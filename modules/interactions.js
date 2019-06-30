@@ -31,9 +31,9 @@ async function wSendChannel(channel, content) {
     var sent;
     try {
         sent = await channel.send(content);
-        logger.logToChannel("SENT: `" + content + "` in " + channel, myHistoryChannel);
+        logger.log("SENT: `" + content + "` in " + channel);
     } catch (e) {
-        logger.logToChannel("INFO: Couldn't send a message in " + channel, myHistoryChannel);
+        logger.log("INFO: Couldn't send a message in " + channel);
     }
     return sent;
 }
@@ -48,9 +48,9 @@ async function wSendAuthor(author, content) {
     var sent;
     try {
         sent = await author.send(content);
-        logger.logToChannel("SENT: DM to [" + author.tag + " - " + author.id + "]", myHistoryChannel);
+        logger.log("SENT: DM to [" + author.tag + " - " + author.id + "]");
     } catch (e) {
-        logger.logToChannel("INFO: Couldn't send a message to [" + author.tag + " - " + author.id + "]", myHistoryChannel);
+        logger.log("INFO: Couldn't send a message to [" + author.tag + " - " + author.id + "]");
     }
     return sent;
 }
@@ -62,9 +62,9 @@ async function wSendAuthor(author, content) {
 async function wDelete(message) {
     try {
         await message.delete();
-        logger.log("INFO: Deleted `" + message.content + "` from " + message.channel, myHistoryChannel);
+        logger.log("INFO: Deleted `" + message.content + "` from " + message.channel);
     } catch (e) {
-        logger.log("INFO: Tried to delete an already deleted message", myHistoryChannel);
+        logger.log("INFO: Tried to delete an already deleted message or not enough permissions.");
     }
 }
 
