@@ -2,10 +2,12 @@
     "dev": {
         "token": "NTk0ODQ1ODg1MTcxNjMwMDkw.XRikRw._sZlEM9D0vYT342vcac4ol4ZnVs",
         "botServerID": "233897365679898624",
-        "gatewaylID": "594847406823178242"
+        "gateID": "594847406823178242",
+        "deleteDelay": 750
     },
     "kuji": {
-        "botServerID": "todo",
-        "botChannelID": "todo"
+        "botServerID": "594824222099111937",
+        "gateID": "594833323348459530",
+        "deleteDelay": 750
     }
 }
