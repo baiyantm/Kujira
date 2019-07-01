@@ -65,7 +65,7 @@ function openJsonFile(path, encoding) {
 function writeObjectToFile(path, data) {
     var cache = [];
     var json = JSON.stringify(data, function (key, value) {
-        if (key != "channelGroup" && key != "vote") {
+        if (key != "member") {
             if (typeof value === 'object' && value !== null) {
                 if (cache.indexOf(value) !== -1) {
                     // Duplicate reference found
@@ -82,7 +82,7 @@ function writeObjectToFile(path, data) {
             }
             return value;
         }
-        if (key == "discordUser") {
+        else {
             return value.id;
         }
     });

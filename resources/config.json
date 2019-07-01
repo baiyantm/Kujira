@@ -3,11 +3,17 @@
         "token": "NTk0ODQ1ODg1MTcxNjMwMDkw.XRikRw._sZlEM9D0vYT342vcac4ol4ZnVs",
         "botServerID": "233897365679898624",
         "gateID": "594847406823178242",
+        "gearID": "594900581357977620",
+        "gearDataID": "594924458033020938",
+        "gearDataMessage": "geardata",
         "deleteDelay": 750
     },
     "kuji": {
         "botServerID": "594824222099111937",
         "gateID": "594833323348459530",
+        "gearID": "594829519953723395",
+        "gearDataID": "595392042054713394",
+        "gearDataMessage": "geardata",
         "deleteDelay": 750
     }
 }
