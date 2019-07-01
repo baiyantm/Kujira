@@ -2,6 +2,32 @@
     "commands": {
         "guest": {
             "ok": "ok"
+        },
+        "adv": {
+            "add": "add",
+            "refresh": "refresh",
+            "clear": "clear",
+            "remove": "remove"
         }
-    }
+    },
+    "classlist": [
+        "warrior",
+        "sorceress",
+        "ranger",
+        "berserker",
+        "tamer",
+        "musa",
+        "maehwa",
+        "valkyrie",
+        "wizard",
+        "witch",
+        "ninja",
+        "kunoichi",
+        "darkknight",
+        "striker",
+        "mystic",
+        "lahn",
+        "archer",
+        "shai"
+    ]
 }
