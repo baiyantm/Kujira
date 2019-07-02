@@ -83,15 +83,12 @@ async function onMessageHandler(message, botMsg) {
                 let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
                 enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
                 if (enteredCommand == commands["refresh"]) {
-                    await refreshBotMsg(myGear, botMsg, players);
                 } else if (enteredCommand == commands["clear"]) {
                     await clearChannel(message.channel);
-                    await refreshBotMsg(myGear, botMsg, players);
                 } else if (enteredCommand == commands["remove"]) {
                     let player = new Player();
                     player.name = args;
                     players = players.filter(currentPlayer => !currentPlayer.equals(player));
-                    await refreshBotMsg(myGear, botMsg, players);
                 } else if (enteredCommand == commands["add"]) {
                     let split = args.split(" ");
                     if (split.length == 5) {
@@ -107,16 +104,15 @@ async function onMessageHandler(message, botMsg) {
                                 players = players.filter(currentPlayer => !currentPlayer.equals(player));
                                 players.push(player);
                                 savePlayers();
-                                await refreshBotMsg(myGear, botMsg, players);
                             }
                         } else {
-                            interactions.wSendAuthor(message.author, enteredCommand.split(" ")[0] + " class not found.\nClass list :\n" + itemsjson["classlist"].join("\n"));
+                            interactions.wSendAuthor(message.author, enteredCommand.split(" ")[0] + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                         }
                     } else {
-                        interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `[name] [classname] [ap] [aap] [dp]`\nClass list :\n" + itemsjson["classlist"].join("\n"));
+                        interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `[name] [classname] [ap] [aap] [dp]`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                     }
                 }
-            } else if(!enteredCommand.startsWith("! ")) {
+            } else if(!enteredCommand.startsWith("! ") && !enteredCommand.startsWith("?")) {
                 let classToFind = itemsjson["classlist"].find(currentclassname => currentclassname == enteredCommand.split(" ")[0]);
                 if (classToFind) {
                     let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
@@ -130,18 +126,18 @@ async function onMessageHandler(message, botMsg) {
                             players = players.filter(currentPlayer => !currentPlayer.equals(player));
                             players.push(player);
                             savePlayers();
-                            await refreshBotMsg(myGear, botMsg, players);
                         } else {
                             interactions.wSendAuthor(message.author, "Some stats are way too high, cheater !");
                         }
                     } else {
-                        interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `[classname] [ap] [aap] [dp]`\nClass list :\n" + itemsjson["classlist"].join("\n"));
+                        interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `[classname] [ap] [aap] [dp]`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                     }
                 } else {
-                    interactions.wSendAuthor(message.author, enteredCommand.split(" ")[0] + " class not found.\nClass list :\n" + itemsjson["classlist"].join("\n"));
+                    interactions.wSendAuthor(message.author, enteredCommand.split(" ")[0] + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                 }
             }
             deleteCommand(message, enteredCommand);
+            await refreshBotMsg(myGear, botMsg, players);
         }
     } catch (e) {
         logger.logError("On message listener error. Something really bad went wrong", e);
