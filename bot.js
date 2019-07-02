@@ -55,13 +55,13 @@ async function initLookout() {
  * @param {Object} botMsg reference to the bot message
  */
 async function onMessageHandler(message, botMsg) {
+    if (message.author.bot) return; //bot ignores bots
     var commands;
     let enteredCommand = message.content.toLowerCase();
     try {
         if (message.channel.id == myGate.id) {
             // ---------- GATE ----------
             commands = itemsjson["commands"]["guest"];
-            if (message.author.bot) return; //bot ignores bots
             if (enteredCommand == commands["ok"]) {
                 let publicRole = message.guild.roles.find(x => x.name == "Public");
                 if (!message.member.roles.has(publicRole.id)) {
@@ -76,7 +76,6 @@ async function onMessageHandler(message, botMsg) {
             deleteCommand(message, enteredCommand);
         } else if (message.channel.id == myGear.id) {
             // ---------- GEAR ----------
-            if (message.author.bot) return; //bot ignores bots
             if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
                 commands = itemsjson["commands"]["adv"];
                 enteredCommand = enteredCommand.substr(1);
@@ -86,13 +85,23 @@ async function onMessageHandler(message, botMsg) {
                 } else if (enteredCommand == commands["clear"]) {
                     await clearChannel(message.channel);
                 } else if (enteredCommand == commands["remove"]) {
-                    let player = new Player();
-                    player.name = args;
-                    players = players.filter(currentPlayer => !currentPlayer.equals(player));
-                    savePlayers();
+                    if(message.mentions.members.size > 0 && message.mentions.members.size < 2) {
+                        let player = new Player(message.mentions.members.first());
+                        players = players.filter(currentPlayer => !currentPlayer.equals(player));
+                        savePlayers();
+                    } else {
+                        let player = new Player();
+                        player.name = args;
+                        players = players.filter(currentPlayer => !currentPlayer.equals(player));
+                        savePlayers();
+                    }
                 } else if (enteredCommand == commands["add"]) {
                     let split = args.split(" ");
                     if (split.length == 5) {
+                        let member = null;
+                        if(message.mentions.members.size > 0 && message.mentions.members.size < 2) {
+                            member = message.mentions.members.first();
+                        }
                         let classToFind = itemsjson["classlist"].find(currentclassname => currentclassname == split[1]);
                         if (classToFind) {
                             let name = split[0];
@@ -100,8 +109,10 @@ async function onMessageHandler(message, botMsg) {
                             let aap = parseInt(split[3]);
                             let dp = parseInt(split[4]);
                             if (Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
-                                let player = new Player(null, classToFind, ap, aap, dp);
-                                player.name = name;
+                                let player = new Player(member, classToFind, ap, aap, dp);
+                                if(!member) {
+                                    player.name = "[" + name + "]";
+                                }
                                 players = players.filter(currentPlayer => !currentPlayer.equals(player));
                                 players.push(player);
                                 savePlayers();
@@ -139,6 +150,20 @@ async function onMessageHandler(message, botMsg) {
             }
             deleteCommand(message, enteredCommand);
             await refreshBotMsg(myGear, botMsg, players);
+        } else {
+            // ---------- ALL CHANNELS ----------
+            if(enteredCommand.startsWith("?gear")) {
+                message.react("✅");
+                let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
+                if(message.mentions.members.size > 0 && message.mentions.members.size < 2) {
+                    let player = new Player(message.mentions.members.first());
+                    interactions.wSendChannel(message.channel, players.filter(currentPlayer => currentPlayer.equals(player)));
+                } else {
+                    let player = new Player();
+                    player.name = args;
+                    interactions.wSendChannel(message.channel, players.filter(currentPlayer => currentPlayer.equals(player)));
+                }
+            }
         }
     } catch (e) {
         logger.logError("On message listener error. Something really bad went wrong", e);
@@ -250,8 +275,6 @@ function getPlayersEmbed(players) {
         embed.setDescription("Player list is empty :(");
     }
     return embed;
-
-
 }
 
 /**
