@@ -37,7 +37,7 @@ async function initLookout() {
             await bot.user.setPresence({
                 game:
                 {
-                    name: "animu",
+                    name: players[Math.floor(Math.random()*players.length)].name,
                     type: "WATCHING"
                 }
             });
@@ -155,13 +155,18 @@ async function onMessageHandler(message, botMsg) {
             if(enteredCommand.startsWith("?gear")) {
                 message.react("✅");
                 let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
+                let player;
                 if(message.mentions.members.size > 0 && message.mentions.members.size < 2) {
-                    let player = new Player(message.mentions.members.first());
-                    interactions.wSendChannel(message.channel, players.filter(currentPlayer => currentPlayer.equals(player)));
+                    player = new Player(message.mentions.members.first());
                 } else {
-                    let player = new Player();
+                    player = new Player();
                     player.name = args;
-                    interactions.wSendChannel(message.channel, players.filter(currentPlayer => currentPlayer.equals(player)));
+                }
+                player = players.filter(currentPlayer => currentPlayer.equals(player));
+                if(player.length > 0) {
+                    interactions.wSendChannel(message.channel, player);
+                } else {
+                    interactions.wSendChannel(message.channel, "Couldn't find this player.");
                 }
             }
         }
