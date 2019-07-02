@@ -30,7 +30,7 @@ async function initLookout() {
     await refreshBotMsg(myGear, botMsg, players);
     bot.on("message", async message => onMessageHandler(message, botMsg));
 
-    let statusDelay = 10000;
+    let statusDelay = 100000;
     //changes "game status" of the bot every statusDelay ms
     setInterval(async () => {
         try {
