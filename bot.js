@@ -89,6 +89,7 @@ async function onMessageHandler(message, botMsg) {
                     let player = new Player();
                     player.name = args;
                     players = players.filter(currentPlayer => !currentPlayer.equals(player));
+                    savePlayers();
                 } else if (enteredCommand == commands["add"]) {
                     let split = args.split(" ");
                     if (split.length == 5) {
