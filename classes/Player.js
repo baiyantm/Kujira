@@ -40,14 +40,14 @@ module.exports = class Player {
          * @returns (ap+aap)/2
          */
         this.getRealAP = function () {
-            return "" + Math.round((parseInt(ap) + parseInt(aap)) / 2);
+            return "" + ((parseInt(ap) + parseInt(aap)) / 2);
         }
 
         /**
          * @returns sum of real ap+dp
          */
         this.getGS = function () {
-            return "" + Math.round(this.getRealAP() + parseInt(dp));
+            return "" + (this.getRealAP() + parseInt(dp));
         }
     }
 }
