@@ -366,8 +366,8 @@ function getStatsEmbed(players, classname) {
     embed.addField("Best AP : " + maxAP.getRealAP(), displayFullPlayer(maxAP), true);
     embed.addField("Best DP : " + maxDP.dp, displayFullPlayer(maxDP), true);
     embed.addField("Worst GS : " + minGS.getGS(), displayFullPlayer(minGS), true);
-    embed.addField("Worst AP : " + minDP.getRealAP(), displayFullPlayer(minDP), true);
-    embed.addField("Worst DP : " + minAP.dp, displayFullPlayer(minAP), true);
+    embed.addField("Worst AP : " + minAP.getRealAP(), displayFullPlayer(minAP), true);
+    embed.addField("Worst DP : " + minDP.dp, displayFullPlayer(minDP), true);
     return embed;
 }
 
