@@ -35,5 +35,19 @@ module.exports = class Player {
         this.toString = function () {
             return this.display();
         }
+
+        /**
+         * @returns (ap+aap)/2
+         */
+        this.getRealAP = function () {
+            return (parseInt(ap) + parseInt(aap)) / 2;
+        }
+
+        /**
+         * @returns sum of avg ap+dp
+         */
+        this.getGS = function () {
+            return "" + (this.getRealAP() + parseInt(dp));
+        }
     }
 }

@@ -56,7 +56,7 @@ function fillUpSpace(string, num) {
  * @returns a string with num size eventually filled with - at the beginning
  */
 function fillUpSpaceRev(string, num) {
-    toAdd = "";
+    var toAdd = "";
     var i = string.length;
     while (i < num) {
         toAdd += '-';
