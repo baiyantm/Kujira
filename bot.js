@@ -362,12 +362,12 @@ function getStatsEmbed(players, classname) {
             true);
     }
     embed.addField("Average gear :", avgAP + " / " + avgAAP + " / " + avgDP, false);
-    embed.addField("Best GS :" + maxGS.getGS(), displayFullPlayer(maxGS), true);
-    embed.addField("Best AP :" + maxAP.getRealAP(), displayFullPlayer(maxAP), true);
-    embed.addField("Best DP :" + maxDP.dp, displayFullPlayer(maxDP), true);
-    embed.addField("Worst GS :" + minGS.getGS(), displayFullPlayer(minGS), true);
-    embed.addField("Worst AP :" + minDP.getRealAP(), displayFullPlayer(minDP), true);
-    embed.addField("Worst DP :" + minAP.dp, displayFullPlayer(minAP), true);
+    embed.addField("Best GS : " + maxGS.getGS(), displayFullPlayer(maxGS), true);
+    embed.addField("Best AP : " + maxAP.getRealAP(), displayFullPlayer(maxAP), true);
+    embed.addField("Best DP : " + maxDP.dp, displayFullPlayer(maxDP), true);
+    embed.addField("Worst GS : " + minGS.getGS(), displayFullPlayer(minGS), true);
+    embed.addField("Worst AP : " + minDP.getRealAP(), displayFullPlayer(minDP), true);
+    embed.addField("Worst DP : " + minAP.dp, displayFullPlayer(minAP), true);
     return embed;
 }
 
