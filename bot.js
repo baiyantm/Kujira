@@ -1,3 +1,5 @@
+// @ts-check
+
 const Discord = require("discord.js");
 const files = require("./modules/files");
 const interactions = require("./modules/interactions");
@@ -37,7 +39,7 @@ async function initLookout() {
             await bot.user.setPresence({
                 game:
                 {
-                    name: players[Math.floor(Math.random()*players.length)].name,
+                    name: players[Math.floor(Math.random() * players.length)].name,
                     type: "WATCHING"
                 }
             });
@@ -51,7 +53,7 @@ async function initLookout() {
 
 /**
  * listener for message event
- * @param {message} message the message sent
+ * @param {Discord.Message} message the message sent
  * @param {Object} botMsg reference to the bot message
  */
 async function onMessageHandler(message, botMsg) {
@@ -85,7 +87,7 @@ async function onMessageHandler(message, botMsg) {
                 } else if (enteredCommand == commands["clear"]) {
                     await clearChannel(message.channel);
                 } else if (enteredCommand == commands["remove"]) {
-                    if(message.mentions.members.size > 0 && message.mentions.members.size < 2) {
+                    if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
                         let player = new Player(message.mentions.members.first());
                         players = players.filter(currentPlayer => !currentPlayer.equals(player));
                         savePlayers();
@@ -99,7 +101,7 @@ async function onMessageHandler(message, botMsg) {
                     let split = args.split(" ");
                     if (split.length == 5) {
                         let member = null;
-                        if(message.mentions.members.size > 0 && message.mentions.members.size < 2) {
+                        if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
                             member = message.mentions.members.first();
                         }
                         let classToFind = itemsjson["classlist"].find(currentclassname => currentclassname == split[1]);
@@ -110,7 +112,7 @@ async function onMessageHandler(message, botMsg) {
                             let dp = parseInt(split[4]);
                             if (Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
                                 let player = new Player(member, classToFind, ap, aap, dp);
-                                if(!member) {
+                                if (!member) {
                                     player.name = "[" + name + "]";
                                 }
                                 players = players.filter(currentPlayer => !currentPlayer.equals(player));
@@ -124,7 +126,7 @@ async function onMessageHandler(message, botMsg) {
                         interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `[name] [classname] [ap] [aap] [dp]`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                     }
                 }
-            } else if(!enteredCommand.startsWith("! ") && !enteredCommand.startsWith("?")) {
+            } else if (!enteredCommand.startsWith("! ") && !enteredCommand.startsWith("?")) {
                 let classToFind = itemsjson["classlist"].find(currentclassname => currentclassname == enteredCommand.split(" ")[0]);
                 if (classToFind) {
                     let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
@@ -152,21 +154,26 @@ async function onMessageHandler(message, botMsg) {
             await refreshBotMsg(myGear, botMsg, players);
         } else {
             // ---------- ALL CHANNELS ----------
-            if(enteredCommand.startsWith("?gear")) {
-                message.react("✅");
+            if (enteredCommand.startsWith("?")) {
+                commands = itemsjson["commands"]["guest"];
+                enteredCommand = enteredCommand.substr(1);
                 let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
-                let player;
-                if(message.mentions.members.size > 0 && message.mentions.members.size < 2) {
-                    player = new Player(message.mentions.members.first());
-                } else {
-                    player = new Player();
-                    player.name = args;
-                }
-                player = players.filter(currentPlayer => currentPlayer.equals(player));
-                if(player.length > 0) {
-                    interactions.wSendChannel(message.channel, player);
-                } else {
-                    interactions.wSendChannel(message.channel, "Couldn't find this player.");
+                enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
+                if (enteredCommand == commands["gear"]) {
+                    message.react("✅");
+                    let player;
+                    if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
+                        player = new Player(message.mentions.members.first());
+                    } else {
+                        player = new Player();
+                        player.name = args;
+                    }
+                    let playersFound = players.filter(currentPlayer => currentPlayer.equals(player));
+                    if (playersFound.length > 0) {
+                        interactions.wSendChannel(message.channel, classEmojis[playersFound[0].classname] + playersFound[0]);
+                    } else {
+                        interactions.wSendChannel(message.channel, "Couldn't find this player.");
+                    }
                 }
             }
         }
@@ -185,7 +192,7 @@ function savePlayers() {
 /**
  * if the bot message exists, edits it
  * if not, sends a new one
- * @param {message} channel the channel where the original message comes from
+ * @param {Discord.Message} channel the channel where the original message comes from
  * @param {Object} botMsg the bot message
  * @param {Player[]} players
  * @returns the new message
@@ -211,7 +218,7 @@ async function newBotMessage(channel, content) {
 
 /**
  * deletes all messages in the channel
- * @param {channel} channel the channel to clean
+ * @param {Discord.TextChannel|Discord.DMChannel|Discord.GroupDMChannel} channel the channel to clean
  */
 async function clearChannel(channel) {
     var deleteCount = 100;
@@ -222,7 +229,7 @@ async function clearChannel(channel) {
     while (moreMessages) {
         try {
             channel.bulkDelete(deleteCount, true);
-            logger.log("INFO: Deleted " + deleteCount + " messages in " + channel.name);
+            logger.log("INFO: Deleted " + deleteCount + " messages in " + channel);
             moreMessages = false;
             //lookup for more messages
             await channel.fetchMessages({ limit: 1 }).then(messages => {
@@ -299,7 +306,7 @@ function playerListHasClassname(players, classname) {
 
 /**
  * delete a command message
- * @param {message} message 
+ * @param {Discord.Message} message 
  * @param {string} enteredCommand 
  */
 async function deleteCommand(message, enteredCommand) {
@@ -312,12 +319,12 @@ async function deleteCommand(message, enteredCommand) {
 
 /**
  * whether the user has adv user permissions
- * @param {message} message the original message
+ * @param {Discord.Message} message the original message
  * @returns true if user is allowed, false if not
  */
 async function checkAdvPermission(message) {
     var allowed = false;
-    if (message.member.roles.find(x => x.name === "Officers") || message.member.id == bot.id) {
+    if (message.member.roles.find(x => x.name === "Officers") || message.member.id == bot.user.id) {
         allowed = true;
     } else {
         await interactions.wSendAuthor(message.author, 'Insufficient permissions.');
@@ -326,7 +333,7 @@ async function checkAdvPermission(message) {
 }
 
 /**
- * @param {string or number} id the player's id
+ * @param {string} id the player's id
  * @param {string} name his display name (if doesn't have id)
  * @param {string} classname
  * @param {string} ap
@@ -347,7 +354,7 @@ async function revivePlayer(id, name, classname, ap, aap, dp) {
 /**
  * downloads a file attached to the last message of the channel and put it in resources/
  * @param {string} filename the file's name
- * @param {channel} channel the channel to download from
+ * @param {Discord.TextChannel} channel the channel to download from
  */
 async function downloadFileFromChannel(filename, channel) {
     return new Promise((resolve, reject) => {
@@ -374,6 +381,26 @@ async function downloadFileFromChannel(filename, channel) {
         setTimeout(() => {
             reject();
         }, 30000);
+    });
+}
+
+/**
+ * fetch an emoji from the server
+ * @param {string} classname 
+ */
+async function fetchClassEmoji(classname) {
+    return new Promise((resolve, reject) => {
+        try {
+            myServer.emojis.find(emoji => {
+                emoji.name == classname;
+                resolve(emoji);
+            });
+        } catch (e) {
+            reject(classname);
+        }
+        setTimeout(() => {
+            reject(classname);
+        }, 10000);
     });
 }
 
@@ -410,7 +437,7 @@ if (configjson && itemsjson) {
         myGearData = bot.channels.get(configjson["gearDataID"]);
 
         itemsjson["classlist"].forEach(async classname => {
-            classEmojis.push(await myServer.emojis.find(emoji => emoji.name == classname));
+            classEmojis.push(await fetchClassEmoji(classname));
         });
 
         //attempt to load a previously saved state
