@@ -40,7 +40,7 @@ async function initLookout() {
             await bot.user.setPresence({
                 game:
                 {
-                    name: players.length > 0 ? players[Math.floor(Math.random()*players.length)].name : "an empty player list :(",
+                    name: players.length > 0 ? players[Math.floor(Math.random() * players.length)].name : "an empty player list :(",
                     type: "WATCHING"
                 }
             });
@@ -114,7 +114,7 @@ async function onMessageHandler(message, botMsg) {
                             if (Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
                                 let player = new Player(member, classToFind, ap, aap, dp);
                                 if (!member) {
-                                    player.name = "[" + name + "]";
+                                    player.name = name;
                                 }
                                 players = players.filter(currentPlayer => !currentPlayer.equals(player));
                                 players.push(player);
@@ -171,24 +171,60 @@ async function onMessageHandler(message, botMsg) {
                     }
                     let playersFound = players.filter(currentPlayer => currentPlayer.equals(player));
                     if (playersFound.length > 0) {
-                        interactions.wSendChannel(message.channel, classEmojis[playersFound[0].classname] + playersFound[0]);
+                        interactions.wSendChannel(message.channel, displayFullPlayer(playersFound[0]));
                     } else {
                         interactions.wSendChannel(message.channel, "Couldn't find this player.");
                     }
-                }
-            } else if(enteredCommand.startsWith("?stats")) {
-                message.react("✅");
-                let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
-                if(!args) {
+                } else if (enteredCommand == commands["stats"]) {
+                    message.react("✅");
+                    if (!args) {
+                        interactions.wSendChannel(message.channel, getStatsEmbed(players));
+                    } else {
 
-                } else {
-
+                    }
                 }
             }
         }
     } catch (e) {
         logger.logError("On message listener error. Something really bad went wrong", e);
     }
+}
+
+/**
+ * @param {Player} player 
+ * @returns a string containing the server class emoji and the player display
+ */
+function displayFullPlayer(player) {
+    return classEmojis.find(emoji => emoji.name == player.classname) + " " + player;
+}
+
+/**
+ * @param {any[]} list 
+ * @param {function} comparator 
+ * @returns the result of the function applied to all players in the list
+ */
+function compare(list, comparator) {
+    let res = list[0];
+    list.forEach(element => {
+        //min : min > element
+        //max : max < element
+        if (comparator(res, element)) {
+            res = element;
+        }
+    });
+    return res;
+}
+
+/**
+ * @param {Player[]} list 
+ * @param {function} aggregate 
+ */
+function avg(list, aggregate) {
+    let res = 0;
+    list.forEach(player => {
+        res += aggregate(player);
+    });
+    return Math.round(res / list.length);
 }
 
 function savePlayers() {
@@ -273,20 +309,81 @@ function cleanUpDataChannel() {
     });
 }
 
+function getStatsEmbed(players, classname) {
+    if (classname) {
+        players = players.filter(currentPlayer => currentPlayer.classname == classname);
+    }
+    const embed = new Discord.RichEmbed();
+    var embedTitle = ":pencil: STATS";
+    var embedColor = 3447003;
+    embed.setColor(embedColor);
+    embed.setTitle(embedTitle);
+    let minAP = compare(players, (min, player) => {
+        return min.getRealAP() > player.getRealAP();
+    });
+    let minDP = compare(players, (min, player) => {
+        return min.dp > player.dp;
+    });
+    let minGS = compare(players, (min, player) => {
+        return min.getGS() > player.getGS();
+    });
+    let maxAP = compare(players, (max, player) => {
+        return max.getRealAP() < player.getRealAP();
+    });
+    let maxDP = compare(players, (max, player) => {
+        return max.dp < player.dp;
+    });
+    let maxGS = compare(players, (max, player) => {
+        return max.getGS() < player.getGS();
+    });
+    let avgAP = avg(players, player => {
+        return player.ap;
+    });
+    let avgAAP = avg(players, player => {
+        return player.aap;
+    });
+    let avgDP = avg(players, player => {
+        return player.dp;
+    });
+    if (!classname) {
+        let minClass = compare(itemsjson["classlist"], (min, class2) => {
+            return countClassNames(players, min) > countClassNames(players, class2);
+        });
+        let maxClass = compare(itemsjson["classlist"], (max, class2) => {
+            return countClassNames(players, max) < countClassNames(players, class2);
+        });
+        embed.addField("Most played class :",
+            classEmojis.find(emoji => emoji.name == maxClass) + " " + maxClass.charAt(0).toUpperCase() + maxClass.slice(1) + " (" + countClassNames(players, maxClass) + ")",
+            true);
+        embed.addField("Least played class :",
+            classEmojis.find(emoji => emoji.name == minClass) + " " + minClass.charAt(0).toUpperCase() + minClass.slice(1) + " (" + countClassNames(players, minClass) + ")",
+            true);
+    }
+    embed.addField("Average gear :", avgAP + " / " + avgAAP + " / " + avgDP, false);
+    embed.addField("Best GS :" + maxGS.getGS(), displayFullPlayer(maxGS), true);
+    embed.addField("Best AP :" + maxAP.getRealAP(), displayFullPlayer(maxAP), true);
+    embed.addField("Best DP :" + maxDP.dp, displayFullPlayer(maxDP), true);
+    embed.addField("Worst GS :" + minGS.getGS(), displayFullPlayer(minGS), true);
+    embed.addField("Worst AP :" + minDP.getRealAP(), displayFullPlayer(minDP), true);
+    embed.addField("Worst DP :" + minAP.dp, displayFullPlayer(minAP), true);
+    return embed;
+}
+
 function getPlayersEmbed(players) {
     const embed = new Discord.RichEmbed();
-    var embedTitle = ":crossed_swords: PLAYER LIST :crossed_swords:";
+    var embedTitle = ":star: PLAYERS";
     var embedColor = 3447003;
     embed.setColor(embedColor);
     embed.setTitle(embedTitle);
     if (players.length > 0) {
         itemsjson["classlist"].forEach(classname => {
-            if (playerListHasClassname(players, classname)) {
+            let classcount = countClassNames(players, classname);
+            if (classcount > 0) {
                 let fieldContent = "";
-                let fieldTitle = "**" + classname.charAt(0).toUpperCase() + classname.slice(1) + " :**\n";
+                let fieldTitle = classname.charAt(0).toUpperCase() + classname.slice(1) + " (" + classcount + ") :\n";
                 players.forEach(player => {
                     if (player.classname == classname) {
-                        fieldContent += classEmojis.find(emoji => emoji.name == classname) + " " + player + "\n";
+                        fieldContent += displayFullPlayer(player) + "\n";
                     }
                 });
                 embed.addField(fieldTitle, fieldContent, true);
@@ -301,16 +398,17 @@ function getPlayersEmbed(players) {
 /**
  * @param {Player[]} players 
  * @param {string} classname 
- * @returns whether the list has this classname
+ * @returns the number of players that have this classname
  */
-function playerListHasClassname(players, classname) {
+function countClassNames(players, classname) {
+    let res = 0;
     for (let i = 0; i < players.length; i++) {
         let player = players[i];
         if (player.classname == classname) {
-            return true;
+            res++;
         }
     }
-    return false;
+    return res;
 }
 
 /**
@@ -401,8 +499,9 @@ async function fetchClassEmoji(classname) {
     return new Promise((resolve, reject) => {
         try {
             myServer.emojis.find(emoji => {
-                emoji.name == classname;
-                resolve(emoji);
+                if (emoji.name == classname) {
+                    resolve(emoji);
+                }
             });
         } catch (e) {
             reject(classname);

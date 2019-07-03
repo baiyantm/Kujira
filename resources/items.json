@@ -2,7 +2,8 @@
     "commands": {
         "guest": {
             "ok": "ok",
-            "gear": "gear"
+            "gear": "gear",
+            "stats": "stats"
         },
         "adv": {
             "add": "add",
