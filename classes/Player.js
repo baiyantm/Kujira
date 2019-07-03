@@ -40,7 +40,7 @@ module.exports = class Player {
          * @returns (ap+aap)/2
          */
         this.getRealAP = function () {
-            return Math.round((parseInt(ap) + parseInt(aap)) / 2);
+            return "" + Math.round((parseInt(ap) + parseInt(aap)) / 2);
         }
 
         /**
