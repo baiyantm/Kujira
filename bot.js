@@ -32,14 +32,15 @@ async function initLookout() {
     await refreshBotMsg(myGear, botMsg, players);
     bot.on("message", async message => onMessageHandler(message, botMsg));
 
-    let statusDelay = 100000;
+    bot.user.setPresence({ game: { name: "a successful bootup !" } });
+    let statusDelay = 300000;
     //changes "game status" of the bot every statusDelay ms
     setInterval(async () => {
         try {
             await bot.user.setPresence({
                 game:
                 {
-                    name: players[Math.floor(Math.random() * players.length)].name,
+                    name: players.length > 0 ? players[Math.floor(Math.random()*players.length)].name : "an empty player list :(",
                     type: "WATCHING"
                 }
             });
@@ -57,7 +58,7 @@ async function initLookout() {
  * @param {Object} botMsg reference to the bot message
  */
 async function onMessageHandler(message, botMsg) {
-    if (message.author.bot) return; //bot ignores bots
+    //if (message.author.bot) return; //bot ignores bots
     var commands;
     let enteredCommand = message.content.toLowerCase();
     try {
@@ -174,6 +175,14 @@ async function onMessageHandler(message, botMsg) {
                     } else {
                         interactions.wSendChannel(message.channel, "Couldn't find this player.");
                     }
+                }
+            } else if(enteredCommand.startsWith("?stats")) {
+                message.react("✅");
+                let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
+                if(!args) {
+
+                } else {
+
                 }
             }
         }
