@@ -87,6 +87,9 @@ async function onMessageHandler(message, botMsg) {
                 if (enteredCommand == commands["refresh"]) {
                 } else if (enteredCommand == commands["clear"]) {
                     await clearChannel(message.channel);
+                } else if (enteredCommand == commands["removeall"]) {
+                    players = [];
+                    savePlayers();
                 } else if (enteredCommand == commands["remove"]) {
                     if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
                         let player = new Player(message.mentions.members.first());

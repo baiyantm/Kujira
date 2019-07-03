@@ -9,7 +9,8 @@
             "add": "add",
             "refresh": "refresh",
             "clear": "clear",
-            "remove": "remove"
+            "remove": "remove",
+            "removeall": "removeall"
         }
     },
     "classlist": [
