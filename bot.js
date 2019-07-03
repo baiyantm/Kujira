@@ -178,11 +178,12 @@ async function onMessageHandler(message, botMsg) {
                         interactions.wSendChannel(message.channel, "Couldn't find this player.");
                     }
                 } else if (enteredCommand == commands["stats"]) {
-                    message.react("✅");
-                    if (!args) {
+                    if (itemsjson["classlist"].includes(args)) {
+                        message.react("✅");
+                        interactions.wSendChannel(message.channel, getStatsEmbed(players, args));
+                    } else if (!args) {
+                        message.react("✅");
                         interactions.wSendChannel(message.channel, getStatsEmbed(players));
-                    } else {
-
                     }
                 }
             }
@@ -316,58 +317,63 @@ function getStatsEmbed(players, classname) {
         players = players.filter(currentPlayer => currentPlayer.classname == classname);
     }
     const embed = new Discord.RichEmbed();
-    var embedTitle = ":pencil: STATS";
+    var embedTitle = ":pencil: STATS" + (classname ? " for " + classname.charAt(0).toUpperCase() + classname.slice(1) : "");
     var embedColor = 3447003;
     embed.setColor(embedColor);
     embed.setTitle(embedTitle);
-    let minAP = compare(players, (min, player) => {
-        return min.getRealAP() > player.getRealAP();
-    });
-    let minDP = compare(players, (min, player) => {
-        return min.dp > player.dp;
-    });
-    let minGS = compare(players, (min, player) => {
-        return min.getGS() > player.getGS();
-    });
-    let maxAP = compare(players, (max, player) => {
-        return max.getRealAP() < player.getRealAP();
-    });
-    let maxDP = compare(players, (max, player) => {
-        return max.dp < player.dp;
-    });
-    let maxGS = compare(players, (max, player) => {
-        return max.getGS() < player.getGS();
-    });
-    let avgAP = avg(players, player => {
-        return player.ap;
-    });
-    let avgAAP = avg(players, player => {
-        return player.aap;
-    });
-    let avgDP = avg(players, player => {
-        return player.dp;
-    });
-    if (!classname) {
-        let minClass = compare(itemsjson["classlist"], (min, class2) => {
-            return countClassNames(players, min) > countClassNames(players, class2);
+    if (players.length > 0) {
+
+        let minAP = compare(players, (min, player) => {
+            return min.getRealAP() > player.getRealAP();
         });
-        let maxClass = compare(itemsjson["classlist"], (max, class2) => {
-            return countClassNames(players, max) < countClassNames(players, class2);
+        let minDP = compare(players, (min, player) => {
+            return min.dp > player.dp;
         });
-        embed.addField("Most played class :",
-            classEmojis.find(emoji => emoji.name == maxClass) + " " + maxClass.charAt(0).toUpperCase() + maxClass.slice(1) + " (" + countClassNames(players, maxClass) + ")",
-            true);
-        embed.addField("Least played class :",
-            classEmojis.find(emoji => emoji.name == minClass) + " " + minClass.charAt(0).toUpperCase() + minClass.slice(1) + " (" + countClassNames(players, minClass) + ")",
-            true);
+        let minGS = compare(players, (min, player) => {
+            return min.getGS() > player.getGS();
+        });
+        let maxAP = compare(players, (max, player) => {
+            return max.getRealAP() < player.getRealAP();
+        });
+        let maxDP = compare(players, (max, player) => {
+            return max.dp < player.dp;
+        });
+        let maxGS = compare(players, (max, player) => {
+            return max.getGS() < player.getGS();
+        });
+        let avgAP = avg(players, player => {
+            return player.ap;
+        });
+        let avgAAP = avg(players, player => {
+            return player.aap;
+        });
+        let avgDP = avg(players, player => {
+            return player.dp;
+        });
+        if (!classname) {
+            let minClass = compare(itemsjson["classlist"], (min, class2) => {
+                return countClassNames(players, min) > countClassNames(players, class2);
+            });
+            let maxClass = compare(itemsjson["classlist"], (max, class2) => {
+                return countClassNames(players, max) < countClassNames(players, class2);
+            });
+            embed.addField("Most played class :",
+                classEmojis.find(emoji => emoji.name == maxClass) + " " + maxClass.charAt(0).toUpperCase() + maxClass.slice(1) + " (" + countClassNames(players, maxClass) + ")",
+                true);
+            embed.addField("Least played class :",
+                classEmojis.find(emoji => emoji.name == minClass) + " " + minClass.charAt(0).toUpperCase() + minClass.slice(1) + " (" + countClassNames(players, minClass) + ")",
+                true);
+        }
+        embed.addField("Average gear :", avgAP + " / " + avgAAP + " / " + avgDP, false);
+        embed.addField("Highest GS : " + maxGS.getGS(), displayFullPlayer(maxGS), true);
+        embed.addField("Highest AP : " + maxAP.getRealAP(), displayFullPlayer(maxAP), true);
+        embed.addField("Highest DP : " + maxDP.dp, displayFullPlayer(maxDP), true);
+        embed.addField("Lowest GS : " + minGS.getGS(), displayFullPlayer(minGS), true);
+        embed.addField("Lowest AP : " + minAP.getRealAP(), displayFullPlayer(minAP), true);
+        embed.addField("Lowest DP : " + minDP.dp, displayFullPlayer(minDP), true);
+    } else {
+        embed.setDescription("There are no " + classname.charAt(0).toUpperCase() + classname.slice(1) + " :(");
     }
-    embed.addField("Average gear :", avgAP + " / " + avgAAP + " / " + avgDP, false);
-    embed.addField("Best GS : " + maxGS.getGS(), displayFullPlayer(maxGS), true);
-    embed.addField("Best AP : " + maxAP.getRealAP(), displayFullPlayer(maxAP), true);
-    embed.addField("Best DP : " + maxDP.dp, displayFullPlayer(maxDP), true);
-    embed.addField("Worst GS : " + minGS.getGS(), displayFullPlayer(minGS), true);
-    embed.addField("Worst AP : " + minAP.getRealAP(), displayFullPlayer(minAP), true);
-    embed.addField("Worst DP : " + minDP.dp, displayFullPlayer(minDP), true);
     return embed;
 }
 
