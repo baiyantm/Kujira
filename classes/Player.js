@@ -47,7 +47,7 @@ module.exports = class Player {
          * @returns sum of avg ap+dp
          */
         this.getGS = function () {
-            return "" + (this.getRealAP() + parseInt(dp));
+            return "" + (this.getRealAP() + parseInt(dp))/2;
         }
     }
 }
