@@ -119,6 +119,8 @@ async function onMessageHandler(message, botMsg) {
                                 players = players.filter(currentPlayer => !currentPlayer.equals(player));
                                 players.push(player);
                                 savePlayers();
+                            } else {
+                                interactions.wSendAuthor(message.author, "Some stats are way too high, check again.");
                             }
                         } else {
                             interactions.wSendAuthor(message.author, enteredCommand.split(" ")[0] + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
