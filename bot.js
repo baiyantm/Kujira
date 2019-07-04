@@ -103,9 +103,8 @@ async function onMessageHandler(message, botMsg) {
                 } else if (enteredCommand == commands["bulk"]) {
                     //generate 7d worth of signups from today (inc today)
                 }
-                
-                deleteCommand(message, enteredCommand);
             }
+            deleteCommand(message, enteredCommand);
         } else if (message.channel.id == myGear.id) {
             // ---------- GEAR ----------
             if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
