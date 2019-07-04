@@ -1,16 +1,30 @@
 {
     "commands": {
-        "guest": {
-            "ok": "ok",
-            "gear": "gear",
-            "stats": "stats"
+        "gate": {
+            "guest": {
+                "ok": "ok"
+            }
         },
-        "adv": {
-            "add": "add",
-            "refresh": "refresh",
-            "clear": "clear",
-            "remove": "remove",
-            "removeall": "removeall"
+        "any": {
+            "guest": {
+                "gear": "gear",
+                "stats": "stats"
+            }
+        },
+        "gear": {
+            "adv": {
+                "add": "add",
+                "clear": "clear",
+                "remove": "remove",
+                "removeall": "removeall"
+            }
+        },
+        "signup": {
+            "adv": {
+                "clear": "clear",
+                "dump": "dump",
+                "generate": "generate"
+            }
         }
     },
     "classlist": [

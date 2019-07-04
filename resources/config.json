@@ -6,6 +6,9 @@
         "gearID": "594900581357977620",
         "gearDataID": "594924458033020938",
         "gearDataMessage": "geardata",
+        "signUpID": "596080167437336579",
+        "signUpHistoryID": "596080219727724545",
+        "signUpMessage": "signupdata",
         "deleteDelay": 750
     },
     "kuji": {
@@ -14,6 +17,9 @@
         "gearID": "594829519953723395",
         "gearDataID": "595392042054713394",
         "gearDataMessage": "geardata",
+        "signUpID": "594829613729972226",
+        "signUpHistoryID": "596068682711433245",
+        "signUpMessage": "signupdata",
         "deleteDelay": 750
     }
 }

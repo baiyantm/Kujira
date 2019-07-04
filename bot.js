@@ -64,7 +64,7 @@ async function onMessageHandler(message, botMsg) {
     try {
         if (message.channel.id == myGate.id) {
             // ---------- GATE ----------
-            commands = itemsjson["commands"]["guest"];
+            commands = itemsjson["commands"]["gate"]["guest"];
             if (enteredCommand == commands["ok"]) {
                 let publicRole = message.guild.roles.find(x => x.name == "Public");
                 if (!message.member.roles.has(publicRole.id)) {
@@ -77,15 +77,23 @@ async function onMessageHandler(message, botMsg) {
                 }
             }
             deleteCommand(message, enteredCommand);
+        } else if (message.channel.id == mySignUp.id) {
+            // ---------- SIGNUP ----------
+            if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
+                commands = itemsjson["commands"]["signup"]["adv"];
+                enteredCommand = enteredCommand.substr(1);
+                if (enteredCommand == commands["dump"]) {
+                    saveSignUp(message);
+                }
+            }
         } else if (message.channel.id == myGear.id) {
             // ---------- GEAR ----------
             if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
-                commands = itemsjson["commands"]["adv"];
+                commands = itemsjson["commands"]["gear"]["adv"];
                 enteredCommand = enteredCommand.substr(1);
                 let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
                 enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
-                if (enteredCommand == commands["refresh"]) {
-                } else if (enteredCommand == commands["clear"]) {
+                if (enteredCommand == commands["clear"]) {
                     await clearChannel(message.channel);
                 } else if (enteredCommand == commands["removeall"]) {
                     players = [];
@@ -160,8 +168,8 @@ async function onMessageHandler(message, botMsg) {
             await refreshBotMsg(myGear, botMsg, players);
         } else {
             // ---------- ALL CHANNELS ----------
-            if (enteredCommand.startsWith("?")) {
-                commands = itemsjson["commands"]["guest"];
+            if (enteredCommand.startsWith("?") && checkIntPermission(message)) {
+                commands = itemsjson["commands"]["any"]["guest"];
                 enteredCommand = enteredCommand.substr(1);
                 let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
                 enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
@@ -237,6 +245,13 @@ function savePlayers() {
     let playerspath = "./resources/players.json";
     files.writeObjectToFile(playerspath, players);
     files.uploadFileToChannel(playerspath, myGearData, configjson["gearDataMessage"]);
+    cleanUpDataChannel();
+}
+
+function saveSignUp(message) {
+    let signuppath = "./resources/" + message.content;
+    files.writeObjectToFile(signuppath, message);
+    files.uploadFileToChannel(signuppath, mySignUpHistory, configjson["signUpMessage"]);
     cleanUpDataChannel();
 }
 
@@ -436,6 +451,21 @@ async function deleteCommand(message, enteredCommand) {
 }
 
 /**
+ * whether the user has int user permissions
+ * @param {Discord.Message} message the original message
+ * @returns true if user is allowed, false if not
+ */
+async function checkIntPermission(message) {
+    var allowed = false;
+    if (message.member.roles.find(x => x.name === "Members") || message.member.id == bot.user.id) {
+        allowed = true;
+    } else {
+        await interactions.wSendAuthor(message.author, 'Insufficient permissions.');
+    }
+    return allowed;
+}
+
+/**
  * whether the user has adv user permissions
  * @param {Discord.Message} message the original message
  * @returns true if user is allowed, false if not
@@ -542,6 +572,8 @@ if (configjson && itemsjson) {
     var myGate;
     var myGear;
     var myGearData;
+    var mySignUp;
+    var mySignUpHistory;
     var players = [];
     var classEmojis = [];
     var loading = 1000;
@@ -549,11 +581,6 @@ if (configjson && itemsjson) {
     bot.once("ready", async () => {
         logger.log("INFO: Logged in as " + bot.user.tag);
         bot.user.setPresence({ game: { name: "booting up..." } });
-
-        myServer = bot.guilds.get(configjson["botServerID"]);
-        myGate = bot.channels.get(configjson["gateID"]);
-        myGear = bot.channels.get(configjson["gearID"]);
-        myGearData = bot.channels.get(configjson["gearDataID"]);
 
         itemsjson["classlist"].forEach(async classname => {
             classEmojis.push(await fetchClassEmoji(classname));
@@ -578,9 +605,11 @@ if (configjson && itemsjson) {
             myGate = bot.channels.get(configjson["gateID"]);
             myGear = bot.channels.get(configjson["gearID"]);
             myGearData = bot.channels.get(configjson["gearDataID"]);
+            mySignUp = bot.channels.get(configjson["signUpID"]);
+            mySignUpHistory = bot.channels.get(configjson["SignUpHistoryID"]);
 
             logger.log("INFO: Booting up attempt...");
-            if (myServer && myGate && myGear && myGearData && classEmojis) {
+            if (myServer && myGate && myGear && myGearData && classEmojis && mySignUp && mySignUpHistory) {
                 clearInterval(interval);
                 logger.log("INFO: ... success !");
 
