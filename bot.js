@@ -307,9 +307,6 @@ async function saveSignUp(signUps) {
     let content = "" + new Date();
     mySignUpData.send(content, {
         embed: await getSignUpsEmbed(signUps),
-        files: [
-            signuppath
-        ]
     });
 }
 
