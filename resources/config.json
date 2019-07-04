@@ -6,7 +6,12 @@
         "gearID": "594900581357977620",
         "gearDataID": "594924458033020938",
         "gearDataMessage": "geardata",
-        "deleteDelay": 750
+        "signUpID": "596080167437336579",
+        "signUpDataID": "596080219727724545",
+        "signUpDataMessage": "signupdata",
+        "deleteDelay": 750,
+        "refreshDelay": 500,
+        "saveDelay": 900000
     },
     "kuji": {
         "botServerID": "594824222099111937",
@@ -14,6 +19,10 @@
         "gearID": "594829519953723395",
         "gearDataID": "595392042054713394",
         "gearDataMessage": "geardata",
-        "deleteDelay": 750
+        "signUpID": "594829613729972226",
+        "signUpDataID": "596068682711433245",
+        "deleteDelay": 750,
+        "refreshDelay": 500,
+        "saveDelay": 900000
     }
 }
