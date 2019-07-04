@@ -98,11 +98,13 @@ async function onMessageHandler(message, botMsg) {
                     await clearChannel(message.channel);
                 } else if (enteredCommand == commands["dump"]) {
                     //manually dumps data into data channel
-                    let signUps = await getDaySignUp();
+                    let signUps = await getDaySignUp(message);
                     await saveSignUp(signUps);
                 } else if (enteredCommand == commands["bulk"]) {
                     //generate 7d worth of signups from today (inc today)
                 }
+                
+                deleteCommand(message, enteredCommand);
             }
         } else if (message.channel.id == myGear.id) {
             // ---------- GEAR ----------
