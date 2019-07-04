@@ -1,5 +1,6 @@
 // @ts-check
 
+const { parse } = require('json2csv');
 const Discord = require("discord.js");
 const files = require("./modules/files");
 const interactions = require("./modules/interactions");
@@ -35,7 +36,7 @@ async function initLookout() {
     bot.user.setPresence({ game: { name: "a successful bootup !" } });
     let statusDelay = 300000;
     //changes "game status" of the bot every statusDelay ms
-    setInterval(async () => {
+    bot.setInterval(async () => {
         try {
             await bot.user.setPresence({
                 game:
@@ -48,6 +49,17 @@ async function initLookout() {
             logger.logError("Game status error", e);
         }
     }, statusDelay);
+
+    bot.setInterval(async () => {
+        savePlayers();
+    }, configjson["saveDelay"]);
+
+    process.on('SIGTERM', function () {
+        logger.log("Recieved signal to terminate, saving and shutting down");
+        savePlayers();
+        bot.destroy();
+        process.exit(0);
+    });
 
     logger.log("INFO: ... lookout initialization done");
 }
@@ -82,8 +94,14 @@ async function onMessageHandler(message, botMsg) {
             if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
                 commands = itemsjson["commands"]["signup"]["adv"];
                 enteredCommand = enteredCommand.substr(1);
-                if (enteredCommand == commands["dump"]) {
-                    saveSignUp(message);
+                if (enteredCommand == commands["clear"]) {
+                    await clearChannel(message.channel);
+                } else if (enteredCommand == commands["dump"]) {
+                    //manually dumps data into data channel
+                    let signUps = await getDaySignUp();
+                    await saveSignUp(signUps);
+                } else if (enteredCommand == commands["bulk"]) {
+                    //generate 7d worth of signups from today (inc today)
                 }
             }
         } else if (message.channel.id == myGear.id) {
@@ -97,17 +115,14 @@ async function onMessageHandler(message, botMsg) {
                     await clearChannel(message.channel);
                 } else if (enteredCommand == commands["removeall"]) {
                     players = [];
-                    savePlayers();
                 } else if (enteredCommand == commands["remove"]) {
                     if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
                         let player = new Player(message.mentions.members.first());
                         players = players.filter(currentPlayer => !currentPlayer.equals(player));
-                        savePlayers();
                     } else {
                         let player = new Player();
                         player.name = args;
                         players = players.filter(currentPlayer => !currentPlayer.equals(player));
-                        savePlayers();
                     }
                 } else if (enteredCommand == commands["add"]) {
                     let split = args.split(" ");
@@ -129,7 +144,6 @@ async function onMessageHandler(message, botMsg) {
                                 }
                                 players = players.filter(currentPlayer => !currentPlayer.equals(player));
                                 players.push(player);
-                                savePlayers();
                             } else {
                                 interactions.wSendAuthor(message.author, "Some stats are way too high, check again.");
                             }
@@ -153,7 +167,6 @@ async function onMessageHandler(message, botMsg) {
                             let player = new Player(message.member, classToFind, ap, aap, dp);
                             players = players.filter(currentPlayer => !currentPlayer.equals(player));
                             players.push(player);
-                            savePlayers();
                         } else {
                             interactions.wSendAuthor(message.author, "Some stats are way too high, cheater !");
                         }
@@ -165,7 +178,11 @@ async function onMessageHandler(message, botMsg) {
                 }
             }
             deleteCommand(message, enteredCommand);
-            await refreshBotMsg(myGear, botMsg, players);
+
+            //refresh bot message
+            bot.setTimeout(async () => {
+                await refreshBotMsg(myGear, botMsg, players);
+            }, configjson["refreshDelay"]);
         } else {
             // ---------- ALL CHANNELS ----------
             if (enteredCommand.startsWith("?") && checkIntPermission(message)) {
@@ -204,13 +221,6 @@ async function onMessageHandler(message, botMsg) {
     }
 }
 
-/**
- * @param {Player} player 
- * @returns a string containing the server class emoji and the player display
- */
-function displayFullPlayer(player) {
-    return classEmojis.find(emoji => emoji.name == player.classname) + " " + player;
-}
 
 /**
  * @param {any[]} list 
@@ -230,29 +240,135 @@ function compare(list, comparator) {
 }
 
 /**
- * @param {Player[]} list 
+ * @param {any[]} list 
  * @param {function} aggregate 
  */
 function avg(list, aggregate) {
     let res = 0;
-    list.forEach(player => {
-        res += aggregate(player);
+    list.forEach(element => {
+        res += aggregate(element);
     });
     return Math.round(res / list.length);
 }
+
+/*
+--------------------------------------- SIGNUP ---------------------------------------
+*/
+
+/**
+ * gets a signup object from the message
+ * @param {Discord.Message} message 
+ * @returns a signup object { yes: [Discord.Member], no: [Discord.Member] }
+ */
+async function getDaySignUp(message) {
+    let signUps = { yes: [], no: [] };
+    let today = new Date();
+    let reactionMessage = await getDaySignUpMessage(today, mySignUp);
+    if (reactionMessage) {
+        let yesReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == "yes").first();
+        let noReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == "no").first();
+        if (yesReaction) {
+            let users = await yesReaction.fetchUsers();
+            await Promise.all(users.map(async user => {
+                signUps.yes.push(await myServer.fetchMember(await bot.fetchUser(user.id)));
+            }));
+        }
+        if (noReaction) {
+            let users = await noReaction.fetchUsers();
+            await Promise.all(users.map(async user => {
+                signUps.no.push(await myServer.fetchMember(await bot.fetchUser(user.id)));
+            }));
+        }
+        return signUps;
+    } else {
+        interactions.wSendAuthor(message.author, "No message found for today.");
+    }
+}
+
+/**
+ * @param {Date} date 
+ * @param {Discord.TextChannel} channel 
+ * @returns the message containing the day, null if none
+ */
+async function getDaySignUpMessage(date, channel) {
+    let message;
+    let dateName = util.findCorrespondingDayName(date.getDay()).toLowerCase();
+    await channel.fetchMessages({ limit: 100 }).then(async messages => {
+        message = await messages.find(message => message.content.toLowerCase().startsWith(dateName));
+    });
+    return message;
+}
+
+async function saveSignUp(signUps) {
+    let signuppath = "./resources/signups" + util.findCorrespondingDayName(new Date().getDay()) + ".csv";
+    let formattedCSV = formatCSV(signUps);
+    const csv = parse(formattedCSV, { unwind: ["yes", "no"]});
+    files.writeToFile(signuppath, csv);
+    let content = "" + new Date();
+    mySignUpData.send(content, {
+        embed: await getSignUpsEmbed(signUps),
+        files: [
+            signuppath
+        ]
+    });
+}
+
+async function getSignUpsEmbed(signUps) {
+    const embed = new Discord.RichEmbed();
+    var embedTitle = ":bookmark_tabs: SIGN UPS";
+    var embedColor = 3447003;
+    embed.setColor(embedColor);
+    embed.setTitle(embedTitle);
+    let yesToSend = "";
+    signUps.yes.forEach(element => {
+        yesToSend += element + "\n";
+    });
+    let noToSend = "";
+    signUps.no.forEach(element => {
+        noToSend += element + "\n";
+    });
+    if (yesToSend) {
+        embed.addField(await fetchEmoji("yes") + " YES", yesToSend);
+    }
+    if (noToSend) {
+        embed.addField(await fetchEmoji("no") + " NO", noToSend);
+    }
+    embed.setTimestamp()
+    return embed;
+}
+
+/**
+ * list of sign ups
+ * @param {any} signUps
+ * @returns easy to read csv 
+ */
+function formatCSV(signUps) {
+    let output = { yes: [], no: [] };
+    signUps.yes.forEach(element => {
+        output.yes.push((element.nickname ? element.nickname : element.username) + "(" + element.id + ")");
+    });
+    signUps.no.forEach(element => {
+        output.no.push((element.nickname ? element.nickname : element.username) + "(" + element.id + ")");
+    });
+    return output;
+}
+
+/*
+--------------------------------------- GEAR ---------------------------------------
+*/
 
 function savePlayers() {
     let playerspath = "./resources/players.json";
     files.writeObjectToFile(playerspath, players);
     files.uploadFileToChannel(playerspath, myGearData, configjson["gearDataMessage"]);
-    cleanUpDataChannel();
 }
 
-function saveSignUp(message) {
-    let signuppath = "./resources/" + message.content;
-    files.writeObjectToFile(signuppath, message);
-    files.uploadFileToChannel(signuppath, mySignUpHistory, configjson["signUpMessage"]);
-    cleanUpDataChannel();
+/**
+ * @param {Player} player 
+ * @returns a string containing the server class emoji and the player display
+ */
+function displayFullPlayer(player) {
+    return classEmojis.find(emoji => emoji.name == player.classname) + " " + player;
 }
 
 /**
@@ -289,7 +405,7 @@ async function newBotMessage(channel, content) {
 async function clearChannel(channel) {
     var deleteCount = 100;
     var moreMessages = true;
-    setTimeout(() => {
+    bot.setTimeout(() => {
         moreMessages = false;
     }, 2500);
     while (moreMessages) {
@@ -309,25 +425,6 @@ async function clearChannel(channel) {
             moreMessages = false;
         }
     }
-}
-
-/**
- * if there's more than X messages, deletes the oldest ones (limit 10)
- */
-function cleanUpDataChannel() {
-    myGearData.fetchMessages({ limit: 10 }).then(async messages => {
-        var count = 0;
-        messages.forEach(async message => {
-            if (count > 1) {
-                try {
-                    await message.delete();
-                } catch (e) {
-                    logger.log("INFO: Couldn't clean up gear data channel");
-                }
-            }
-            count++;
-        });
-    });
 }
 
 function getStatsEmbed(players, classname) {
@@ -444,7 +541,7 @@ function countClassNames(players, classname) {
  */
 async function deleteCommand(message, enteredCommand) {
     if (!enteredCommand.startsWith("! ") || (enteredCommand.startsWith("! ") && !await checkAdvPermission(message))) {
-        setTimeout(async () => {
+        bot.setTimeout(async () => {
             await interactions.wDelete(message);
         }, configjson["deleteDelay"]);
     }
@@ -534,21 +631,21 @@ async function downloadFileFromChannel(filename, channel) {
 
 /**
  * fetch an emoji from the server
- * @param {string} classname 
+ * @param {string} name 
  */
-async function fetchClassEmoji(classname) {
+async function fetchEmoji(name) {
     return new Promise((resolve, reject) => {
         try {
             myServer.emojis.find(emoji => {
-                if (emoji.name == classname) {
+                if (emoji.name == name) {
                     resolve(emoji);
                 }
             });
         } catch (e) {
-            reject(classname);
+            reject(name);
         }
         setTimeout(() => {
-            reject(classname);
+            reject(name);
         }, 10000);
     });
 }
@@ -573,7 +670,7 @@ if (configjson && itemsjson) {
     var myGear;
     var myGearData;
     var mySignUp;
-    var mySignUpHistory;
+    var mySignUpData;
     var players = [];
     var classEmojis = [];
     var loading = 1000;
@@ -582,8 +679,11 @@ if (configjson && itemsjson) {
         logger.log("INFO: Logged in as " + bot.user.tag);
         bot.user.setPresence({ game: { name: "booting up..." } });
 
+        myServer = bot.guilds.get(configjson["botServerID"]);
+        myGearData = bot.channels.get(configjson["gearDataID"]);
+
         itemsjson["classlist"].forEach(async classname => {
-            classEmojis.push(await fetchClassEmoji(classname));
+            classEmojis.push(await fetchEmoji(classname));
         });
 
         //attempt to load a previously saved state
@@ -606,10 +706,10 @@ if (configjson && itemsjson) {
             myGear = bot.channels.get(configjson["gearID"]);
             myGearData = bot.channels.get(configjson["gearDataID"]);
             mySignUp = bot.channels.get(configjson["signUpID"]);
-            mySignUpHistory = bot.channels.get(configjson["SignUpHistoryID"]);
+            mySignUpData = bot.channels.get(configjson["signUpDataID"]);
 
             logger.log("INFO: Booting up attempt...");
-            if (myServer && myGate && myGear && myGearData && classEmojis && mySignUp && mySignUpHistory) {
+            if (myServer && myGate && myGear && myGearData && classEmojis && mySignUp && mySignUpData) {
                 clearInterval(interval);
                 logger.log("INFO: ... success !");
 

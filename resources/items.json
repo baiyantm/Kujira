@@ -23,7 +23,7 @@
             "adv": {
                 "clear": "clear",
                 "dump": "dump",
-                "generate": "generate"
+                "bulk": "bulk"
             }
         }
     },

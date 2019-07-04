@@ -91,7 +91,21 @@ function writeObjectToFile(path, data) {
     logger.log("FILE: ...success !");
 }
 
+
+/**
+ * writes an object into a json file
+ * @param {string} path the path to the json file
+ * @param {string} data the data to be written
+ */
+function writeToFile(path, data) {
+    logger.log("FILE: Writing in\"" + path + "\" ...");
+    fs.writeFileSync(path, data);
+    logger.log("FILE: ...success !");
+}
+
+
 module.exports.download = download;
 module.exports.uploadFileToChannel = uploadFileToChannel;
 module.exports.openJsonFile = openJsonFile;
 module.exports.writeObjectToFile = writeObjectToFile;
+module.exports.writeToFile = writeToFile;
