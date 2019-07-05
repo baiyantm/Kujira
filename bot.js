@@ -295,7 +295,7 @@ async function getDaySignUp(message, day) {
             if (member.roles.find(x => x.name == "Members")) {
                 if (!signUpsHasId(signUps, member.id)) {
                     let name = (member.nickname ? member.nickname : member.user.username);
-                    let object = { "name": name, "id": member.id, [dayStr]: " N/A" };
+                    let object = { "name": name, "id": member.id, [dayStr]: "N/A" };
                     signUps.push(object);
                 }
             }
