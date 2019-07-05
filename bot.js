@@ -32,6 +32,29 @@ async function initLookout() {
 
     await refreshBotMsg(myGear, botMsg, players);
     bot.on("message", async message => onMessageHandler(message, botMsg));
+    bot.on("messageReactionAdd", async messageReaction => onReactionHandler(messageReaction));
+
+    bot.on('raw', packet => {
+        // We don't want this to run on unrelated packets
+        if (!['MESSAGE_REACTION_ADD'].includes(packet.t)) return;
+        // Grab the channel to check the message from
+        const channel = bot.channels.get(packet.d.channel_id);
+        // There's no need to emit if the message is cached, because the event will fire anyway for that
+        if (channel.messages.has(packet.d.message_id)) return;
+        // Since we have confirmed the message is not cached, let's fetch it
+        channel.fetchMessage(packet.d.message_id).then(message => {
+            // Emojis can have identifiers of name:id format, so we have to account for that case as well
+            const emoji = packet.d.emoji.id ? `${packet.d.emoji.name}:${packet.d.emoji.id}` : packet.d.emoji.name;
+            // This gives us the reaction we need to emit the event properly, in top of the message object
+            const reaction = message.reactions.get(emoji);
+            // Adds the currently reacting user to the reaction's users collection.
+            if (reaction) reaction.users.set(packet.d.user_id, bot.users.get(packet.d.user_id));
+            // Check which type of event it is before emitting
+            if (packet.t === 'MESSAGE_REACTION_ADD') {
+                bot.emit('messageReactionAdd', reaction, bot.users.get(packet.d.user_id));
+            }
+        });
+    });
 
     bot.user.setPresence({ game: { name: "a successful bootup !" } });
     let statusDelay = 300000;
@@ -62,6 +85,30 @@ async function initLookout() {
     });
 
     logger.log("INFO: ... lookout initialization done");
+}
+
+/**
+ * listener for emoji add event
+ * @param {Discord.MessageReaction} messageReaction 
+ */
+async function onReactionHandler(messageReaction) {
+    if (messageReaction.message.channel.id == mySignUp.id) {
+        let message = messageReaction.message;
+        let yesReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == itemsjson["yesreaction"]).first();
+        let noReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == itemsjson["noreaction"]).first();
+        if (messageReaction.emoji.name == itemsjson["noreaction"]) {
+            let user = noReaction.users.last();
+            if (yesReaction && (await noReaction.fetchUsers()).get(user.id)) {
+                yesReaction.remove(user);
+            }
+        }
+        if (messageReaction.emoji.name == itemsjson["yesreaction"]) {
+            let user = yesReaction.users.last();
+            if (noReaction && (await yesReaction.fetchUsers()).get(user.id)) {
+                noReaction.remove(user);
+            }
+        }
+    }
 }
 
 /**
@@ -260,6 +307,22 @@ function avg(list, aggregate) {
 */
 
 /**
+ * 
+ * @param {Discord.MessageReaction} reactions 
+ * @returns whether the id is within the list
+ */
+function reactionListHasId(reactions, id) {
+    let reactionUsers = reactions.users;
+    for (let i = 0; i < reactionUsers.size; i++) {
+        let item = reactionUsers[i];
+        if (item.id == id) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * gets a signup object from the message
  * @param {Discord.Message} message 
  * @param {Date} day 
@@ -271,17 +334,8 @@ async function getDaySignUp(message, day) {
     //let signUps = { "name": [], "id": [], [dayStr]: [] };
     let reactionMessage = await getDaySignUpMessage(day, mySignUp);
     if (reactionMessage) {
-        let yesReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == "yes").first();
-        let noReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == "no").first();
-        if (yesReaction) {
-            let users = await yesReaction.fetchUsers();
-            await Promise.all(users.map(async user => {
-                let member = await myServer.fetchMember(await bot.fetchUser(user.id));
-                let name = (member.nickname ? member.nickname : member.user.username);
-                let object = { "name": name, "id": user.id, [dayStr]: "yes" };
-                signUps.push(object);
-            }));
-        }
+        let yesReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == itemsjson["yesreaction"]).first();
+        let noReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == itemsjson["noreaction"]).first();
         if (noReaction) {
             let users = await noReaction.fetchUsers();
             await Promise.all(users.map(async user => {
@@ -291,9 +345,20 @@ async function getDaySignUp(message, day) {
                 signUps.push(object);
             }));
         }
+        if (yesReaction) {
+            let users = await yesReaction.fetchUsers();
+            await Promise.all(users.map(async user => {
+                if (!signUpsHasId(signUps, user.id)) {
+                    let member = await myServer.fetchMember(await bot.fetchUser(user.id));
+                    let name = (member.nickname ? member.nickname : member.user.username);
+                    let object = { "name": name, "id": user.id, [dayStr]: "yes" };
+                    signUps.push(object);
+                }
+            }));
+        }
         myServer.members.forEach(member => {
             if (member.roles.find(x => x.name == "Members")) {
-                if (!signUpsHasId(signUps, member.id)) {
+                if (!signUpsHasId(signUps, member.id) && member.id != bot.user.id) {
                     let name = (member.nickname ? member.nickname : member.user.username);
                     let object = { "name": name, "id": member.id, [dayStr]: "N/A" };
                     signUps.push(object);
@@ -383,13 +448,13 @@ async function getSignUpsEmbed(signUps) {
         }
     });
     if (yesToSend) {
-        embed.addField(await fetchEmoji("yes") + " YES (" + yes + ")", yesToSend, true);
+        embed.addField(await fetchEmoji(itemsjson["yesreaction"]) + " YES (" + yes + ")", yesToSend, true);
     }
     if (noToSend) {
-        embed.addField(await fetchEmoji("no") + " NO(" + no + ")", noToSend, true);
+        embed.addField(await fetchEmoji(itemsjson["noreaction"]) + " NO (" + no + ")", noToSend, true);
     }
     if (naToSend) {
-        embed.addField(":question:" + " N/A(" + na + ")", naToSend, true);
+        embed.addField(":question:" + " N/A (" + na + ")", naToSend, true);
     }
     embed.setTimestamp()
     return embed;
