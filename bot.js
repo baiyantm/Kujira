@@ -88,7 +88,7 @@ async function onMessageHandler(message, botMsg) {
                     }
                 }
             }
-            deleteCommand(message, enteredCommand);
+            deleteCommand(message);
         } else if (message.channel.id == mySignUp.id) {
             // ---------- SIGNUP ----------
             if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
@@ -98,13 +98,16 @@ async function onMessageHandler(message, botMsg) {
                     await clearChannel(message.channel);
                 } else if (enteredCommand == commands["dump"]) {
                     //manually dumps data into data channel
-                    let signUps = await getDaySignUp(message);
+                    let signUps = await getDaySignUp(message, new Date());
+                    signUps.sort((a, b) => {
+                        return a.id - b.id;
+                    });
                     await saveSignUp(signUps);
+                    deleteCommand(message);
                 } else if (enteredCommand == commands["bulk"]) {
                     //generate 7d worth of signups from today (inc today)
                 }
             }
-            deleteCommand(message, enteredCommand);
         } else if (message.channel.id == myGear.id) {
             // ---------- GEAR ----------
             if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
@@ -178,7 +181,7 @@ async function onMessageHandler(message, botMsg) {
                     interactions.wSendAuthor(message.author, enteredCommand.split(" ")[0] + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                 }
             }
-            deleteCommand(message, enteredCommand);
+            deleteCommand(message);
 
             //refresh bot message
             bot.setTimeout(async () => {
@@ -259,31 +262,64 @@ function avg(list, aggregate) {
 /**
  * gets a signup object from the message
  * @param {Discord.Message} message 
- * @returns a signup object { yes: [Discord.Member], no: [Discord.Member] }
+ * @param {Date} day 
+ * @returns
  */
-async function getDaySignUp(message) {
-    let signUps = { yes: [], no: [] };
-    let today = new Date();
-    let reactionMessage = await getDaySignUpMessage(today, mySignUp);
+async function getDaySignUp(message, day) {
+    let dayStr = util.findCorrespondingDayName(day.getDay());
+    let signUps = [];
+    //let signUps = { "name": [], "id": [], [dayStr]: [] };
+    let reactionMessage = await getDaySignUpMessage(day, mySignUp);
     if (reactionMessage) {
         let yesReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == "yes").first();
         let noReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == "no").first();
         if (yesReaction) {
             let users = await yesReaction.fetchUsers();
             await Promise.all(users.map(async user => {
-                signUps.yes.push(await myServer.fetchMember(await bot.fetchUser(user.id)));
+                let member = await myServer.fetchMember(await bot.fetchUser(user.id));
+                let name = (member.nickname ? member.nickname : member.user.username);
+                let object = { "name": name, "id": user.id, [dayStr]: "yes" };
+                signUps.push(object);
             }));
         }
         if (noReaction) {
             let users = await noReaction.fetchUsers();
             await Promise.all(users.map(async user => {
-                signUps.no.push(await myServer.fetchMember(await bot.fetchUser(user.id)));
+                let member = await myServer.fetchMember(await bot.fetchUser(user.id));
+                let name = (member.nickname ? member.nickname : member.user.username);
+                let object = { "name": name, "id": user.id, [dayStr]: "no" };
+                signUps.push(object);
             }));
         }
+        myServer.members.forEach(member => {
+            if (member.roles.find(x => x.name == "Members")) {
+                if (!signUpsHasId(signUps, member.id)) {
+                    let name = (member.nickname ? member.nickname : member.user.username);
+                    let object = { "name": name, "id": member.id, [dayStr]: " N/A" };
+                    signUps.push(object);
+                }
+            }
+        });
         return signUps;
     } else {
         interactions.wSendAuthor(message.author, "No message found for today.");
     }
+}
+
+/**
+ * 
+ * @param {any[]} signUps 
+ * @param {string} id 
+ * @returns whether the signups has this id
+ */
+function signUpsHasId(signUps, id) {
+    for (let i = 0; i < signUps.length; i++) {
+        let item = signUps[i];
+        if (item["id"] == id) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
@@ -301,54 +337,62 @@ async function getDaySignUpMessage(date, channel) {
 }
 
 async function saveSignUp(signUps) {
-    let signuppath = "./resources/signups" + util.findCorrespondingDayName(new Date().getDay()) + ".csv";
-    let formattedCSV = formatCSV(signUps);
-    const csv = parse(formattedCSV, { unwind: ["yes", "no"]});
+    let todayStr = Object.keys(signUps[0])[2];
+    let signuppath = "./resources/signups" + todayStr + ".csv";
+    const csv = parse(signUps, { unwind: ["name", "id", todayStr] });
     files.writeToFile(signuppath, csv);
-    let content = "" + new Date();
-    mySignUpData.send(content, {
+    mySignUpData.send({
         embed: await getSignUpsEmbed(signUps),
+        files: [
+            signuppath
+        ]
     });
 }
 
 async function getSignUpsEmbed(signUps) {
+    let dayStr = Object.keys(signUps[0])[2];
     const embed = new Discord.RichEmbed();
     var embedTitle = ":bookmark_tabs: SIGN UPS";
     var embedColor = 3447003;
     embed.setColor(embedColor);
     embed.setTitle(embedTitle);
     let yesToSend = "";
-    signUps.yes.forEach(element => {
-        yesToSend += element + "\n";
+    let yes = 0;
+    signUps.forEach(element => {
+        if (element[dayStr] == "yes") {
+            yesToSend += "<@" + element.id + ">" + "\n";
+            yes++;
+        }
     });
+
     let noToSend = "";
-    signUps.no.forEach(element => {
-        noToSend += element + "\n";
+    let no = 0;
+    signUps.forEach(element => {
+        if (element[dayStr] == "no") {
+            noToSend += "<@" + element.id + ">" + "\n";
+            no++;
+        }
+    });
+
+    let naToSend = "";
+    let na = 0;
+    signUps.forEach(element => {
+        if (element[dayStr] == "N/A") {
+            naToSend += "<@" + element.id + ">" + "\n";
+            na++;
+        }
     });
     if (yesToSend) {
-        embed.addField(await fetchEmoji("yes") + " YES", yesToSend);
+        embed.addField(await fetchEmoji("yes") + " YES (" + yes + ")", yesToSend, true);
     }
     if (noToSend) {
-        embed.addField(await fetchEmoji("no") + " NO", noToSend);
+        embed.addField(await fetchEmoji("no") + " NO(" + no + ")", noToSend, true);
+    }
+    if (naToSend) {
+        embed.addField(":question:" + " N/A(" + na + ")", naToSend, true);
     }
     embed.setTimestamp()
     return embed;
-}
-
-/**
- * list of sign ups
- * @param {any} signUps
- * @returns easy to read csv 
- */
-function formatCSV(signUps) {
-    let output = { yes: [], no: [] };
-    signUps.yes.forEach(element => {
-        output.yes.push((element.nickname ? element.nickname : element.username) + "(" + element.id + ")");
-    });
-    signUps.no.forEach(element => {
-        output.no.push((element.nickname ? element.nickname : element.username) + "(" + element.id + ")");
-    });
-    return output;
 }
 
 /*
@@ -535,10 +579,9 @@ function countClassNames(players, classname) {
 /**
  * delete a command message
  * @param {Discord.Message} message 
- * @param {string} enteredCommand 
  */
-async function deleteCommand(message, enteredCommand) {
-    if (!enteredCommand.startsWith("! ") || (enteredCommand.startsWith("! ") && !await checkAdvPermission(message))) {
+async function deleteCommand(message) {
+    if (!message.content.startsWith("! ") || (message.content.startsWith("! ") && !await checkAdvPermission(message))) {
         bot.setTimeout(async () => {
             await interactions.wDelete(message);
         }, configjson["deleteDelay"]);
@@ -552,7 +595,7 @@ async function deleteCommand(message, enteredCommand) {
  */
 async function checkIntPermission(message) {
     var allowed = false;
-    if (message.member.roles.find(x => x.name === "Members") || message.member.id == bot.user.id) {
+    if (message.member.roles.find(x => x.name == "Members")) {
         allowed = true;
     } else {
         await interactions.wSendAuthor(message.author, 'Insufficient permissions.');
@@ -567,7 +610,7 @@ async function checkIntPermission(message) {
  */
 async function checkAdvPermission(message) {
     var allowed = false;
-    if (message.member.roles.find(x => x.name === "Officers") || message.member.id == bot.user.id) {
+    if (message.member.roles.find(x => x.name == "Officers")) {
         allowed = true;
     } else {
         await interactions.wSendAuthor(message.author, 'Insufficient permissions.');
