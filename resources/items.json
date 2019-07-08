@@ -24,7 +24,8 @@
                 "clear": "clear",
                 "reset": "reset",
                 "dump": "dump",
-                "bulk": "bulk"
+                "bulk": "bulk",
+                "generate": "generate"
             }
         }
     },
