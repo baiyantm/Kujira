@@ -11,7 +11,8 @@
         "signUpDataMessage": "signupdata",
         "deleteDelay": 750,
         "refreshDelay": 500,
-        "saveDelay": 900000
+        "saveDelay": 900000,
+        "hourSignup": 17
     },
     "kuji": {
         "botServerID": "594824222099111937",
@@ -23,6 +24,7 @@
         "signUpDataID": "596068682711433245",
         "deleteDelay": 750,
         "refreshDelay": 500,
-        "saveDelay": 900000
+        "saveDelay": 900000,
+        "hourSignup": 17
     }
 }

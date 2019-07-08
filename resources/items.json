@@ -22,6 +22,7 @@
         "signup": {
             "adv": {
                 "clear": "clear",
+                "reset": "reset",
                 "dump": "dump",
                 "bulk": "bulk"
             }

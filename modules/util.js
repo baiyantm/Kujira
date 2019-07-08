@@ -73,10 +73,60 @@ function fillUpSpaceRev(string, num) {
  */
 function fillUpSpaceBoth(string, num) {
     var nbToFill = num - string.length;
-    if(nbToFill > 0) {
-        return module.exports.fillUpSpaceRev(module.exports.fillUpSpace(string, string.length + nbToFill/2), string.length + nbToFill);
+    if (nbToFill > 0) {
+        return module.exports.fillUpSpaceRev(module.exports.fillUpSpace(string, string.length + nbToFill / 2), string.length + nbToFill);
     } else {
         return string;
+    }
+}
+
+/**
+ * @param {string|number} dd 
+ * @param {string|number} hh 
+ * @param {string|number} mm 
+ * @returns number of minutes until dd hh mm
+ */
+function getMinUntil(dd, hh, mm) {
+    let today = new Date();
+    return (hh - today.getHours()) * 60 - today.getMinutes() + 24 * 60 * diffDays(today.getDay(), dd) + mm;
+}
+
+/**
+ * @param {string|number} day1 
+ * @param {string|number} day2 
+ * @returns {string|number} the number of days between 2 dates
+ */
+function diffDays(day1, day2) {
+    let i = 0;
+    while (day1 != day2) {
+        day1++;
+        i++;
+        if (day1 > 6) {
+            day1 = 0;
+        }
+    }
+    return i;
+}
+
+
+/**
+ * @param {string|number} hh 
+ * @returns whether hh has already passed compared to today
+ */
+function isNextDay(hh) {
+    let today = new Date();
+    return today.getHours() >= hh;
+}
+
+/**
+ * @param {number} num 
+ * @returns string with 0 at the beginning if < 10
+ */
+function zeroString(num) {
+    if (num < 10) {
+        return '0' + num;
+    } else {
+        return num;
     }
 }
 
@@ -85,3 +135,7 @@ module.exports.findCorrespondingDayNumber = findCorrespondingDayNumber;
 module.exports.fillUpSpace = fillUpSpace;
 module.exports.fillUpSpaceRev = fillUpSpaceRev;
 module.exports.fillUpSpaceBoth = fillUpSpaceBoth;
+module.exports.getMinUntil = getMinUntil;
+module.exports.diffDays = diffDays;
+module.exports.isNextDay = isNextDay;
+module.exports.zeroString = zeroString;

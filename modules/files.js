@@ -103,7 +103,6 @@ function writeToFile(path, data) {
     logger.log("FILE: ...success !");
 }
 
-
 module.exports.download = download;
 module.exports.uploadFileToChannel = uploadFileToChannel;
 module.exports.openJsonFile = openJsonFile;

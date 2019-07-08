@@ -40,8 +40,10 @@ async function initLookout() {
         // Grab the channel to check the message from
         const channel = bot.channels.get(packet.d.channel_id);
         // There's no need to emit if the message is cached, because the event will fire anyway for that
+        // @ts-ignore
         if (channel.messages.has(packet.d.message_id)) return;
         // Since we have confirmed the message is not cached, let's fetch it
+        // @ts-ignore
         channel.fetchMessage(packet.d.message_id).then(message => {
             // Emojis can have identifiers of name:id format, so we have to account for that case as well
             const emoji = packet.d.emoji.id ? `${packet.d.emoji.name}:${packet.d.emoji.id}` : packet.d.emoji.name;
@@ -77,6 +79,8 @@ async function initLookout() {
         savePlayers();
     }, configjson["saveDelay"]);
 
+    setupSignUpSchedule();
+
     process.on('SIGTERM', function () {
         logger.log("Recieved signal to terminate, saving and shutting down");
         savePlayers();
@@ -98,13 +102,13 @@ async function onReactionHandler(messageReaction) {
         let noReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == itemsjson["noreaction"]).first();
         if (messageReaction.emoji.name == itemsjson["noreaction"]) {
             let user = noReaction.users.last();
-            if (yesReaction && (await noReaction.fetchUsers()).get(user.id)) {
+            if (user.id != bot.user.id && yesReaction && (await noReaction.fetchUsers()).get(user.id)) {
                 yesReaction.remove(user);
             }
         }
         if (messageReaction.emoji.name == itemsjson["yesreaction"]) {
             let user = yesReaction.users.last();
-            if (noReaction && (await yesReaction.fetchUsers()).get(user.id)) {
+            if (user.id != bot.user.id && noReaction && (await yesReaction.fetchUsers()).get(user.id)) {
                 noReaction.remove(user);
             }
         }
@@ -135,7 +139,7 @@ async function onMessageHandler(message, botMsg) {
                     }
                 }
             }
-            deleteCommand(message);
+            await deleteCommand(message);
         } else if (message.channel.id == mySignUp.id) {
             // ---------- SIGNUP ----------
             if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
@@ -143,16 +147,15 @@ async function onMessageHandler(message, botMsg) {
                 enteredCommand = enteredCommand.substr(1);
                 if (enteredCommand == commands["clear"]) {
                     await clearChannel(message.channel);
+                } if (enteredCommand == commands["reset"]) {
+                    await clearChannel(message.channel);
+                    await bulkSignUpMessages();
                 } else if (enteredCommand == commands["dump"]) {
                     //manually dumps data into data channel
-                    let signUps = await getDaySignUp(message, new Date());
-                    signUps.sort((a, b) => {
-                        return a.id - b.id;
-                    });
-                    await saveSignUp(signUps);
-                    deleteCommand(message);
+                    await saveSignUp();
+                    await deleteCommand(message);
                 } else if (enteredCommand == commands["bulk"]) {
-                    //generate 7d worth of signups from today (inc today)
+                    await bulkSignUpMessages();
                 }
             }
         } else if (message.channel.id == myGear.id) {
@@ -228,7 +231,7 @@ async function onMessageHandler(message, botMsg) {
                     interactions.wSendAuthor(message.author, enteredCommand.split(" ")[0] + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                 }
             }
-            deleteCommand(message);
+            await deleteCommand(message);
 
             //refresh bot message
             bot.setTimeout(async () => {
@@ -272,6 +275,39 @@ async function onMessageHandler(message, botMsg) {
     }
 }
 
+/**
+ * generate 7d worth of signups from today (inc today)
+ */
+async function bulkSignUpMessages() {
+    for (let i = 0; i < 7; i++) {
+        let date = new Date();
+        date.setDate(date.getDate() + i); // get the next day
+        let content = util.findCorrespondingDayName(i) + " - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth()) + "." + date.getFullYear();
+        let message = await interactions.wSendChannel(mySignUp, content);
+        message.react(await fetchEmoji(itemsjson["yesreaction"]));
+        message.react(await fetchEmoji(itemsjson["noreaction"]));
+    }
+}
+
+/**
+ * setup timeouts to save everyday at X hour; when one is done the next one is set
+ */
+function setupSignUpSchedule() {
+    let today = new Date();
+    let minUntilSave = util.getMinUntil(today.getDay() + Number(util.isNextDay(configjson["hourSignup"])), configjson["hourSignup"], 0);
+    bot.setTimeout(async () => {
+        await saveSignUp();
+
+        //setup in the next one
+        let today = new Date();
+        let minUntilSave = util.getMinUntil(today.getDay() + Number(util.isNextDay(configjson["hourSignup"])), configjson["hourSignup"], 0);
+        bot.setTimeout(async () => {
+            await saveSignUp();
+        }, minUntilSave * 60 * 1000);
+    }, minUntilSave * 60 * 1000);
+    logger.log("INFO: Sign ups save schedule set");
+}
+
 
 /**
  * @param {any[]} list 
@@ -307,28 +343,11 @@ function avg(list, aggregate) {
 */
 
 /**
- * 
- * @param {Discord.MessageReaction} reactions 
- * @returns whether the id is within the list
- */
-function reactionListHasId(reactions, id) {
-    let reactionUsers = reactions.users;
-    for (let i = 0; i < reactionUsers.size; i++) {
-        let item = reactionUsers[i];
-        if (item.id == id) {
-            return true;
-        }
-    }
-    return false;
-}
-
-/**
  * gets a signup object from the message
- * @param {Discord.Message} message 
  * @param {Date} day 
  * @returns
  */
-async function getDaySignUp(message, day) {
+async function getDaySignUp(day) {
     let dayStr = util.findCorrespondingDayName(day.getDay());
     let signUps = [];
     //let signUps = { "name": [], "id": [], [dayStr]: [] };
@@ -340,9 +359,11 @@ async function getDaySignUp(message, day) {
             let users = await noReaction.fetchUsers();
             await Promise.all(users.map(async user => {
                 let member = await myServer.fetchMember(await bot.fetchUser(user.id));
-                let name = (member.nickname ? member.nickname : member.user.username);
-                let object = { "name": name, "id": user.id, [dayStr]: "no" };
-                signUps.push(object);
+                if (member.roles.find(x => x.name == "Members")) {
+                    let name = (member.nickname ? member.nickname : member.user.username);
+                    let object = { "name": name, "id": user.id, [dayStr]: "no" };
+                    signUps.push(object);
+                }
             }));
         }
         if (yesReaction) {
@@ -350,9 +371,11 @@ async function getDaySignUp(message, day) {
             await Promise.all(users.map(async user => {
                 if (!signUpsHasId(signUps, user.id)) {
                     let member = await myServer.fetchMember(await bot.fetchUser(user.id));
-                    let name = (member.nickname ? member.nickname : member.user.username);
-                    let object = { "name": name, "id": user.id, [dayStr]: "yes" };
-                    signUps.push(object);
+                    if (member.roles.find(x => x.name == "Members")) {
+                        let name = (member.nickname ? member.nickname : member.user.username);
+                        let object = { "name": name, "id": user.id, [dayStr]: "yes" };
+                        signUps.push(object);
+                    }
                 }
             }));
         }
@@ -366,8 +389,6 @@ async function getDaySignUp(message, day) {
             }
         });
         return signUps;
-    } else {
-        interactions.wSendAuthor(message.author, "No message found for today.");
     }
 }
 
@@ -401,17 +422,25 @@ async function getDaySignUpMessage(date, channel) {
     return message;
 }
 
-async function saveSignUp(signUps) {
-    let todayStr = Object.keys(signUps[0])[2];
-    let signuppath = "./resources/signups" + todayStr + ".csv";
-    const csv = parse(signUps, { unwind: ["name", "id", todayStr] });
-    files.writeToFile(signuppath, csv);
-    mySignUpData.send({
-        embed: await getSignUpsEmbed(signUps),
-        files: [
-            signuppath
-        ]
-    });
+async function saveSignUp() {
+    let signUps = await getDaySignUp(new Date());
+    if (signUps) {
+        signUps.sort((a, b) => {
+            return a.id - b.id;
+        });
+        let todayStr = Object.keys(signUps[0])[2];
+        let signuppath = "./download/signups" + todayStr + ".csv";
+        const csv = parse(signUps, { unwind: ["name", "id", todayStr] });
+        files.writeToFile(signuppath, csv);
+        mySignUpData.send({
+            embed: await getSignUpsEmbed(signUps),
+            files: [
+                signuppath
+            ]
+        });
+    } else {
+        interactions.wSendChannel(mySignUpData, "No message found for today.");
+    }
 }
 
 async function getSignUpsEmbed(signUps) {
@@ -465,7 +494,7 @@ async function getSignUpsEmbed(signUps) {
 */
 
 function savePlayers() {
-    let playerspath = "./resources/players.json";
+    let playerspath = "./download/players.json";
     files.writeObjectToFile(playerspath, players);
     files.uploadFileToChannel(playerspath, myGearData, configjson["gearDataMessage"]);
 }
@@ -703,7 +732,7 @@ async function revivePlayer(id, name, classname, ap, aap, dp) {
 }
 
 /**
- * downloads a file attached to the last message of the channel and put it in resources/
+ * downloads a file attached to the last message of the channel and put it in download/
  * @param {string} filename the file's name
  * @param {Discord.TextChannel} channel the channel to download from
  */
@@ -716,7 +745,7 @@ async function downloadFileFromChannel(filename, channel) {
                         if (element.filename == filename) {
                             logger.log("HTTP: Downloading " + filename + " ...");
                             try {
-                                await files.download(element.url, "./resources/" + filename, () => { });
+                                await files.download(element.url, "./download/" + filename, () => { });
                                 logger.log("HTTP: ...success !");
                                 resolve();
                             } catch (e) {
@@ -794,11 +823,12 @@ if (configjson && itemsjson) {
 
         //attempt to load a previously saved state
         try {
+            // @ts-ignore
             await downloadFileFromChannel("players.json", myGearData);
         } catch (e) {
             logger.log("INFO: Couldn't find or download the players file");
         }
-        var playersjson = files.openJsonFile("./resources/players.json", "utf8");
+        var playersjson = files.openJsonFile("./download/players.json", "utf8");
         if (playersjson) {
             playersjson.forEach(async currentPlayer => {
                 players.push(await revivePlayer(currentPlayer["id"], currentPlayer["name"], currentPlayer["classname"], currentPlayer["ap"], currentPlayer["aap"], currentPlayer["dp"]));
