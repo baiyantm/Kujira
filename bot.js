@@ -156,6 +156,7 @@ async function onMessageHandler(message, botMsg) {
                     await deleteCommand(message);
                 } else if (enteredCommand == commands["bulk"]) {
                     await bulkSignUpMessages();
+                    await deleteCommand(message);
                 }
             }
         } else if (message.channel.id == myGear.id) {
@@ -287,8 +288,8 @@ async function bulkSignUpMessages() {
         iDay++;
         let content = util.findCorrespondingDayName(i) + " - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth()) + "." + date.getFullYear();
         let message = await interactions.wSendChannel(mySignUp, content);
-        message.react(await fetchEmoji(itemsjson["yesreaction"]));
-        message.react(await fetchEmoji(itemsjson["noreaction"]));
+        await message.react(await fetchEmoji(itemsjson["yesreaction"]));
+        await message.react(await fetchEmoji(itemsjson["noreaction"]));
     }
 }
 
