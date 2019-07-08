@@ -152,7 +152,11 @@ async function onMessageHandler(message, botMsg) {
                     await clearChannel(message.channel);
                 } else if (enteredCommand == commands["reset"]) {
                     await clearChannel(message.channel);
-                    await bulkSignUpMessages(configjson["defaultDay"]);
+                    if(args == "bulk") {
+                        await bulkSignUpMessages(configjson["defaultDay"]);
+                    } else {
+                        await generateSignUpMessages(configjson["defaultCount"]);
+                    }
                 } else if (enteredCommand == commands["dump"]) {
                     //manually dumps data into data channel
                     deleteCommand(message);
@@ -160,6 +164,13 @@ async function onMessageHandler(message, botMsg) {
                 } else if (enteredCommand == commands["bulk"]) {
                     deleteCommand(message);
                     await bulkSignUpMessages(args ? args : configjson["defaultDay"]);
+                } else if (enteredCommand == commands["generate"]) {
+                    deleteCommand(message);
+                    if(Number(args) <= 15) {
+                        await generateSignUpMessages(args ? args : configjson["defaultCount"]);
+                    } else {
+                        interactions.wSendAuthor(message.author, "I cannot generate that many messages");
+                    }
                 }
             }
         } else if (message.channel.id == myGear.id) {
@@ -280,6 +291,23 @@ async function onMessageHandler(message, botMsg) {
 }
 
 /**
+ * @param {number} num
+ * generate num singup messages
+ */
+async function generateSignUpMessages(num) {
+    let yesemoji = await fetchEmoji(itemsjson["yesreaction"]);
+    let noemoji = await fetchEmoji(itemsjson["noreaction"]);
+    for (let i = 0; i < num; i++) {
+        let date = new Date();
+        date.setDate(date.getDate() + i); // get the next day
+        let content = util.findCorrespondingDayName(date.getDay()) + " - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth()) + "." + date.getFullYear();
+        let message = await interactions.wSendChannel(mySignUp, content);
+        await message.react(yesemoji);
+        await message.react(noemoji);
+    }
+}
+
+/**
  * @param {string} day
  * generate singup messages until day (inc today)
  */
@@ -287,7 +315,8 @@ async function bulkSignUpMessages(day) {
     let today = new Date();
     let yesemoji = await fetchEmoji(itemsjson["yesreaction"]);
     let noemoji = await fetchEmoji(itemsjson["noreaction"]);
-    for (let i = 0; i <= util.diffDays(today.getDay(), util.findCorrespondingDayNumber(day)); i++) {
+    let loops = day == "loop" ? 7 : util.diffDays(today.getDay(), util.findCorrespondingDayNumber(day));
+    for (let i = 0; i <= loops; i++) {
         let date = new Date();
         date.setDate(date.getDate() + i); // get the next day
         let content = util.findCorrespondingDayName(date.getDay()) + " - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth()) + "." + date.getFullYear();
