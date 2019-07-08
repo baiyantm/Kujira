@@ -12,7 +12,8 @@
         "deleteDelay": 750,
         "refreshDelay": 500,
         "saveDelay": 900000,
-        "hourSignup": 17
+        "hourSignup": 17,
+        "defaultDay": "sun"
     },
     "kuji": {
         "botServerID": "594824222099111937",
@@ -25,6 +26,7 @@
         "deleteDelay": 750,
         "refreshDelay": 500,
         "saveDelay": 900000,
-        "hourSignup": 17
+        "hourSignup": 17,
+        "defaultDay": "sun"
     }
 }

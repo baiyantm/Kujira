@@ -139,24 +139,27 @@ async function onMessageHandler(message, botMsg) {
                     }
                 }
             }
-            await deleteCommand(message);
+            deleteCommand(message);
         } else if (message.channel.id == mySignUp.id) {
             // ---------- SIGNUP ----------
             if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
                 commands = itemsjson["commands"]["signup"]["adv"];
                 enteredCommand = enteredCommand.substr(1);
+                let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
+                enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
+                console.debug(enteredCommand);
                 if (enteredCommand == commands["clear"]) {
                     await clearChannel(message.channel);
-                } if (enteredCommand == commands["reset"]) {
+                } else if (enteredCommand == commands["reset"]) {
                     await clearChannel(message.channel);
-                    await bulkSignUpMessages();
+                    await bulkSignUpMessages(configjson["defaultDay"]);
                 } else if (enteredCommand == commands["dump"]) {
                     //manually dumps data into data channel
+                    deleteCommand(message);
                     await saveSignUp();
-                    await deleteCommand(message);
                 } else if (enteredCommand == commands["bulk"]) {
-                    await bulkSignUpMessages();
-                    await deleteCommand(message);
+                    deleteCommand(message);
+                    await bulkSignUpMessages(args ? args : configjson["defaultDay"]);
                 }
             }
         } else if (message.channel.id == myGear.id) {
@@ -232,7 +235,7 @@ async function onMessageHandler(message, botMsg) {
                     interactions.wSendAuthor(message.author, enteredCommand.split(" ")[0] + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                 }
             }
-            await deleteCommand(message);
+            deleteCommand(message);
 
             //refresh bot message
             bot.setTimeout(async () => {
@@ -277,19 +280,20 @@ async function onMessageHandler(message, botMsg) {
 }
 
 /**
- * generate 7d worth of signups from today (inc today)
+ * @param {string} day
+ * generate singup messages until day (inc today)
  */
-async function bulkSignUpMessages() {
+async function bulkSignUpMessages(day) {
     let today = new Date();
-    let iDay = 0;
-    for (let i = today.getDay(); i < 7; i++) {
+    let yesemoji = await fetchEmoji(itemsjson["yesreaction"]);
+    let noemoji = await fetchEmoji(itemsjson["noreaction"]);
+    for (let i = 0; i <= util.diffDays(today.getDay(), util.findCorrespondingDayNumber(day)); i++) {
         let date = new Date();
-        date.setDate(date.getDate() + iDay); // get the next day
-        iDay++;
-        let content = util.findCorrespondingDayName(i) + " - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth()) + "." + date.getFullYear();
+        date.setDate(date.getDate() + i); // get the next day
+        let content = util.findCorrespondingDayName(date.getDay()) + " - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth()) + "." + date.getFullYear();
         let message = await interactions.wSendChannel(mySignUp, content);
-        await message.react(await fetchEmoji(itemsjson["yesreaction"]));
-        await message.react(await fetchEmoji(itemsjson["noreaction"]));
+        await message.react(yesemoji);
+        await message.react(noemoji);
     }
 }
 
