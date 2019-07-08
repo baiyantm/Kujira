@@ -279,9 +279,12 @@ async function onMessageHandler(message, botMsg) {
  * generate 7d worth of signups from today (inc today)
  */
 async function bulkSignUpMessages() {
-    for (let i = 0; i < 7; i++) {
+    let today = new Date();
+    let iDay = 0;
+    for (let i = today.getDay(); i < 7; i++) {
         let date = new Date();
-        date.setDate(date.getDate() + i); // get the next day
+        date.setDate(date.getDate() + iDay); // get the next day
+        iDay++;
         let content = util.findCorrespondingDayName(i) + " - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth()) + "." + date.getFullYear();
         let message = await interactions.wSendChannel(mySignUp, content);
         message.react(await fetchEmoji(itemsjson["yesreaction"]));
