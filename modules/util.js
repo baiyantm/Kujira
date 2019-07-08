@@ -130,6 +130,22 @@ function zeroString(num) {
     }
 }
 
+/**
+ * @param {number} time in minutes
+ * @returns {string} string with the time left before time
+ */
+function displayHoursMinBefore(time) {
+    let hour = Math.trunc(time / 60);
+    let min = time % 60;
+    if (hour < 1) {
+        return min + 'm';
+    }
+    else {
+        if (min < 10) { min = '0' + min }
+        return hour + 'h' + min + 'm';
+    }
+}
+
 module.exports.findCorrespondingDayName = findCorrespondingDayName;
 module.exports.findCorrespondingDayNumber = findCorrespondingDayNumber;
 module.exports.fillUpSpace = fillUpSpace;
@@ -139,3 +155,4 @@ module.exports.getMinUntil = getMinUntil;
 module.exports.diffDays = diffDays;
 module.exports.isNextDay = isNextDay;
 module.exports.zeroString = zeroString;
+module.exports.displayHoursMinBefore = displayHoursMinBefore;

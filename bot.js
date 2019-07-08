@@ -76,15 +76,15 @@ async function initLookout() {
     }, statusDelay);
 
     bot.setInterval(async () => {
-        savePlayers();
+        await savePlayers();
     }, configjson["saveDelay"]);
 
     setupSignUpSchedule();
 
-    process.on('SIGTERM', function () {
+    process.on('SIGTERM', async function () {
         logger.log("Recieved signal to terminate, saving and shutting down");
-        savePlayers();
-        bot.destroy();
+        await savePlayers();
+        await bot.destroy();
         process.exit(0);
     });
 
@@ -530,10 +530,10 @@ async function getSignUpsEmbed(signUps) {
 --------------------------------------- GEAR ---------------------------------------
 */
 
-function savePlayers() {
+async function savePlayers() {
     let playerspath = "./download/players.json";
-    files.writeObjectToFile(playerspath, players);
-    files.uploadFileToChannel(playerspath, myGearData, configjson["gearDataMessage"]);
+    await files.writeObjectToFile(playerspath, players);
+    await files.uploadFileToChannel(playerspath, myGearData, configjson["gearDataMessage"]);
 }
 
 /**
