@@ -14,7 +14,9 @@
         "saveDelay": 900000,
         "hourSignup": 17,
         "defaultDay": "sun",
-        "defaultCount": 7
+        "defaultCount": 7,
+        "yesreaction": "✅",
+        "noreaction": "❌"
     },
     "kuji": {
         "botServerID": "594824222099111937",
@@ -29,6 +31,8 @@
         "saveDelay": 900000,
         "hourSignup": 17,
         "defaultDay": "sun",
-        "defaultCount": 7
+        "defaultCount": 7,
+        "yesreaction": "✅",
+        "noreaction": "❌"
     }
 }

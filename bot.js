@@ -98,15 +98,15 @@ async function initLookout() {
 async function onReactionHandler(messageReaction) {
     if (messageReaction.message.channel.id == mySignUp.id) {
         let message = messageReaction.message;
-        let yesReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == itemsjson["yesreaction"]).first();
-        let noReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == itemsjson["noreaction"]).first();
-        if (messageReaction.emoji.name == itemsjson["noreaction"]) {
+        let yesReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["yesreaction"]).first();
+        let noReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["noreaction"]).first();
+        if (messageReaction.emoji.name == configjson["noreaction"]) {
             let user = noReaction.users.last();
             if (user.id != bot.user.id && yesReaction && (await noReaction.fetchUsers()).get(user.id)) {
                 yesReaction.remove(user);
             }
         }
-        if (messageReaction.emoji.name == itemsjson["yesreaction"]) {
+        if (messageReaction.emoji.name == configjson["yesreaction"]) {
             let user = yesReaction.users.last();
             if (user.id != bot.user.id && noReaction && (await yesReaction.fetchUsers()).get(user.id)) {
                 noReaction.remove(user);
@@ -295,15 +295,13 @@ async function onMessageHandler(message, botMsg) {
  * generate num singup messages
  */
 async function generateSignUpMessages(num) {
-    let yesemoji = await fetchEmoji(itemsjson["yesreaction"]);
-    let noemoji = await fetchEmoji(itemsjson["noreaction"]);
     for (let i = 0; i < num; i++) {
         let date = new Date();
         date.setDate(date.getDate() + i); // get the next day
         let content = util.findCorrespondingDayName(date.getDay()) + " - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth()) + "." + date.getFullYear();
         let message = await interactions.wSendChannel(mySignUp, content);
-        await message.react(yesemoji);
-        await message.react(noemoji);
+        await message.react(configjson["yesreaction"]);
+        message.react(configjson["noreaction"]);
     }
 }
 
@@ -313,18 +311,14 @@ async function generateSignUpMessages(num) {
  */
 async function bulkSignUpMessages(day) {
     let today = new Date();
-    let yesemoji = await fetchEmoji(itemsjson["yesreaction"]);
-    let noemoji = await fetchEmoji(itemsjson["noreaction"]);
     let loops = day == "loop" ? 7 : util.diffDays(today.getDay(), util.findCorrespondingDayNumber(day));
     for (let i = 0; i <= loops; i++) {
         let date = new Date();
         date.setDate(date.getDate() + i); // get the next day
         let content = util.findCorrespondingDayName(date.getDay()) + " - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth()) + "." + date.getFullYear();
         let message = await interactions.wSendChannel(mySignUp, content);
-        message.react(yesemoji);
-        bot.setTimeout(() => {
-            message.react(noemoji);
-        }, 10000);
+        await message.react(configjson["yesreaction"]);
+        message.react(configjson["noreaction"]);
     }
 }
 
@@ -392,8 +386,8 @@ async function getDaySignUp(day) {
     //let signUps = { "name": [], "id": [], [dayStr]: [] };
     let reactionMessage = await getDaySignUpMessage(day, mySignUp);
     if (reactionMessage) {
-        let yesReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == itemsjson["yesreaction"]).first();
-        let noReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == itemsjson["noreaction"]).first();
+        let yesReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
+        let noReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
         if (noReaction) {
             let users = await noReaction.fetchUsers();
             await Promise.all(users.map(async user => {
@@ -516,10 +510,10 @@ async function getSignUpsEmbed(signUps) {
         }
     });
     if (yesToSend) {
-        embed.addField(await fetchEmoji(itemsjson["yesreaction"]) + " YES (" + yes + ")", yesToSend, true);
+        embed.addField(configjson["yesreaction"] + " YES (" + yes + ")", yesToSend, true);
     }
     if (noToSend) {
-        embed.addField(await fetchEmoji(itemsjson["noreaction"]) + " NO (" + no + ")", noToSend, true);
+        embed.addField(configjson["noreaction"] + " NO (" + no + ")", noToSend, true);
     }
     if (naToSend) {
         embed.addField(":question:" + " N/A (" + na + ")", naToSend, true);
