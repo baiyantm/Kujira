@@ -76,15 +76,15 @@ async function initLookout() {
     }, statusDelay);
 
     bot.setInterval(async () => {
-        savePlayers();
+        await savePlayers();
     }, configjson["saveDelay"]);
 
     setupSignUpSchedule();
 
-    process.on('SIGTERM', function () {
+    process.on('SIGTERM', async function () {
         logger.log("Recieved signal to terminate, saving and shutting down");
-        savePlayers();
-        bot.destroy();
+        await savePlayers();
+        await bot.destroy();
         process.exit(0);
     });
 
@@ -321,8 +321,10 @@ async function bulkSignUpMessages(day) {
         date.setDate(date.getDate() + i); // get the next day
         let content = util.findCorrespondingDayName(date.getDay()) + " - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth()) + "." + date.getFullYear();
         let message = await interactions.wSendChannel(mySignUp, content);
-        await message.react(yesemoji);
-        await message.react(noemoji);
+        message.react(yesemoji);
+        bot.setTimeout(() => {
+            message.react(noemoji);
+        }, 10000);
     }
 }
 
@@ -530,10 +532,10 @@ async function getSignUpsEmbed(signUps) {
 --------------------------------------- GEAR ---------------------------------------
 */
 
-function savePlayers() {
+async function savePlayers() {
     let playerspath = "./download/players.json";
-    files.writeObjectToFile(playerspath, players);
-    files.uploadFileToChannel(playerspath, myGearData, configjson["gearDataMessage"]);
+    await files.writeObjectToFile(playerspath, players);
+    await files.uploadFileToChannel(playerspath, myGearData, configjson["gearDataMessage"]);
 }
 
 /**
