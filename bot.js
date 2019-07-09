@@ -321,8 +321,10 @@ async function bulkSignUpMessages(day) {
         date.setDate(date.getDate() + i); // get the next day
         let content = util.findCorrespondingDayName(date.getDay()) + " - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth()) + "." + date.getFullYear();
         let message = await interactions.wSendChannel(mySignUp, content);
-        await message.react(yesemoji);
-        await message.react(noemoji);
+        message.react(yesemoji);
+        bot.setTimeout(() => {
+            message.react(noemoji);
+        }, 10000);
     }
 }
 
