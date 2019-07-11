@@ -13,6 +13,13 @@ async function initLookout() {
 
     var annCache = { reference: null }; //because JavaScript
     await cacheAnnouncements(annCache);
+    annCache.reference.forEach(async message => {
+        try {
+            await downloadFilesFromMessage(message);
+        } catch (e) {
+            //nothing to dl
+        }
+    });
 
     var botMsg = { reference: null }; //because JavaScript
     //lookup for a previous message so we keep using it
@@ -170,7 +177,7 @@ async function onEditHandler(newMessage, annCache) {
  */
 async function onDeleteHandler(deletedMessage, annCache) {
     if (deletedMessage.channel.id == myAnnouncement.id) {
-        await interactions.wSendChannel(myAnnouncementData, await getHistoryEmbed(deletedMessage, 0));
+        await interactions.wSendChannel(myAnnouncementData, await getHistoryEmbed(deletedMessage));
         await cacheAnnouncements(annCache);
     }
 }
@@ -188,6 +195,9 @@ async function onMessageHandler(message, botMsg, annCache) {
     try {
         if (message.channel.id == myAnnouncement.id) {
             await cacheAnnouncements(annCache);
+            if (message.attachments.size > 0) {
+                await downloadFilesFromMessage(message);
+            }
         }
         else if (message.channel.id == myGate.id) {
             // ---------- GATE ----------
@@ -368,30 +378,18 @@ async function cacheAnnouncements(annCache) {
 
 /**
  * @param {Discord.Message} message 
- * @param {0 | 1} status whether it's a new message or an edit
  * @returns an embed containing info about the message
  */
-async function getHistoryEmbed(message, status) {
+async function getHistoryEmbed(message) {
     const embed = new Discord.RichEmbed();
-    if (status == 1) {
-        embed.setTitle("EDITED A MESSAGE");
-    }
     let embedColor = 3447003;
     embed.setColor(embedColor);
     embed.setAuthor(message.author.tag, message.author.avatarURL);
     embed.setDescription(message.content);
     embed.setTimestamp(message.editedTimestamp ? message.editedTimestamp : message.createdTimestamp);
-    embed.setFooter(message.id)
-    if (status == 0) {
-        try {
-            await downloadFilesFromMessage(message);
-            message.attachments.forEach(attachment => {
-                embed.attachFile("./download/" + message.id + "/" + attachment.filename);
-            });
-        } catch (e) {
-            //nothing to dl
-        }
-    }
+    message.attachments.forEach(attachment => {
+        embed.attachFile("./download/" + message.id + "/" + attachment.filename);
+    });
     return embed;
 }
 
@@ -403,16 +401,14 @@ async function downloadFilesFromMessage(message) {
     return new Promise(async (resolve, reject) => {
         if (message.attachments.size > 0) {
             await message.attachments.forEach(async element => {
-                logger.log("HTTP: Downloading " + element.filename + " ...");
                 try {
                     if (!fs.existsSync("./download/" + message.id + "/")) {
                         fs.mkdirSync("./download/" + message.id + "/");
                     }
                     await files.download(element.url, "./download/" + message.id + "/" + element.filename, () => { });
-                    logger.log("HTTP: ...success !");
                     resolve();
                 } catch (e) {
-                    logger.logError("Could not download a file", e);
+                    logger.logError("Could not download " + element.filename + " file", e);
                     reject();
                 }
             });
