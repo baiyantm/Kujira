@@ -1,5 +1,5 @@
 // @ts-check
-
+const fs = require('fs');
 const { parse } = require('json2csv');
 const Discord = require("discord.js");
 const files = require("./modules/files");
@@ -32,30 +32,50 @@ async function initLookout() {
 
     await refreshBotMsg(myGear, botMsg, players);
     bot.on("message", async message => onMessageHandler(message, botMsg));
-    bot.on("messageReactionAdd", async messageReaction => onReactionHandler(messageReaction));
+
+    if (mySignUp.id && mySignUpData.id) {
+        bot.on("messageReactionAdd", async messageReaction => onReactionHandler(messageReaction));
+    }
+
+    if (myAnnouncement.id && myAnnouncementData.id) {
+        bot.on("messageUpdate", async (oldMessage, newMessage) => onEditHandler(newMessage));
+    }
 
     bot.on('raw', packet => {
         // We don't want this to run on unrelated packets
-        if (!['MESSAGE_REACTION_ADD'].includes(packet.t)) return;
-        // Grab the channel to check the message from
-        const channel = bot.channels.get(packet.d.channel_id);
-        // There's no need to emit if the message is cached, because the event will fire anyway for that
-        // @ts-ignore
-        if (channel.messages.has(packet.d.message_id)) return;
-        // Since we have confirmed the message is not cached, let's fetch it
-        // @ts-ignore
-        channel.fetchMessage(packet.d.message_id).then(message => {
-            // Emojis can have identifiers of name:id format, so we have to account for that case as well
-            const emoji = packet.d.emoji.id ? `${packet.d.emoji.name}:${packet.d.emoji.id}` : packet.d.emoji.name;
-            // This gives us the reaction we need to emit the event properly, in top of the message object
-            const reaction = message.reactions.get(emoji);
-            // Adds the currently reacting user to the reaction's users collection.
-            if (reaction) reaction.users.set(packet.d.user_id, bot.users.get(packet.d.user_id));
-            // Check which type of event it is before emitting
-            if (packet.t === 'MESSAGE_REACTION_ADD') {
-                bot.emit('messageReactionAdd', reaction, bot.users.get(packet.d.user_id));
+        if (!['MESSAGE_REACTION_ADD'].includes(packet.t) && !['MESSAGE_UPDATE'].includes(packet.t)) {
+            return;
+        } else {
+            if (['MESSAGE_REACTION_ADD'].includes(packet.t)) {
+                // Grab the channel to check the message from
+                const channel = bot.channels.get(packet.d.channel_id);
+                // There's no need to emit if the message is cached, because the event will fire anyway for that
+                // @ts-ignore
+                if (channel.messages.has(packet.d.message_id)) return;
+                // Since we have confirmed the message is not cached, let's fetch it
+                // @ts-ignore
+                channel.fetchMessage(packet.d.message_id).then(message => {
+                    // Emojis can have identifiers of name:id format, so we have to account for that case as well
+                    const emoji = packet.d.emoji.id ? `${packet.d.emoji.name}:${packet.d.emoji.id}` : packet.d.emoji.name;
+                    // This gives us the reaction we need to emit the event properly, in top of the message object
+                    const reaction = message.reactions.get(emoji);
+                    // Adds the currently reacting user to the reaction's users collection.
+                    if (reaction) reaction.users.set(packet.d.user_id, bot.users.get(packet.d.user_id));
+                    // Check which type of event it is before emitting
+                    bot.emit('messageReactionAdd', reaction, bot.users.get(packet.d.user_id));
+                });
+            } else if (['MESSAGE_UPDATE'].includes(packet.t)) {
+                const channel = bot.channels.get(packet.d.channel_id);
+                // There's no need to emit if the message is cached, because the event will fire anyway for that
+                // @ts-ignore
+                if (channel.messages.has(packet.d.id)) return;
+                // Since we have confirmed the message is not cached, let's fetch it
+                // @ts-ignore
+                channel.fetchMessage(packet.d.id).then(message => {
+                    bot.emit('messageUpdate', null, message);
+                });
             }
-        });
+        }
     });
 
     bot.user.setPresence({ game: { name: "a successful bootup !" } });
@@ -75,21 +95,28 @@ async function initLookout() {
         }
     }, statusDelay);
 
-    bot.setInterval(async () => {
-        await savePlayers();
-    }, configjson["saveDelay"]);
+    if (myGear.id && myGearData.id) {
+        bot.setInterval(async () => {
+            await savePlayers();
+        }, configjson["saveDelay"]);
+    }
 
-    setupSignUpSchedule();
+    if (mySignUp.id && mySignUpData.id) {
+        setupSignUpSchedule();
+    }
 
     process.on('SIGTERM', async function () {
         logger.log("Recieved signal to terminate, saving and shutting down");
-        await savePlayers();
+        if (myGear.id && myGearData.id) {
+            await savePlayers();
+        }
         await bot.destroy();
         process.exit(0);
     });
 
     logger.log("INFO: ... lookout initialization done");
 }
+
 
 /**
  * listener for emoji add event
@@ -116,6 +143,16 @@ async function onReactionHandler(messageReaction) {
 }
 
 /**
+ * listener for message edit
+ * @param {Discord.Message} newMessage 
+ */
+async function onEditHandler(newMessage) {
+    if (newMessage.channel.id == myAnnouncement.id) {
+        interactions.wSendChannel(myAnnouncementData, await getHistoryEmbed(newMessage, 1));
+    }
+}
+
+/**
  * listener for message event
  * @param {Discord.Message} message the message sent
  * @param {Object} botMsg reference to the bot message
@@ -125,7 +162,10 @@ async function onMessageHandler(message, botMsg) {
     var commands;
     let enteredCommand = message.content.toLowerCase();
     try {
-        if (message.channel.id == myGate.id) {
+        if (message.channel.id == myAnnouncement.id) {
+            interactions.wSendChannel(myAnnouncementData, await getHistoryEmbed(message, 0));
+        }
+        else if (message.channel.id == myGate.id) {
             // ---------- GATE ----------
             commands = itemsjson["commands"]["gate"]["guest"];
             if (enteredCommand == commands["ok"]) {
@@ -147,12 +187,11 @@ async function onMessageHandler(message, botMsg) {
                 enteredCommand = enteredCommand.substr(1);
                 let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
                 enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
-                console.debug(enteredCommand);
                 if (enteredCommand == commands["clear"]) {
                     await clearChannel(message.channel);
                 } else if (enteredCommand == commands["reset"]) {
                     await clearChannel(message.channel);
-                    if(args == "bulk") {
+                    if (args == "bulk") {
                         await bulkSignUpMessages(configjson["defaultDay"]);
                     } else {
                         await generateSignUpMessages(configjson["defaultCount"]);
@@ -166,7 +205,7 @@ async function onMessageHandler(message, botMsg) {
                     await bulkSignUpMessages(args ? args : configjson["defaultDay"]);
                 } else if (enteredCommand == commands["generate"]) {
                     deleteCommand(message);
-                    if(Number(args) <= 15) {
+                    if (Number(args) <= 15) {
                         await generateSignUpMessages(args ? args : configjson["defaultCount"]);
                     } else {
                         interactions.wSendAuthor(message.author, "I cannot generate that many messages");
@@ -290,6 +329,85 @@ async function onMessageHandler(message, botMsg) {
     }
 }
 
+/*
+--------------------------------------- HISTORY section ---------------------------------------
+*/
+
+/**
+ * @param {Discord.Message} message 
+ * @param {0 | 1} status whether it's a new message or an edit
+ * @returns an embed containing info about the message
+ */
+async function getHistoryEmbed(message, status) {
+    const embed = new Discord.RichEmbed();
+    if (status == 1) {
+        embed.setTitle("EDITED A MESSAGE");
+    }
+    let embedColor = 3447003;
+    embed.setColor(embedColor);
+    embed.setAuthor(message.author.tag, message.author.avatarURL);
+    embed.setDescription(message.content);
+    embed.setTimestamp(new Date());
+    embed.setFooter(message.id)
+    if (status == 0) {
+        try {
+            await downloadFilesFromMessage(message);
+            message.attachments.forEach(attachment => {
+                embed.attachFile("./download/" + message.id + "/" + attachment.filename);
+            });
+        } catch (e) {
+            //nothing to dl
+        }
+    }
+    return embed;
+}
+
+/**
+ * downloads files attached to the message and put it in download/messageid
+ * @param {Discord.Message} message
+ */
+async function downloadFilesFromMessage(message) {
+    return new Promise(async (resolve, reject) => {
+        if (message.attachments.size > 0) {
+            await message.attachments.forEach(async element => {
+                logger.log("HTTP: Downloading " + element.filename + " ...");
+                try {
+                    if (!fs.existsSync("./download/" + message.id + "/")) {
+                        fs.mkdirSync("./download/" + message.id + "/");
+                    }
+                    await files.download(element.url, "./download/" + message.id + "/" + element.filename, () => { });
+                    logger.log("HTTP: ...success !");
+                    resolve();
+                } catch (e) {
+                    logger.logError("Could not download a file", e);
+                    reject();
+                }
+            });
+            setTimeout(() => {
+                reject();
+            }, 30000);
+        } else {
+            reject();
+        }
+    });
+}
+
+/**
+ * 
+ * @param {Discord.Collection<string,Discord.MessageReaction>} messageReactions
+ */
+async function getReactions(messageReactions) {
+    let res = "";
+    messageReactions.forEach(reaction => {
+        //TODO
+    });
+    return res ? res : "No reactions";
+}
+
+/*
+--------------------------------------- SIGNUP section ---------------------------------------
+*/
+
 /**
  * @param {number} num
  * generate num singup messages
@@ -340,40 +458,6 @@ function setupSignUpSchedule() {
     }, minUntilSave * 60 * 1000);
     logger.log("INFO: Sign ups save schedule set");
 }
-
-
-/**
- * @param {any[]} list 
- * @param {function} comparator 
- * @returns the result of the function applied to all players in the list
- */
-function compare(list, comparator) {
-    let res = list[0];
-    list.forEach(element => {
-        //min : min > element
-        //max : max < element
-        if (comparator(res, element)) {
-            res = element;
-        }
-    });
-    return res;
-}
-
-/**
- * @param {any[]} list 
- * @param {function} aggregate 
- */
-function avg(list, aggregate) {
-    let res = 0;
-    list.forEach(element => {
-        res += aggregate(element);
-    });
-    return Math.round(res / list.length);
-}
-
-/*
---------------------------------------- SIGNUP ---------------------------------------
-*/
 
 /**
  * gets a signup object from the message
@@ -479,8 +563,8 @@ async function saveSignUp() {
 async function getSignUpsEmbed(signUps) {
     let dayStr = Object.keys(signUps[0])[2];
     const embed = new Discord.RichEmbed();
-    var embedTitle = ":bookmark_tabs: SIGN UPS";
-    var embedColor = 3447003;
+    let embedTitle = ":bookmark_tabs: SIGN UPS";
+    let embedColor = 3447003;
     embed.setColor(embedColor);
     embed.setTitle(embedTitle);
     let yesToSend = "";
@@ -523,7 +607,7 @@ async function getSignUpsEmbed(signUps) {
 }
 
 /*
---------------------------------------- GEAR ---------------------------------------
+--------------------------------------- GEAR section ---------------------------------------
 */
 
 async function savePlayers() {
@@ -562,7 +646,7 @@ async function refreshBotMsg(channel, botMsg, players) {
 }
 
 async function newBotMessage(channel, content) {
-    var sentMessage;
+    let sentMessage;
     sentMessage = await interactions.wSendChannel(channel, content);
     return sentMessage;
 }
@@ -572,8 +656,8 @@ async function newBotMessage(channel, content) {
  * @param {Discord.TextChannel|Discord.DMChannel|Discord.GroupDMChannel} channel the channel to clean
  */
 async function clearChannel(channel) {
-    var deleteCount = 100;
-    var moreMessages = true;
+    let deleteCount = 100;
+    let moreMessages = true;
     bot.setTimeout(() => {
         moreMessages = false;
     }, 2500);
@@ -601,8 +685,8 @@ function getStatsEmbed(players, classname) {
         players = players.filter(currentPlayer => currentPlayer.classname == classname);
     }
     const embed = new Discord.RichEmbed();
-    var embedTitle = ":pencil: STATS" + (classname ? " for " + classname.charAt(0).toUpperCase() + classname.slice(1) : "");
-    var embedColor = 3447003;
+    let embedTitle = ":pencil: STATS" + (classname ? " for " + classname.charAt(0).toUpperCase() + classname.slice(1) : "");
+    let embedColor = 3447003;
     embed.setColor(embedColor);
     embed.setTitle(embedTitle);
     if (players.length > 0) {
@@ -663,8 +747,8 @@ function getStatsEmbed(players, classname) {
 
 function getPlayersEmbed(players) {
     const embed = new Discord.RichEmbed();
-    var embedTitle = ":star: PLAYERS";
-    var embedColor = 3447003;
+    let embedTitle = ":star: PLAYERS";
+    let embedColor = 3447003;
     embed.setColor(embedColor);
     embed.setTitle(embedTitle);
     if (players.length > 0) {
@@ -703,6 +787,39 @@ function countClassNames(players, classname) {
     return res;
 }
 
+/*
+--------------------------------------- GENERAL section ---------------------------------------
+*/
+
+/**
+ * @param {any[]} list 
+ * @param {function} comparator 
+ * @returns the result of the function applied to all players in the list
+ */
+function compare(list, comparator) {
+    let res = list[0];
+    list.forEach(element => {
+        //min : min > element
+        //max : max < element
+        if (comparator(res, element)) {
+            res = element;
+        }
+    });
+    return res;
+}
+
+/**
+ * @param {any[]} list 
+ * @param {function} aggregate 
+ */
+function avg(list, aggregate) {
+    let res = 0;
+    list.forEach(element => {
+        res += aggregate(element);
+    });
+    return Math.round(res / list.length);
+}
+
 /**
  * delete a command message
  * @param {Discord.Message} message 
@@ -721,7 +838,7 @@ async function deleteCommand(message) {
  * @returns true if user is allowed, false if not
  */
 async function checkIntPermission(message) {
-    var allowed = false;
+    let allowed = false;
     if (message.member.roles.find(x => x.name == "Members")) {
         allowed = true;
     } else {
@@ -736,7 +853,7 @@ async function checkIntPermission(message) {
  * @returns true if user is allowed, false if not
  */
 async function checkAdvPermission(message) {
-    var allowed = false;
+    let allowed = false;
     if (message.member.roles.find(x => x.name == "Officers")) {
         allowed = true;
     } else {
@@ -769,7 +886,7 @@ async function revivePlayer(id, name, classname, ap, aap, dp) {
  * @param {string} filename the file's name
  * @param {Discord.TextChannel} channel the channel to download from
  */
-async function downloadFileFromChannel(filename, channel) {
+async function downloadGearFileFromChannel(filename, channel) {
     return new Promise((resolve, reject) => {
         channel.fetchMessages({ limit: 1 }).then(async messages => {
             messages.forEach(message => {
@@ -839,6 +956,8 @@ if (configjson && itemsjson) {
     var myGearData;
     var mySignUp;
     var mySignUpData;
+    var myAnnouncement;
+    var myAnnouncementData;
     var players = [];
     var classEmojis = [];
     var loading = 1000;
@@ -857,7 +976,7 @@ if (configjson && itemsjson) {
         //attempt to load a previously saved state
         try {
             // @ts-ignore
-            await downloadFileFromChannel("players.json", myGearData);
+            await downloadGearFileFromChannel("players.json", myGearData);
         } catch (e) {
             logger.log("INFO: Couldn't find or download the players file");
         }
@@ -876,9 +995,11 @@ if (configjson && itemsjson) {
             myGearData = bot.channels.get(configjson["gearDataID"]);
             mySignUp = bot.channels.get(configjson["signUpID"]);
             mySignUpData = bot.channels.get(configjson["signUpDataID"]);
+            myAnnouncement = bot.channels.get(configjson["announcementID"]);
+            myAnnouncementData = bot.channels.get(configjson["announcementDataID"]);
 
             logger.log("INFO: Booting up attempt...");
-            if (myServer && myGate && myGear && myGearData && classEmojis && mySignUp && mySignUpData) {
+            if (myServer && myGate && myGear && myGearData && classEmojis && mySignUp && mySignUpData && myAnnouncement && myAnnouncementData) {
                 clearInterval(interval);
                 logger.log("INFO: ... success !");
 
