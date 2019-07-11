@@ -11,6 +11,9 @@ var Player = require('./classes/Player');
 async function initLookout() {
     logger.log("INFO: Initializing lookout ...");
 
+    var annCache = { reference: null }; //because JavaScript
+    await cacheAnnouncements(annCache);
+
     var botMsg = { reference: null }; //because JavaScript
     //lookup for a previous message so we keep using it
     await myGear.fetchMessages({ limit: 100 }).then(messages => {
@@ -31,19 +34,18 @@ async function initLookout() {
     });
 
     await refreshBotMsg(myGear, botMsg, players);
-    bot.on("message", async message => onMessageHandler(message, botMsg));
+    bot.on("message", async message => onMessageHandler(message, botMsg, annCache));
 
-    if (mySignUp.id && mySignUpData.id) {
-        bot.on("messageReactionAdd", async messageReaction => onReactionHandler(messageReaction));
-    }
+    bot.on("messageReactionAdd", async messageReaction => onReactionHandler(messageReaction));
 
-    if (myAnnouncement.id && myAnnouncementData.id) {
-        bot.on("messageUpdate", async (oldMessage, newMessage) => onEditHandler(newMessage));
-    }
+    bot.on("messageUpdate", async (oldMessage, newMessage) => onEditHandler(newMessage, annCache));
+
+    bot.on("messageDelete", async deletedMessage => onDeleteHandler(deletedMessage, annCache));
 
     bot.on('raw', packet => {
         // We don't want this to run on unrelated packets
-        if (!['MESSAGE_REACTION_ADD'].includes(packet.t) && !['MESSAGE_UPDATE'].includes(packet.t)) {
+        if (!['MESSAGE_REACTION_ADD'].includes(packet.t) && !['MESSAGE_UPDATE'].includes(packet.t)
+            && !['MESSAGE_DELETE'].includes(packet.t)) {
             return;
         } else {
             if (['MESSAGE_REACTION_ADD'].includes(packet.t)) {
@@ -74,6 +76,14 @@ async function initLookout() {
                 channel.fetchMessage(packet.d.id).then(message => {
                     bot.emit('messageUpdate', null, message);
                 });
+            } else if (['MESSAGE_DELETE'].includes(packet.t)) {
+                const channel = bot.channels.get(packet.d.channel_id);
+                // There's no need to emit if the message is cached, because the event will fire anyway for that
+                // @ts-ignore
+                if (channel.messages.has(packet.d.id)) return;
+                // Since we have confirmed the message is not cached, let's fetch it
+                // @ts-ignore
+                bot.emit('messageDelete', { channel: { id: packet.d.channel_id }, id: packet.d.id });
             }
         }
     });
@@ -145,10 +155,23 @@ async function onReactionHandler(messageReaction) {
 /**
  * listener for message edit
  * @param {Discord.Message} newMessage 
+ * @param {{reference : any}} annCache 
  */
-async function onEditHandler(newMessage) {
+async function onEditHandler(newMessage, annCache) {
     if (newMessage.channel.id == myAnnouncement.id) {
-        interactions.wSendChannel(myAnnouncementData, await getHistoryEmbed(newMessage, 1));
+        await cacheAnnouncements(annCache);
+    }
+}
+
+/**
+ * listener for message edit
+ * @param {Discord.Message} deletedMessage 
+ * @param {{reference : any}} annCache 
+ */
+async function onDeleteHandler(deletedMessage, annCache) {
+    if (deletedMessage.channel.id == myAnnouncement.id) {
+        await interactions.wSendChannel(myAnnouncementData, await getHistoryEmbed(deletedMessage, 0));
+        await cacheAnnouncements(annCache);
     }
 }
 
@@ -156,14 +179,15 @@ async function onEditHandler(newMessage) {
  * listener for message event
  * @param {Discord.Message} message the message sent
  * @param {Object} botMsg reference to the bot message
+ * @param {{reference : any}} annCache 
  */
-async function onMessageHandler(message, botMsg) {
+async function onMessageHandler(message, botMsg, annCache) {
     //if (message.author.bot) return; //bot ignores bots
     var commands;
     let enteredCommand = message.content.toLowerCase();
     try {
         if (message.channel.id == myAnnouncement.id) {
-            interactions.wSendChannel(myAnnouncementData, await getHistoryEmbed(message, 0));
+            await cacheAnnouncements(annCache);
         }
         else if (message.channel.id == myGate.id) {
             // ---------- GATE ----------
@@ -334,6 +358,15 @@ async function onMessageHandler(message, botMsg) {
 */
 
 /**
+ * @param {{reference : any}} annCache 
+ */
+async function cacheAnnouncements(annCache) {
+    await myAnnouncement.fetchMessages({ limit: 100 }).then(messages => {
+        annCache.reference = messages;
+    });
+}
+
+/**
  * @param {Discord.Message} message 
  * @param {0 | 1} status whether it's a new message or an edit
  * @returns an embed containing info about the message
@@ -347,7 +380,7 @@ async function getHistoryEmbed(message, status) {
     embed.setColor(embedColor);
     embed.setAuthor(message.author.tag, message.author.avatarURL);
     embed.setDescription(message.content);
-    embed.setTimestamp(new Date());
+    embed.setTimestamp(message.editedTimestamp ? message.editedTimestamp : message.createdTimestamp);
     embed.setFooter(message.id)
     if (status == 0) {
         try {
