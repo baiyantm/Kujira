@@ -11,6 +11,8 @@ var Player = require('./classes/Player');
 async function initLookout() {
     logger.log("INFO: Initializing lookout ...");
 
+    bot.user.setPresence({ game: { name: "a successful bootup !" } });
+
     var annCache = { reference: null }; //because JavaScript
     await cacheAnnouncements(annCache);
     annCache.reference.forEach(async message => {
@@ -95,7 +97,6 @@ async function initLookout() {
         }
     });
 
-    bot.user.setPresence({ game: { name: "a successful bootup !" } });
     let statusDelay = 300000;
     //changes "game status" of the bot every statusDelay ms
     bot.setInterval(async () => {
@@ -343,7 +344,32 @@ async function onMessageHandler(message, botMsg, annCache) {
                     }
                     let playersFound = players.filter(currentPlayer => currentPlayer.equals(player));
                     if (playersFound.length > 0) {
-                        interactions.wSendChannel(message.channel, displayFullPlayer(playersFound[0]));
+                        //sort by gs - highest to lowest
+                        let sortedPlayers = players.sort((a, b) => {
+                            return b.getGS() - a.getGS();
+                        });
+                        let i = 0;
+                        for (i; i < sortedPlayers.length; i++) {
+                            let player = sortedPlayers[i];
+                            if (playersFound[0].equals(player)) {
+                                break;
+                            }
+                        }
+                        let medal = "";
+                        switch (i) {
+                            case 0:
+                                medal = ":first_place:";
+                                break;
+                            case 1:
+                                medal = ":second_place:";
+                                break;
+                            case 2:
+                                medal = ":third_place:";
+                                break;
+                            default:
+                                break;
+                        }
+                        interactions.wSendChannel(message.channel, (medal ? medal : "#" + (i + 1)) + " " + displayFullPlayer(playersFound[0]));
                     } else {
                         interactions.wSendChannel(message.channel, "Couldn't find this player.");
                     }
@@ -373,6 +399,23 @@ async function onMessageHandler(message, botMsg, annCache) {
 async function cacheAnnouncements(annCache) {
     await myAnnouncement.fetchMessages({ limit: 100 }).then(messages => {
         annCache.reference = messages;
+        let presence = "";
+        messages.array().slice().reverse().forEach(message => {
+            if (message.content.length <= 20) {
+                presence = message.content;
+            }
+        });
+        try {
+            bot.user.setPresence({
+                game:
+                {
+                    name: presence,
+                    type: "PLAYING"
+                }
+            });
+        } catch (e) {
+            logger.logError("Game status error", e);
+        }
     });
 }
 
@@ -387,8 +430,16 @@ async function getHistoryEmbed(message) {
     embed.setAuthor(message.author.tag, message.author.avatarURL);
     embed.setDescription(message.content);
     embed.setTimestamp(message.editedTimestamp ? message.editedTimestamp : message.createdTimestamp);
+    console.debug(message);
     message.attachments.forEach(attachment => {
         embed.attachFile("./download/" + message.id + "/" + attachment.filename);
+    });
+    message.reactions.forEach(async reaction => {
+        let users = "";
+        reaction.users.forEach(user => {
+            users += user + "\n";
+        });
+        embed.addField(reaction.emoji, users, true);
     });
     return embed;
 }
