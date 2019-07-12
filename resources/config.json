@@ -18,7 +18,8 @@
         "defaultDay": "sun",
         "defaultCount": 7,
         "yesreaction": "✅",
-        "noreaction": "❌"
+        "noreaction": "❌",
+        "maybereaction": "🤔"
     },
     "kuji": {
         "botServerID": "594824222099111937",
@@ -37,6 +38,7 @@
         "defaultDay": "sun",
         "defaultCount": 7,
         "yesreaction": "✅",
-        "noreaction": "❌"
+        "noreaction": "❌",
+        "maybereaction": "🤔"
     }
 }

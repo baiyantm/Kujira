@@ -129,15 +129,25 @@ async function onReactionHandler(messageReaction) {
         let message = messageReaction.message;
         let yesReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["yesreaction"]).first();
         let noReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["noreaction"]).first();
+        let maybeReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["maybereaction"]).first();
         if (messageReaction.emoji.name == configjson["noreaction"]) {
             let user = noReaction.users.last();
-            if (user.id != bot.user.id && yesReaction && (await noReaction.fetchUsers()).get(user.id)) {
+            if (user.id != bot.user.id && yesReaction && maybeReaction && (await noReaction.fetchUsers()).get(user.id)) {
+                maybeReaction.remove(user);
                 yesReaction.remove(user);
             }
         }
         if (messageReaction.emoji.name == configjson["yesreaction"]) {
             let user = yesReaction.users.last();
             if (user.id != bot.user.id && noReaction && (await yesReaction.fetchUsers()).get(user.id)) {
+                maybeReaction.remove(user);
+                noReaction.remove(user);
+            }
+        }
+        if (messageReaction.emoji.name == configjson["maybereaction"]) {
+            let user = maybeReaction.users.last();
+            if (user.id != bot.user.id && noReaction && (await maybeReaction.fetchUsers()).get(user.id)) {
+                yesReaction.remove(user);
                 noReaction.remove(user);
             }
         }
@@ -485,7 +495,8 @@ async function generateSignUpMessages(num) {
         let content = util.findCorrespondingDayName(date.getDay()) + " - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth()) + "." + date.getFullYear();
         let message = await interactions.wSendChannel(mySignUp, content);
         await message.react(configjson["yesreaction"]);
-        message.react(configjson["noreaction"]);
+        await message.react(configjson["noreaction"]);
+        message.react(configjson["maybereaction"]);
     }
 }
 
@@ -538,6 +549,7 @@ async function getDaySignUp(day) {
     if (reactionMessage) {
         let yesReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
         let noReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
+        let maybeReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == configjson["maybereaction"]).first();
         if (noReaction) {
             let users = await noReaction.fetchUsers();
             await Promise.all(users.map(async user => {
@@ -557,6 +569,19 @@ async function getDaySignUp(day) {
                     if (member.roles.find(x => x.name == "Members")) {
                         let name = (member.nickname ? member.nickname : member.user.username);
                         let object = { "name": name, "id": user.id, [dayStr]: "yes" };
+                        signUps.push(object);
+                    }
+                }
+            }));
+        }
+        if (maybeReaction) {
+            let users = await maybeReaction.fetchUsers();
+            await Promise.all(users.map(async user => {
+                if (!signUpsHasId(signUps, user.id)) {
+                    let member = await myServer.fetchMember(await bot.fetchUser(user.id));
+                    if (member.roles.find(x => x.name == "Members")) {
+                        let name = (member.nickname ? member.nickname : member.user.username);
+                        let object = { "name": name, "id": user.id, [dayStr]: "maybe" };
                         signUps.push(object);
                     }
                 }
@@ -651,6 +676,15 @@ async function getSignUpsEmbed(signUps) {
         }
     });
 
+    let maybeToSend = "";
+    let maybe = 0;
+    signUps.forEach(element => {
+        if (element[dayStr] == "maybe") {
+            maybeToSend += "<@" + element.id + ">" + "\n";
+            maybe++;
+        }
+    });
+
     let naToSend = "";
     let na = 0;
     signUps.forEach(element => {
@@ -664,6 +698,9 @@ async function getSignUpsEmbed(signUps) {
     }
     if (noToSend) {
         embed.addField(configjson["noreaction"] + " NO (" + no + ")", noToSend, true);
+    }
+    if (maybeToSend) {
+        embed.addField(configjson["maybereaction"] + " MAYBE (" + maybe + ")", maybeToSend, true);
     }
     if (naToSend) {
         embed.addField(":question:" + " N/A (" + na + ")", naToSend, true);
