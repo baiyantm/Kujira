@@ -97,22 +97,6 @@ async function initLookout() {
         }
     });
 
-    let statusDelay = 300000;
-    //changes "game status" of the bot every statusDelay ms
-    bot.setInterval(async () => {
-        try {
-            await bot.user.setPresence({
-                game:
-                {
-                    name: players.length > 0 ? players[Math.floor(Math.random() * players.length)].name : "an empty player list :(",
-                    type: "WATCHING"
-                }
-            });
-        } catch (e) {
-            logger.logError("Game status error", e);
-        }
-    }, statusDelay);
-
     if (myGear.id && myGearData.id) {
         bot.setInterval(async () => {
             await savePlayers();
