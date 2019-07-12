@@ -45,7 +45,7 @@ async function initLookout() {
     await refreshBotMsg(myGear, botMsg, players);
     bot.on("message", async message => onMessageHandler(message, botMsg, annCache));
 
-    bot.on("messageReactionAdd", async messageReaction => onReactionHandler(messageReaction, annCache));
+    bot.on("messageReactionAdd", async messageReaction => onReactionHandler(messageReaction));
 
     bot.on("messageUpdate", async (oldMessage, newMessage) => onEditHandler(newMessage, annCache));
 
@@ -139,9 +139,8 @@ async function initLookout() {
 /**
  * listener for emoji add event
  * @param {Discord.MessageReaction} messageReaction 
- * @param {{reference : any}} annCache 
  */
-async function onReactionHandler(messageReaction, annCache) {
+async function onReactionHandler(messageReaction) {
     if (messageReaction.message.channel.id == mySignUp.id) {
         let message = messageReaction.message;
         let yesReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["yesreaction"]).first();
@@ -158,8 +157,6 @@ async function onReactionHandler(messageReaction, annCache) {
                 noReaction.remove(user);
             }
         }
-    } else if (messageReaction.message.channel.id == myAnnouncement.id) {
-        cacheAnnouncements(annCache);
     }
 }
 
@@ -442,7 +439,9 @@ async function getHistoryEmbed(message) {
         reaction.users.forEach(user => {
             users += user + "\n";
         });
-        embed.addField(reaction.emoji, users, true);
+        if (users) {
+            embed.addField(reaction.emoji, users, true);
+        }
     });
     return embed;
 }
