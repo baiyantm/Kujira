@@ -106,7 +106,7 @@ async function initLookout() {
     if (mySignUp.id && mySignUpData.id) {
         setupSignUpSchedule();
     }
-
+    
     process.on('SIGTERM', async function () {
         logger.log("Recieved signal to terminate, saving and shutting down");
         if (myGear.id && myGearData.id) {
@@ -115,7 +115,7 @@ async function initLookout() {
         await bot.destroy();
         process.exit(0);
     });
-
+    
     logger.log("INFO: ... lookout initialization done");
 }
 
@@ -414,21 +414,25 @@ async function cacheAnnouncements(annCache) {
     await myAnnouncement.fetchMessages({ limit: 100 }).then(messages => {
         annCache.reference = messages;
         let presence = "";
-        messages.array().slice().reverse().forEach(message => {
-            if (message.content.length <= 20) {
-                presence = message.content;
-            }
-        });
-        try {
-            bot.user.setPresence({
-                game:
-                {
-                    name: presence,
-                    type: "PLAYING"
+        if (messages) {
+            messages.array().slice().reverse().forEach(message => {
+                if (message.content.length <= 20) {
+                    presence = message.content;
                 }
             });
-        } catch (e) {
-            logger.logError("Game status error", e);
+            if (presence) {
+                try {
+                    bot.user.setPresence({
+                        game:
+                        {
+                            name: presence,
+                            type: "PLAYING"
+                        }
+                    });
+                } catch (e) {
+                    logger.logError("Game status error", e);
+                }
+            }
         }
     });
 }
@@ -543,7 +547,8 @@ async function bulkSignUpMessages(day) {
  */
 function setupSignUpSchedule() {
     let today = new Date();
-    let minUntilSave = util.getMinUntil(today.getDay() + Number(util.isNextDay(configjson["hourSignup"])), configjson["hourSignup"], 0);
+    let dd = (today.getDay() + Number(util.isNextDay(configjson["hourSignup"])))%7;
+    let minUntilSave = util.getMinUntil(dd, configjson["hourSignup"], 0);
     bot.setTimeout(async () => {
         await saveSignUp();
 
