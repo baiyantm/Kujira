@@ -132,23 +132,35 @@ async function onReactionHandler(messageReaction) {
         let maybeReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["maybereaction"]).first();
         if (messageReaction.emoji.name == configjson["noreaction"]) {
             let user = noReaction.users.last();
-            if (user.id != bot.user.id && yesReaction && maybeReaction && (await noReaction.fetchUsers()).get(user.id)) {
-                maybeReaction.remove(user);
-                yesReaction.remove(user);
+            if (user.id != bot.user.id && (await noReaction.fetchUsers()).get(user.id)) {
+                if (maybeReaction) {
+                    maybeReaction.remove(user);
+                }
+                if (yesReaction) {
+                    yesReaction.remove(user);
+                }
             }
         }
         if (messageReaction.emoji.name == configjson["yesreaction"]) {
             let user = yesReaction.users.last();
-            if (user.id != bot.user.id && noReaction && (await yesReaction.fetchUsers()).get(user.id)) {
-                maybeReaction.remove(user);
-                noReaction.remove(user);
+            if (user.id != bot.user.id && (await yesReaction.fetchUsers()).get(user.id)) {
+                if (maybeReaction) {
+                    maybeReaction.remove(user);
+                }
+                if (noReaction) {
+                    noReaction.remove(user);
+                }
             }
         }
         if (messageReaction.emoji.name == configjson["maybereaction"]) {
             let user = maybeReaction.users.last();
-            if (user.id != bot.user.id && noReaction && (await maybeReaction.fetchUsers()).get(user.id)) {
-                yesReaction.remove(user);
-                noReaction.remove(user);
+            if (user.id != bot.user.id && (await maybeReaction.fetchUsers()).get(user.id)) {
+                if (yesReaction) {
+                    yesReaction.remove(user);
+                }
+                if (noReaction) {
+                    noReaction.remove(user);
+                }
             }
         }
     }
