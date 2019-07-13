@@ -16,7 +16,7 @@
         "saveDelay": 900000,
         "hourSignup": 17,
         "defaultDay": "sun",
-        "defaultCount": 7,
+        "defaultCount": 1,
         "yesreaction": "✅",
         "noreaction": "❌",
         "maybereaction": "🤔"
@@ -36,7 +36,7 @@
         "saveDelay": 900000,
         "hourSignup": 17,
         "defaultDay": "sun",
-        "defaultCount": 7,
+        "defaultCount": 1,
         "yesreaction": "✅",
         "noreaction": "❌",
         "maybereaction": "🤔"
