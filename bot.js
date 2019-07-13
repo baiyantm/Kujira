@@ -251,6 +251,14 @@ async function onMessageHandler(message, botMsg, annCache) {
                     } else {
                         interactions.wSendAuthor(message.author, "I cannot generate that many messages");
                     }
+                } else if (enteredCommand == commands["react"]) {
+                    await message.channel.fetchMessages({ limit: 2 }).then(async messages => {
+                        let toReact = messages.last();
+                        await toReact.react(configjson["yesreaction"]);
+                        await toReact.react(configjson["noreaction"]);
+                        toReact.react(configjson["maybereaction"]);
+                    });
+                    await deleteCommand(message);
                 }
             }
         } else if (message.channel.id == myGear.id) {
@@ -525,7 +533,8 @@ async function bulkSignUpMessages(day) {
         let content = util.findCorrespondingDayName(date.getDay()) + " - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth()) + "." + date.getFullYear();
         let message = await interactions.wSendChannel(mySignUp, content);
         await message.react(configjson["yesreaction"]);
-        message.react(configjson["noreaction"]);
+        await message.react(configjson["noreaction"]);
+        message.react(configjson["maybereaction"]);
     }
 }
 
