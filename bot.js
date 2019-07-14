@@ -516,7 +516,7 @@ async function generateSignUpMessages(num) {
     for (let i = 0; i < num; i++) {
         let date = new Date();
         date.setDate(date.getDate() + i); // get the next day
-        let content = util.findCorrespondingDayName(date.getDay()) + "day - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth()) + "." + date.getFullYear();
+        let content = util.findCorrespondingDayName(date.getDay()) + " - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth()) + "." + date.getFullYear();
         let message = await interactions.wSendChannel(mySignUp, content);
         await message.react(configjson["yesreaction"]);
         await message.react(configjson["noreaction"]);
@@ -534,7 +534,7 @@ async function bulkSignUpMessages(day) {
     for (let i = 0; i <= loops; i++) {
         let date = new Date();
         date.setDate(date.getDate() + i); // get the next day
-        let content = util.findCorrespondingDayName(date.getDay()) + "day - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth()) + "." + date.getFullYear();
+        let content = util.findCorrespondingDayName(date.getDay()) + " - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth()) + "." + date.getFullYear();
         let message = await interactions.wSendChannel(mySignUp, content);
         await message.react(configjson["yesreaction"]);
         await message.react(configjson["noreaction"]);

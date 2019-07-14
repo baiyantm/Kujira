@@ -5,13 +5,13 @@
  */
 function findCorrespondingDayName(number) {
     switch (number) {
-        case 0: return 'Sun';
-        case 1: return 'Mon';
-        case 2: return 'Tue';
-        case 3: return 'Wed';
-        case 4: return 'Thu';
-        case 5: return 'Fri';
-        case 6: return 'Sat';
+        case 0: return 'Sunday';
+        case 1: return 'Monday';
+        case 2: return 'Tuesday';
+        case 3: return 'Wednesday';
+        case 4: return 'Thursday';
+        case 5: return 'Friday';
+        case 6: return 'Saturday';
     }
     return null;
 }
@@ -22,14 +22,20 @@ function findCorrespondingDayName(number) {
 *  @returns number corresponding to the day of a given string (Sun => 0, Mon => 1...), null if not found
  */
 function findCorrespondingDayNumber(string) {
-    switch (string) {
-        case 'sun': return 0;
-        case 'mon': return 1;
-        case 'tue': return 2;
-        case 'wed': return 3;
-        case 'thu': return 4;
-        case 'fri': return 5;
-        case 'sat': return 6;
+    if (string.startsWith('sun')) {
+        return 0;
+    } else if (string.startsWith('mon')) {
+        return 1;
+    } else if (string.startsWith('tue')) {
+        return 2;
+    } else if (string.startsWith('wed')) {
+        return 3;
+    } else if (string.startsWith('thu')) {
+        return 4;
+    } else if (string.startsWith('fri')) {
+        return 5;
+    } else if (string.startsWith('sat')) {
+        return 6;
     }
     return null;
 }
