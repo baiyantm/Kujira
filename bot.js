@@ -449,7 +449,6 @@ async function getHistoryEmbed(message) {
     embed.setAuthor(message.author.tag, message.author.avatarURL);
     embed.setDescription(message.content);
     embed.setTimestamp(message.editedTimestamp ? message.editedTimestamp : message.createdTimestamp);
-    console.debug(message);
     message.attachments.forEach(attachment => {
         embed.attachFile("./download/" + message.id + "/" + attachment.filename);
     });
