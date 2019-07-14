@@ -454,6 +454,7 @@ async function getHistoryEmbed(message) {
     });
     message.reactions.forEach(async reaction => {
         let users = "";
+        reaction.fetchUsers();
         reaction.users.forEach(user => {
             users += user + "\n";
         });
