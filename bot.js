@@ -552,13 +552,7 @@ function setupSignUpSchedule() {
     let minUntilSave = util.getMinUntil(dd, configjson["hourSignup"], 0);
     bot.setTimeout(async () => {
         await saveSignUp();
-
-        //setup in the next one
-        let today = new Date();
-        let minUntilSave = util.getMinUntil(today.getDay() + Number(util.isNextDay(configjson["hourSignup"])), configjson["hourSignup"], 0);
-        bot.setTimeout(async () => {
-            await saveSignUp();
-        }, minUntilSave * 60 * 1000);
+        setupSignUpSchedule();
     }, minUntilSave * 60 * 1000);
     logger.log("INFO: Sign ups save schedule set");
 }
