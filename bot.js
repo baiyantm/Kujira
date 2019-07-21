@@ -246,7 +246,7 @@ async function onMessageHandler(message, botMsg, annCache) {
                     await bulkSignUpMessages(args ? args : configjson["defaultDay"]);
                 } else if (enteredCommand == commands["generate"]) {
                     deleteCommand(message);
-                    if (Number(args) <= 15) {
+                    if (Number(args) <= 7) {
                         await generateSignUpMessages(args ? args : configjson["defaultCount"]);
                     } else {
                         interactions.wSendAuthor(message.author, "I cannot generate that many messages");
@@ -517,7 +517,7 @@ async function generateSignUpMessages(num) {
     for (let i = 0; i < num; i++) {
         let date = new Date();
         date.setDate(date.getDate() + i); // get the next day
-        let content = util.findCorrespondingDayName(date.getDay()) + " - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth()) + "." + date.getFullYear();
+        let content = util.findCorrespondingDayName(date.getDay()) + " - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth()+1) + "." + date.getFullYear();
         let message = await interactions.wSendChannel(mySignUp, content);
         await message.react(configjson["yesreaction"]);
         await message.react(configjson["noreaction"]);
