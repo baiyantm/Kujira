@@ -20,7 +20,7 @@
         "noreaction": "❌",
         "maybereaction": "🤔",
         "lewdrole": "lewd",
-        "whalerole": "whales",
+        "whalesrole": "whales",
         "sailiesrole": "sailies"
     },
     "kuji": {
@@ -42,7 +42,7 @@
         "noreaction": "❌",
         "maybereaction": "🤔",
         "lewdrole": "lewd",
-        "whalerole": "whales",
+        "whalesrole": "whales",
         "sailiesrole": "sailies"
     }
 }
