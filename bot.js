@@ -319,7 +319,7 @@ async function onMessageHandler(message, botMsg) {
             }, configjson["refreshDelay"]);
         } else {
             // === ALL CHANNELS ===
-            if (enteredCommand.startsWith("?")) {
+            if (enteredCommand.startsWith("?") && checkIntPermission(message)) {
                 commands = itemsjson["commands"]["any"]["guest"];
                 enteredCommand = enteredCommand.substr(1);
                 let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
@@ -858,12 +858,10 @@ async function deleteCommand(message) {
  * @param {Discord.Message} message the original message
  * @returns true if user is allowed, false if not
  */
-async function checkIntPermission(message) {
+function checkIntPermission(message) {
     let allowed = false;
     if (message.member.roles.find(x => x.name == "Members")) {
         allowed = true;
-    } else {
-        await interactions.wSendAuthor(message.author, 'Insufficient permissions.');
     }
     return allowed;
 }
