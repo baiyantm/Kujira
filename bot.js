@@ -180,12 +180,9 @@ async function onMessageHandler(message, botMsg) {
             if (enteredCommand == commands["ok"]) {
                 let publicRole = message.guild.roles.find(x => x.name == "Public");
                 if (!message.member.roles.has(publicRole.id)) {
-                    try {
-                        await message.member.addRole(publicRole);
-                        logger.log("ROLE: " + publicRole + " role added to " + message.author.tag);
-                    } catch (e) {
-                        interactions.wSendAuthor(message.author, "Public role not found or not self-assignable, please contact an admin.");
-                    }
+                    await message.member.addRole(publicRole);
+                    logger.log("ROLE: " + publicRole + " role added to " + message.author.tag);
+                    await interactions.wSendAuthor(message.author, itemsjson["guidelines"]);
                 }
             }
             deleteCommand(message);
@@ -319,12 +316,12 @@ async function onMessageHandler(message, botMsg) {
             }, configjson["refreshDelay"]);
         } else {
             // === ALL CHANNELS ===
-            if (enteredCommand.startsWith("?") && checkIntPermission(message)) {
+            if (enteredCommand.startsWith("?")) {
                 commands = itemsjson["commands"]["any"]["guest"];
                 enteredCommand = enteredCommand.substr(1);
                 let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
                 enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
-                if (enteredCommand == commands["gear"]) {
+                if (enteredCommand == commands["gear"] && checkIntPermission(message)) {
                     message.react("✅");
                     let player;
                     if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
@@ -350,7 +347,7 @@ async function onMessageHandler(message, botMsg) {
                     } else {
                         interactions.wSendChannel(message.channel, "Couldn't find this player.");
                     }
-                } else if (enteredCommand == commands["stats"]) {
+                } else if (enteredCommand == commands["stats"] && checkIntPermission(message)) {
                     if (itemsjson["classlist"].includes(args)) {
                         message.react("✅");
                         interactions.wSendChannel(message.channel, getStatsEmbed(players, args));
@@ -360,25 +357,25 @@ async function onMessageHandler(message, botMsg) {
                     }
                 } else if (enteredCommand == commands["sub"]) {
                     let rolename = args;
-                    if (rolename == configjson["whalesrole"] || rolename == configjson["lewdrole"] || rolename == configjson["sailiesrole"]) {
+                    if (rolename == configjson["lewdrole"] || (rolename == configjson["sailiesrole"] && checkIntPermission(message)) || (rolename == configjson["whalesrole"] && checkIntPermission(message))) {
                         let role = message.guild.roles.find(x => x.name == rolename.charAt(0).toUpperCase() + rolename.slice(1));
                         if (message.member.roles.has(role.id)) {
                             try {
                                 await message.member.removeRole(role);
-                                interactions.wSendChannel(message.channel, rolename + ' role removed.');
-                                logger.log('ROLE: ' + rolename + ' role removed from ' + message.author.tag);
-                                message.react('✅');
+                                interactions.wSendAuthor(message.author, role.name + ' role removed.');
+                                logger.log('ROLE: ' + role.name + ' role removed from ' + message.author.tag);
+                                interactions.wDelete(message);
                             } catch (e) {
-                                interactions.wSendChannel(message.channel, rolename + ' role not found or not self-assignable.');
+                                interactions.wSendAuthor(message.author, args + ' role not found or not self-assignable.');
                             }
                         } else {
                             try {
                                 await message.member.addRole(role);
-                                interactions.wSendChannel(message.channel, rolename + ' role added.');
-                                logger.log('ROLE: ' + rolename + ' role added to ' + message.author.tag);
-                                message.react('✅');
+                                interactions.wSendAuthor(message.author, role.name + ' role added.');
+                                logger.log('ROLE: ' + role.name + ' role added to ' + message.author.tag);
+                                interactions.wDelete(message);
                             } catch (e) {
-                                interactions.wSendChannel(message.channel, rolename + ' role not found or not self-assignable.');
+                                interactions.wSendAuthor(message.author, args + ' role not found or not self-assignable.');
                             }
                         }
                     }
@@ -734,7 +731,7 @@ function getStatsEmbed(players, classname) {
         embed.addField("Lowest AP : " + minAP.getRealAP(), displayFullPlayer(minAP), true);
         embed.addField("Lowest DP : " + minDP.dp, displayFullPlayer(minDP), true);
     } else {
-        embed.setDescription("There are no " + classname.charAt(0).toUpperCase() + classname.slice(1) + " :(");
+        embed.setDescription("Empty player list.");
     }
     return embed;
 }
