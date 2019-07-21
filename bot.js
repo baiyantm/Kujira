@@ -300,7 +300,7 @@ async function onMessageHandler(message, botMsg) {
                                 players = players.filter(currentPlayer => !currentPlayer.equals(player));
                                 players.push(player);
                             } else {
-                                interactions.wSendAuthor(message.author, "Some stats are way too high, cheater !");
+                                interactions.wSendAuthor(message.author, "Some stats are too high or not numbers.");
                             }
                         } else {
                             interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `[classname] [ap] [aap] [dp]`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
