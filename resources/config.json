@@ -10,7 +10,6 @@
         "signUpDataID": "596080219727724545",
         "signUpDataMessage": "signupdata",
         "announcementID": "598840850390319125",
-        "announcementDataID": "598840911564242955",
         "deleteDelay": 750,
         "refreshDelay": 500,
         "saveDelay": 900000,
@@ -19,7 +18,10 @@
         "defaultCount": 1,
         "yesreaction": "✅",
         "noreaction": "❌",
-        "maybereaction": "🤔"
+        "maybereaction": "🤔",
+        "lewdrole": "lewd",
+        "whalerole": "whales",
+        "sailiesrole": "sailies"
     },
     "kuji": {
         "botServerID": "594824222099111937",
@@ -30,7 +32,6 @@
         "signUpID": "594829613729972226",
         "signUpDataID": "596068682711433245",
         "announcementID": "594828745462775823",
-        "announcementDataID": "598822163721748480",
         "deleteDelay": 750,
         "refreshDelay": 500,
         "saveDelay": 900000,
@@ -39,6 +40,9 @@
         "defaultCount": 1,
         "yesreaction": "✅",
         "noreaction": "❌",
-        "maybereaction": "🤔"
+        "maybereaction": "🤔",
+        "lewdrole": "lewd",
+        "whalerole": "whales",
+        "sailiesrole": "sailies"
     }
 }

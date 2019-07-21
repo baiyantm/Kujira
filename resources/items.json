@@ -8,7 +8,8 @@
         "any": {
             "guest": {
                 "gear": "gear",
-                "stats": "stats"
+                "stats": "stats",
+                "sub": "sub"
             }
         },
         "gear": {
@@ -17,6 +18,9 @@
                 "clear": "clear",
                 "remove": "remove",
                 "removeall": "removeall"
+            },
+            "guest": {
+                "help": "help"
             }
         },
         "signup": {
@@ -30,6 +34,7 @@
             }
         }
     },
+    "gearhelp": "The bot commands are the following :\n`[classname] [ap] [aap] [dp]` in #gear - register your class and gear in the list, replace any previous entry\n`?gear [name]` (any channel) - show the gear of the player by name\n`?gear [mention]` (any channel) - show the gear of the player by mention\n`?stats` (any channel) - show stats for all classes\n`?stats [classname]` (any channel) - show stats for specified class",
     "classlist": [
         "warrior",
         "sorceress",
