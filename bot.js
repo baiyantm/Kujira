@@ -13,15 +13,9 @@ async function initLookout() {
 
     bot.user.setPresence({ game: { name: "a successful bootup !" } });
 
-    var annCache = { reference: null }; //because JavaScript
-    await cacheAnnouncements(annCache);
-    annCache.reference.forEach(async message => {
-        try {
-            await downloadFilesFromMessage(message);
-        } catch (e) {
-            //nothing to dl
-        }
-    });
+    if (myAnnouncement) {
+        updatePresence();
+    }
 
     var botMsg = { reference: null }; //because JavaScript
     //lookup for a previous message so we keep using it
@@ -43,13 +37,14 @@ async function initLookout() {
     });
 
     await refreshBotMsg(myGear, botMsg, players);
-    bot.on("message", async message => onMessageHandler(message, botMsg, annCache));
+
+    bot.on("message", async message => onMessageHandler(message, botMsg));
 
     bot.on("messageReactionAdd", async messageReaction => onReactionHandler(messageReaction));
 
-    bot.on("messageUpdate", async (oldMessage, newMessage) => onEditHandler(newMessage, annCache));
+    //bot.on("messageUpdate", async (oldMessage, newMessage) => onEditHandler(newMessage, annCache));
 
-    bot.on("messageDelete", async deletedMessage => onDeleteHandler(deletedMessage, annCache));
+    //bot.on("messageDelete", async deletedMessage => onDeleteHandler(deletedMessage, annCache));
 
     bot.on('raw', packet => {
         // We don't want this to run on unrelated packets
@@ -167,47 +162,20 @@ async function onReactionHandler(messageReaction) {
 }
 
 /**
- * listener for message edit
- * @param {Discord.Message} newMessage 
- * @param {{reference : any}} annCache 
- */
-async function onEditHandler(newMessage, annCache) {
-    if (newMessage.channel.id == myAnnouncement.id) {
-        await cacheAnnouncements(annCache);
-    }
-}
-
-/**
- * listener for message edit
- * @param {Discord.Message} deletedMessage 
- * @param {{reference : any}} annCache 
- */
-async function onDeleteHandler(deletedMessage, annCache) {
-    if (deletedMessage.channel.id == myAnnouncement.id) {
-        await interactions.wSendChannel(myAnnouncementData, await getHistoryEmbed(deletedMessage));
-        await cacheAnnouncements(annCache);
-    }
-}
-
-/**
  * listener for message event
  * @param {Discord.Message} message the message sent
  * @param {Object} botMsg reference to the bot message
- * @param {{reference : any}} annCache 
  */
-async function onMessageHandler(message, botMsg, annCache) {
+async function onMessageHandler(message, botMsg) {
     //if (message.author.bot) return; //bot ignores bots
     var commands;
     let enteredCommand = message.content.toLowerCase();
     try {
         if (message.channel.id == myAnnouncement.id) {
-            await cacheAnnouncements(annCache);
-            if (message.attachments.size > 0) {
-                await downloadFilesFromMessage(message);
-            }
+            updatePresence();
         }
-        else if (message.channel.id == myGate.id) {
-            // ---------- GATE ----------
+        if (message.channel.id == myGate.id) {
+            // === GATE ===
             commands = itemsjson["commands"]["gate"]["guest"];
             if (enteredCommand == commands["ok"]) {
                 let publicRole = message.guild.roles.find(x => x.name == "Public");
@@ -222,7 +190,7 @@ async function onMessageHandler(message, botMsg, annCache) {
             }
             deleteCommand(message);
         } else if (message.channel.id == mySignUp.id) {
-            // ---------- SIGNUP ----------
+            // === SIGNUP ===
             if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
                 commands = itemsjson["commands"]["signup"]["adv"];
                 enteredCommand = enteredCommand.substr(1);
@@ -262,7 +230,7 @@ async function onMessageHandler(message, botMsg, annCache) {
                 }
             }
         } else if (message.channel.id == myGear.id) {
-            // ---------- GEAR ----------
+            // === GEAR ===
             if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
                 commands = itemsjson["commands"]["gear"]["adv"];
                 enteredCommand = enteredCommand.substr(1);
@@ -312,26 +280,35 @@ async function onMessageHandler(message, botMsg, annCache) {
                     }
                 }
             } else if (!enteredCommand.startsWith("! ") && !enteredCommand.startsWith("?")) {
-                let classToFind = itemsjson["classlist"].find(currentclassname => currentclassname == enteredCommand.split(" ")[0]);
-                if (classToFind) {
-                    let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
-                    let split = args.split(" ");
-                    if (split.length == 3) {
-                        let ap = parseInt(split[0]);
-                        let aap = parseInt(split[1]);
-                        let dp = parseInt(split[2]);
-                        if (Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
-                            let player = new Player(message.member, classToFind, ap, aap, dp);
-                            players = players.filter(currentPlayer => !currentPlayer.equals(player));
-                            players.push(player);
+                commands = itemsjson["commands"]["gear"]["guest"];
+                if (enteredCommand == commands["help"]) {
+                    let helpMessage = await interactions.wSendChannel(message.channel, itemsjson["gearhelp"]);
+                    bot.setTimeout(() => {
+                        interactions.wDelete(helpMessage);
+                    }, 60000);
+                } else {
+                    let classToFind = itemsjson["classlist"].find(currentclassname => currentclassname == enteredCommand.split(" ")[0]);
+                    if (classToFind) {
+                        let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
+                        let split = args.split(" ");
+                        if (split.length == 3) {
+                            let ap = parseInt(split[0]);
+                            let aap = parseInt(split[1]);
+                            let dp = parseInt(split[2]);
+                            if (Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
+                                let player = new Player(message.member, classToFind, ap, aap, dp);
+                                players = players.filter(currentPlayer => !currentPlayer.equals(player));
+                                players.push(player);
+                            } else {
+                                interactions.wSendAuthor(message.author, "Some stats are way too high, cheater !");
+                            }
                         } else {
-                            interactions.wSendAuthor(message.author, "Some stats are way too high, cheater !");
+                            interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `[classname] [ap] [aap] [dp]`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                         }
                     } else {
-                        interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `[classname] [ap] [aap] [dp]`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
+                        interactions.wSendAuthor(message.author, enteredCommand.split(" ")[0] + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                     }
-                } else {
-                    interactions.wSendAuthor(message.author, enteredCommand.split(" ")[0] + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
+
                 }
             }
             deleteCommand(message);
@@ -341,8 +318,8 @@ async function onMessageHandler(message, botMsg, annCache) {
                 await refreshBotMsg(myGear, botMsg, players);
             }, configjson["refreshDelay"]);
         } else {
-            // ---------- ALL CHANNELS ----------
-            if (enteredCommand.startsWith("?") && checkIntPermission(message)) {
+            // === ALL CHANNELS ===
+            if (enteredCommand.startsWith("?")) {
                 commands = itemsjson["commands"]["any"]["guest"];
                 enteredCommand = enteredCommand.substr(1);
                 let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
@@ -369,21 +346,7 @@ async function onMessageHandler(message, botMsg, annCache) {
                                 break;
                             }
                         }
-                        let medal = "";
-                        switch (i) {
-                            case 0:
-                                medal = ":first_place:";
-                                break;
-                            case 1:
-                                medal = ":second_place:";
-                                break;
-                            case 2:
-                                medal = ":third_place:";
-                                break;
-                            default:
-                                break;
-                        }
-                        interactions.wSendChannel(message.channel, (medal ? medal : "#" + (i + 1)) + " " + displayFullPlayer(playersFound[0]));
+                        interactions.wSendChannel(message.channel, displayFullPlayer(playersFound[0]));
                     } else {
                         interactions.wSendChannel(message.channel, "Couldn't find this player.");
                     }
@@ -395,114 +358,36 @@ async function onMessageHandler(message, botMsg, annCache) {
                         message.react("✅");
                         interactions.wSendChannel(message.channel, getStatsEmbed(players));
                     }
+                } else if (enteredCommand == commands["sub"]) {
+                    let rolename = args;
+                    if (rolename == configjson["whalesrole"] || rolename == configjson["lewdrole"] || rolename == configjson["sailiesrole"]) {
+                        let role = message.guild.roles.find(x => x.name == rolename.charAt(0).toUpperCase() + rolename.slice(1));
+                        if (message.member.roles.has(role.id)) {
+                            try {
+                                await message.member.removeRole(role);
+                                interactions.wSendChannel(message.channel, rolename + ' role removed.');
+                                logger.log('ROLE: ' + rolename + ' role removed from ' + message.author.tag);
+                                message.react('✅');
+                            } catch (e) {
+                                interactions.wSendChannel(message.channel, rolename + ' role not found or not self-assignable.');
+                            }
+                        } else {
+                            try {
+                                await message.member.addRole(role);
+                                interactions.wSendChannel(message.channel, rolename + ' role added.');
+                                logger.log('ROLE: ' + rolename + ' role added to ' + message.author.tag);
+                                message.react('✅');
+                            } catch (e) {
+                                interactions.wSendChannel(message.channel, rolename + ' role not found or not self-assignable.');
+                            }
+                        }
+                    }
                 }
             }
         }
     } catch (e) {
         logger.logError("On message listener error. Something really bad went wrong", e);
     }
-}
-
-/*
---------------------------------------- HISTORY section ---------------------------------------
-*/
-
-/**
- * @param {{reference : any}} annCache 
- */
-async function cacheAnnouncements(annCache) {
-    await myAnnouncement.fetchMessages({ limit: 100 }).then(messages => {
-        annCache.reference = messages;
-        let presence = "";
-        if (messages) {
-            messages.array().slice().reverse().forEach(message => {
-                if (message.content.length <= 20) {
-                    presence = message.content;
-                }
-            });
-            if (!presence) {
-                presence = "Check announcements";
-            }
-            try {
-                bot.user.setPresence({
-                    game:
-                    {
-                        name: presence,
-                        type: "PLAYING"
-                    }
-                });
-            } catch (e) {
-                logger.logError("Game status error", e);
-            }
-        }
-    });
-}
-
-/**
- * @param {Discord.Message} message 
- * @returns an embed containing info about the message
- */
-async function getHistoryEmbed(message) {
-    const embed = new Discord.RichEmbed();
-    let embedColor = 3447003;
-    embed.setColor(embedColor);
-    embed.setAuthor(message.author.tag, message.author.avatarURL);
-    embed.setDescription(message.content);
-    embed.setTimestamp(message.editedTimestamp ? message.editedTimestamp : message.createdTimestamp);
-    message.attachments.forEach(attachment => {
-        embed.attachFile("./download/" + message.id + "/" + attachment.filename);
-    });
-    message.reactions.forEach(async reaction => {
-        let users = "";
-        await reaction.fetchUsers();
-        reaction.users.forEach(user => {
-            users += user + "\n";
-        });
-        if (users) {
-            embed.addField(reaction.emoji, users, true);
-        }
-    });
-    return embed;
-}
-
-/**
- * downloads files attached to the message and put it in download/messageid
- * @param {Discord.Message} message
- */
-async function downloadFilesFromMessage(message) {
-    return new Promise(async (resolve, reject) => {
-        if (message.attachments.size > 0) {
-            await message.attachments.forEach(async element => {
-                try {
-                    if (!fs.existsSync("./download/" + message.id + "/")) {
-                        fs.mkdirSync("./download/" + message.id + "/");
-                    }
-                    await files.download(element.url, "./download/" + message.id + "/" + element.filename, () => { });
-                    resolve();
-                } catch (e) {
-                    logger.logError("Could not download " + element.filename + " file", e);
-                    reject();
-                }
-            });
-            setTimeout(() => {
-                reject();
-            }, 30000);
-        } else {
-            reject();
-        }
-    });
-}
-
-/**
- * 
- * @param {Discord.Collection<string,Discord.MessageReaction>} messageReactions
- */
-async function getReactions(messageReactions) {
-    let res = "";
-    messageReactions.forEach(reaction => {
-        //TODO
-    });
-    return res ? res : "No reactions";
 }
 
 /*
@@ -517,7 +402,7 @@ async function generateSignUpMessages(num) {
     for (let i = 0; i < num; i++) {
         let date = new Date();
         date.setDate(date.getDate() + i); // get the next day
-        let content = util.findCorrespondingDayName(date.getDay()) + " - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth()+1) + "." + date.getFullYear();
+        let content = util.findCorrespondingDayName(date.getDay()) + " - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth() + 1) + "." + date.getFullYear();
         let message = await interactions.wSendChannel(mySignUp, content);
         await message.react(configjson["yesreaction"]);
         await message.react(configjson["noreaction"]);
@@ -781,26 +666,11 @@ async function newBotMessage(channel, content) {
  */
 async function clearChannel(channel) {
     let deleteCount = 100;
-    let moreMessages = true;
-    bot.setTimeout(() => {
-        moreMessages = false;
-    }, 2500);
-    while (moreMessages) {
-        try {
-            channel.bulkDelete(deleteCount, true);
-            logger.log("INFO: Deleted " + deleteCount + " messages in " + channel);
-            moreMessages = false;
-            //lookup for more messages
-            await channel.fetchMessages({ limit: 1 }).then(messages => {
-                messages.forEach(() => {
-                    //atleast one message found = channel not cleared => delete more
-                    moreMessages = true;
-                });
-            });
-        } catch (e) {
-            logger.logError("bulkDelete error", e);
-            moreMessages = false;
-        }
+    try {
+        channel.bulkDelete(deleteCount, true);
+        logger.log("INFO: Deleted " + deleteCount + " messages in " + channel);
+    } catch (e) {
+        logger.logError("bulkDelete error", e);
     }
 }
 
@@ -915,6 +785,33 @@ function countClassNames(players, classname) {
 --------------------------------------- GENERAL section ---------------------------------------
 */
 
+async function updatePresence() {
+    await myAnnouncement.fetchMessages({ limit: 5 }).then(messages => {
+        let presence = "";
+        if (messages) {
+            messages.array().slice().reverse().forEach(message => {
+                if (message.content.length <= 20) {
+                    presence = message.content;
+                }
+            });
+            if (!presence) {
+                presence = "Check announcements";
+            }
+            try {
+                bot.user.setPresence({
+                    game:
+                    {
+                        name: presence,
+                        type: "PLAYING"
+                    }
+                });
+            } catch (e) {
+                logger.logError("Game status error", e);
+            }
+        }
+    });
+}
+
 /**
  * @param {any[]} list 
  * @param {function} comparator 
@@ -949,7 +846,7 @@ function avg(list, aggregate) {
  * @param {Discord.Message} message 
  */
 async function deleteCommand(message) {
-    if (!message.content.startsWith("! ") || (message.content.startsWith("! ") && !await checkAdvPermission(message))) {
+    if ((!message.content.startsWith("! ") || (message.content.startsWith("! ") && !await checkAdvPermission(message))) && message.author.id != bot.user.id) {
         bot.setTimeout(async () => {
             await interactions.wDelete(message);
         }, configjson["deleteDelay"]);
@@ -1081,7 +978,6 @@ if (configjson && itemsjson) {
     var mySignUp;
     var mySignUpData;
     var myAnnouncement;
-    var myAnnouncementData;
     var players = [];
     var classEmojis = [];
     var loading = 1000;
@@ -1120,10 +1016,9 @@ if (configjson && itemsjson) {
             mySignUp = bot.channels.get(configjson["signUpID"]);
             mySignUpData = bot.channels.get(configjson["signUpDataID"]);
             myAnnouncement = bot.channels.get(configjson["announcementID"]);
-            myAnnouncementData = bot.channels.get(configjson["announcementDataID"]);
 
             logger.log("INFO: Booting up attempt...");
-            if (myServer && myGate && myGear && myGearData && classEmojis && mySignUp && mySignUpData && myAnnouncement && myAnnouncementData) {
+            if (myServer && myGate && myGear && myGearData && classEmojis && mySignUp && mySignUpData && myAnnouncement) {
                 clearInterval(interval);
                 logger.log("INFO: ... success !");
 
