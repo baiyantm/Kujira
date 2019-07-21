@@ -300,7 +300,7 @@ async function onMessageHandler(message, botMsg) {
                                 players = players.filter(currentPlayer => !currentPlayer.equals(player));
                                 players.push(player);
                             } else {
-                                interactions.wSendAuthor(message.author, "Some stats are way too high, cheater !");
+                                interactions.wSendAuthor(message.author, "Some stats are too high or not numbers.");
                             }
                         } else {
                             interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `[classname] [ap] [aap] [dp]`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
@@ -319,7 +319,7 @@ async function onMessageHandler(message, botMsg) {
             }, configjson["refreshDelay"]);
         } else {
             // === ALL CHANNELS ===
-            if (enteredCommand.startsWith("?")) {
+            if (enteredCommand.startsWith("?") && checkIntPermission(message)) {
                 commands = itemsjson["commands"]["any"]["guest"];
                 enteredCommand = enteredCommand.substr(1);
                 let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
@@ -858,12 +858,10 @@ async function deleteCommand(message) {
  * @param {Discord.Message} message the original message
  * @returns true if user is allowed, false if not
  */
-async function checkIntPermission(message) {
+function checkIntPermission(message) {
     let allowed = false;
     if (message.member.roles.find(x => x.name == "Members")) {
         allowed = true;
-    } else {
-        await interactions.wSendAuthor(message.author, 'Insufficient permissions.');
     }
     return allowed;
 }
