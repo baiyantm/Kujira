@@ -2,7 +2,7 @@
  * Player class (member: GuildMember, classname: string, ap: string, aap: string, dp:string)
  */
 module.exports = class Player {
-    constructor(member, classname, ap, aap, dp) {
+    constructor(member, classname, ap, aap, dp, hidden) {
         //id can be null
         this.id = member ? member.id : undefined;
         this.name = member ? member.displayName : "default";
@@ -10,13 +10,29 @@ module.exports = class Player {
         this.ap = ap;
         this.aap = aap;
         this.dp = dp;
+        this.hidden = hidden;
 
         /**
          * @returns a string with the name + indication whether driver
          */
         this.display = function () {
-            return this.name + " " + this.ap + " / " + this.aap + " / " + this.dp;
+            return this.hidden ? this.name : this.name + " " + this.valueFormat(this.ap) + " / " + this.valueFormat(this.aap) + " / " + this.valueFormat(this.dp);
         };
+
+        /**
+         * @param {number} value
+         * @returns 00 + value if < 10, 0 + value if < 100
+         */
+        this.valueFormat = function (value) {
+            if (value < 10) {
+                value = "0" + value;
+            }
+            if (value < 100) {
+                value = "0" + value;
+            }
+            return value;
+        }
+
         /**
          * compares two players to see if they're the same person (their id is the same or else their name is the same)
          * @param {Player} player
@@ -40,14 +56,14 @@ module.exports = class Player {
          * @returns (ap+aap)/2
          */
         this.getRealAP = function () {
-            return Math.round((parseInt(ap) + parseInt(aap)) / 2);
+            return this.hidden ? null : Math.round((parseInt(ap) + parseInt(aap)) / 2);
         }
 
         /**
          * @returns sum of real ap+dp
          */
         this.getGS = function () {
-            return Math.round(this.getRealAP() + parseInt(dp));
+            return this.hidden ? null : Math.round(this.getRealAP() + parseInt(dp));
         }
     }
 }

@@ -11,10 +11,10 @@ var Player = require('./classes/Player');
 async function initLookout() {
     logger.log("INFO: Initializing lookout ...");
 
-    bot.user.setPresence({ game: { name: "a successful bootup !" } });
+    bot.user.setPresence({ game: { name: "up" } });
 
     if (myAnnouncement) {
-        updatePresence();
+        setupPresence();
     }
 
     var botMsg = { reference: null }; //because JavaScript
@@ -42,14 +42,9 @@ async function initLookout() {
 
     bot.on("messageReactionAdd", async messageReaction => onReactionHandler(messageReaction));
 
-    //bot.on("messageUpdate", async (oldMessage, newMessage) => onEditHandler(newMessage, annCache));
-
-    //bot.on("messageDelete", async deletedMessage => onDeleteHandler(deletedMessage, annCache));
-
     bot.on('raw', packet => {
         // We don't want this to run on unrelated packets
-        if (!['MESSAGE_REACTION_ADD'].includes(packet.t) && !['MESSAGE_UPDATE'].includes(packet.t)
-            && !['MESSAGE_DELETE'].includes(packet.t)) {
+        if (!['MESSAGE_REACTION_ADD'].includes(packet.t)) {
             return;
         } else {
             if (['MESSAGE_REACTION_ADD'].includes(packet.t)) {
@@ -70,24 +65,6 @@ async function initLookout() {
                     // Check which type of event it is before emitting
                     bot.emit('messageReactionAdd', reaction, bot.users.get(packet.d.user_id));
                 });
-            } else if (['MESSAGE_UPDATE'].includes(packet.t)) {
-                const channel = bot.channels.get(packet.d.channel_id);
-                // There's no need to emit if the message is cached, because the event will fire anyway for that
-                // @ts-ignore
-                if (channel.messages.has(packet.d.id)) return;
-                // Since we have confirmed the message is not cached, let's fetch it
-                // @ts-ignore
-                channel.fetchMessage(packet.d.id).then(message => {
-                    bot.emit('messageUpdate', null, message);
-                });
-            } else if (['MESSAGE_DELETE'].includes(packet.t)) {
-                const channel = bot.channels.get(packet.d.channel_id);
-                // There's no need to emit if the message is cached, because the event will fire anyway for that
-                // @ts-ignore
-                if (channel.messages.has(packet.d.id)) return;
-                // Since we have confirmed the message is not cached, let's fetch it
-                // @ts-ignore
-                bot.emit('messageDelete', { channel: { id: packet.d.channel_id }, id: packet.d.id });
             }
         }
     });
@@ -171,9 +148,6 @@ async function onMessageHandler(message, botMsg) {
     var commands;
     let enteredCommand = message.content.toLowerCase();
     try {
-        if (message.channel.id == myAnnouncement.id) {
-            updatePresence();
-        }
         if (message.channel.id == myGate.id) {
             // === GATE ===
             commands = itemsjson["commands"]["gate"]["guest"];
@@ -250,7 +224,7 @@ async function onMessageHandler(message, botMsg) {
                     let split = args.split(" ");
                     if (split.length == 5) {
                         let member = null;
-                        if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
+                        if (message.mentions.members.size == 1) {
                             member = message.mentions.members.first();
                         }
                         let classToFind = itemsjson["classlist"].find(currentclassname => currentclassname == split[1]);
@@ -260,7 +234,7 @@ async function onMessageHandler(message, botMsg) {
                             let aap = parseInt(split[3]);
                             let dp = parseInt(split[4]);
                             if (Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
-                                let player = new Player(member, classToFind, ap, aap, dp);
+                                let player = new Player(member, classToFind, ap, aap, dp, false);
                                 if (!member) {
                                     player.name = name;
                                 }
@@ -293,14 +267,18 @@ async function onMessageHandler(message, botMsg) {
                             let aap = parseInt(split[1]);
                             let dp = parseInt(split[2]);
                             if (Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
-                                let player = new Player(message.member, classToFind, ap, aap, dp);
+                                let player = new Player(message.member, classToFind, ap, aap, dp, false);
                                 players = players.filter(currentPlayer => !currentPlayer.equals(player));
                                 players.push(player);
                             } else {
                                 interactions.wSendAuthor(message.author, "Some stats are too high or not numbers.");
                             }
+                        } else if (split.length == 1) {
+                            let player = new Player(message.member, classToFind, null, null, null, true);
+                            players = players.filter(currentPlayer => !currentPlayer.equals(player));
+                            players.push(player);
                         } else {
-                            interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `[classname] [ap] [aap] [dp]`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
+                            interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `[classname] [ap] [aap] [dp]` or `[classname]`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                         }
                     } else {
                         interactions.wSendAuthor(message.author, enteredCommand.split(" ")[0] + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
@@ -325,24 +303,13 @@ async function onMessageHandler(message, botMsg) {
                     message.react("✅");
                     let player;
                     if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
-                        player = new Player(message.mentions.members.first());
+                        player = new Player(message.mentions.members.first(), false);
                     } else {
                         player = new Player();
                         player.name = args;
                     }
                     let playersFound = players.filter(currentPlayer => currentPlayer.equals(player));
                     if (playersFound.length > 0) {
-                        //sort by gs - highest to lowest
-                        let sortedPlayers = players.sort((a, b) => {
-                            return b.getGS() - a.getGS();
-                        });
-                        let i = 0;
-                        for (i; i < sortedPlayers.length; i++) {
-                            let player = sortedPlayers[i];
-                            if (playersFound[0].equals(player)) {
-                                break;
-                            }
-                        }
                         interactions.wSendChannel(message.channel, displayFullPlayer(playersFound[0]));
                     } else {
                         interactions.wSendChannel(message.channel, "Couldn't find this player.");
@@ -680,33 +647,34 @@ function getStatsEmbed(players, classname) {
     let embedColor = 3447003;
     embed.setColor(embedColor);
     embed.setTitle(embedTitle);
-    if (players.length > 0) {
 
-        let minAP = compare(players, (min, player) => {
+    let playersWithoutHidden = players.filter(currentPlayer => !currentPlayer.hidden);
+    if (playersWithoutHidden.length > 0) {
+        let minAP = compare(playersWithoutHidden, (min, player) => {
             return min.getRealAP() > player.getRealAP();
         });
-        let minDP = compare(players, (min, player) => {
+        let minDP = compare(playersWithoutHidden, (min, player) => {
             return min.dp > player.dp;
         });
-        let minGS = compare(players, (min, player) => {
+        let minGS = compare(playersWithoutHidden, (min, player) => {
             return min.getGS() > player.getGS();
         });
-        let maxAP = compare(players, (max, player) => {
+        let maxAP = compare(playersWithoutHidden, (max, player) => {
             return max.getRealAP() < player.getRealAP();
         });
-        let maxDP = compare(players, (max, player) => {
+        let maxDP = compare(playersWithoutHidden, (max, player) => {
             return max.dp < player.dp;
         });
-        let maxGS = compare(players, (max, player) => {
+        let maxGS = compare(playersWithoutHidden, (max, player) => {
             return max.getGS() < player.getGS();
         });
-        let avgAP = avg(players, player => {
+        let avgAP = avg(playersWithoutHidden, player => {
             return player.ap;
         });
-        let avgAAP = avg(players, player => {
+        let avgAAP = avg(playersWithoutHidden, player => {
             return player.aap;
         });
-        let avgDP = avg(players, player => {
+        let avgDP = avg(playersWithoutHidden, player => {
             return player.dp;
         });
         if (!classname) {
@@ -782,18 +750,14 @@ function countClassNames(players, classname) {
 --------------------------------------- GENERAL section ---------------------------------------
 */
 
-async function updatePresence() {
-    await myAnnouncement.fetchMessages({ limit: 5 }).then(messages => {
-        let presence = "";
-        if (messages) {
-            messages.array().slice().reverse().forEach(message => {
-                if (message.content.length <= 20) {
-                    presence = message.content;
-                }
-            });
-            if (!presence) {
-                presence = "Check announcements";
-            }
+async function setupPresence() {
+    bot.setInterval(async () => {
+        await myAnnouncement.fetchMessages({ limit: 1 }).then(messages => {
+            let message = messages.first();
+            let issuedTimestamp = message.editedTimestamp ? message.editedTimestamp : message.createdTimestamp;
+            let startDate = new Date();
+            let seconds = (issuedTimestamp - startDate.getTime()) / 1000;
+            let presence = seconds > 864000 ? "Check announcements" : "Announcement " + util.displayHoursMinBefore(Math.abs(Math.round(seconds / 60))) + " ago";
             try {
                 bot.user.setPresence({
                     game:
@@ -805,8 +769,8 @@ async function updatePresence() {
             } catch (e) {
                 logger.logError("Game status error", e);
             }
-        }
-    });
+        });
+    }, 60000);
 }
 
 /**
@@ -885,13 +849,14 @@ async function checkAdvPermission(message) {
  * @param {string} ap
  * @param {string} aap
  * @param {string} dp
+ * @param {boolean} hidden
  * @returns a player object with the given data
  */
-async function revivePlayer(id, name, classname, ap, aap, dp) {
+async function revivePlayer(id, name, classname, ap, aap, dp, hidden) {
     if (id) {
-        return new Player(await myServer.fetchMember(await bot.fetchUser(id)), classname, ap, aap, dp);
+        return new Player(await myServer.fetchMember(await bot.fetchUser(id)), classname, ap, aap, dp, hidden);
     } else {
-        let player = new Player(null, classname, ap, aap, dp);
+        let player = new Player(null, classname, ap, aap, dp, hidden);
         player.name = name;
         return player;
     }
@@ -998,7 +963,7 @@ if (configjson && itemsjson) {
         var playersjson = files.openJsonFile("./download/players.json", "utf8");
         if (playersjson) {
             playersjson.forEach(async currentPlayer => {
-                players.push(await revivePlayer(currentPlayer["id"], currentPlayer["name"], currentPlayer["classname"], currentPlayer["ap"], currentPlayer["aap"], currentPlayer["dp"]));
+                players.push(await revivePlayer(currentPlayer["id"], currentPlayer["name"], currentPlayer["classname"], currentPlayer["ap"], currentPlayer["aap"], currentPlayer["dp"], currentPlayer["hidden"]));
             });
         }
 
