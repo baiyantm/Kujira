@@ -35,7 +35,7 @@
         }
     },
     "guidelines" : "Welcome to Kujiratori discord, if you are there for mercing please contact an officer if not already done.\nIf you want access to the nsfw-lewd channel, type `?sub lewd` in the discord",
-    "gearhelp": "The bot commands are the following :\n`[classname] [ap] [aap] [dp]` in #gear - register your class and gear in the list, replace any previous entry\n`?gear [name]` (any channel) - show the gear of the player by name\n`?gear [mention]` (any channel) - show the gear of the player by mention\n`?stats` (any channel) - show stats for all classes\n`?stats [classname]` (any channel) - show stats for specified class",
+    "gearhelp": "The bot commands are the following :\n`[classname] [ap] [aap] [dp]` - register your class and gear in the list, replace any previous entry\nor `[classname]` - register your class in the list, replace any previous entry\n`?gear [name]` (any channel) - show the gear of the player by name\n`?gear [mention]` (any channel) - show the gear of the player by mention\n`?stats` (any channel) - show stats for all classes\n`?stats [classname]` (any channel) - show stats for specified class",
     "classlist": [
         "warrior",
         "sorceress",
