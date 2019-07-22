@@ -303,7 +303,7 @@ async function onMessageHandler(message, botMsg) {
                     message.react("✅");
                     let player;
                     if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
-                        player = new Player(message.mentions.members.first(), false);
+                        player = new Player(message.mentions.members.first());
                     } else {
                         player = new Player();
                         player.name = args;
