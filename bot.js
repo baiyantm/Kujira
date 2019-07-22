@@ -273,7 +273,7 @@ async function onMessageHandler(message, botMsg) {
                             } else {
                                 interactions.wSendAuthor(message.author, "Some stats are too high or not numbers.");
                             }
-                        } else if (split.length == 1) {
+                        } else if (!args) {
                             let player = new Player(message.member, classToFind, null, null, null, true);
                             players = players.filter(currentPlayer => !currentPlayer.equals(player));
                             players.push(player);
