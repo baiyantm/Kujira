@@ -19,7 +19,7 @@ function findCorrespondingDayName(number) {
 
 /**
  * @param {string} string  
-*  @returns number corresponding to the day of a given string (Sun => 0, Mon => 1...), null if not found
+*  @returns number corresponding to the day of a given string (sun => 0, mon => 1...), null if not found
  */
 function findCorrespondingDayNumber(string) {
     if (string.startsWith('sun')) {

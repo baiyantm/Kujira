@@ -179,7 +179,14 @@ async function onMessageHandler(message, botMsg) {
                 } else if (enteredCommand == commands["dump"]) {
                     //manually dumps data into data channel
                     deleteCommand(message);
-                    await saveSignUp();
+                    let day;
+                    if (args) {
+                        day = util.findCorrespondingDayNumber(args);
+                    } else {
+                        let today = new Date();
+                        day = today.getDay();
+                    }
+                    await saveSignUp(day);
                 } else if (enteredCommand == commands["bulk"]) {
                     deleteCommand(message);
                     await bulkSignUpMessages(args ? args : configjson["defaultDay"]);
@@ -315,12 +322,49 @@ async function onMessageHandler(message, botMsg) {
                         interactions.wSendChannel(message.channel, "Couldn't find this player.");
                     }
                 } else if (enteredCommand == commands["stats"] && checkIntPermission(message)) {
-                    if (itemsjson["classlist"].includes(args)) {
-                        message.react("✅");
-                        interactions.wSendChannel(message.channel, getStatsEmbed(players, args));
-                    } else if (!args) {
-                        message.react("✅");
-                        interactions.wSendChannel(message.channel, getStatsEmbed(players));
+                    let split = args.split(" ");
+                    //split.lenght cannot be 0 here
+                    if (split.length <= 2) {
+                        if (split.length == 1) {
+                            if (itemsjson["classlist"].includes(args) || !args) {
+                                message.react("✅");
+                                interactions.wSendChannel(message.channel, getStatsEmbed(players, args));
+                            } else {
+                                let day;
+                                if (args == "today") {
+                                    let today = new Date();
+                                    day = today.getDay();
+                                } else if (util.findCorrespondingDayNumber(args) != null) {
+                                    day = util.findCorrespondingDayNumber(args);
+                                }
+                                if (day != null) {
+                                    message.react("✅");
+                                    let playersGear = await getSignedUpPlayersGears(day, players);
+                                    if (playersGear) {
+                                        interactions.wSendChannel(message.channel, getSignedUpStatsEmbed(playersGear, args, day));
+                                    } else {
+                                        interactions.wSendChannel(message.channel, "No message found for " + util.findCorrespondingDayName(day));
+                                    }
+                                }
+                            }
+                        } else {
+                            let className = itemsjson["classlist"].includes(split[0]) ? split[0] : (itemsjson["classlist"].includes(split[1]) ? split[1] : null);
+                            let today = new Date();
+                            let possibleDay0 = split[0] == "today" ? today.getDay() : util.findCorrespondingDayNumber(split[0]);
+                            let possibleDay1 = split[1] == "today" ? today.getDay() : util.findCorrespondingDayNumber(split[1]);
+                            let day = possibleDay0 ? possibleDay0 : (possibleDay1 ? possibleDay1 : null);
+                            message.react("✅");
+                            if (day != null && className != null) {
+                                let playersGear = await getSignedUpPlayersGears(day, players);
+                                if (playersGear) {
+                                    interactions.wSendChannel(message.channel, getSignedUpStatsEmbed(playersGear, className, day));
+                                } else {
+                                    interactions.wSendChannel(message.channel, "No message found for " + util.findCorrespondingDayName(day));
+                                }
+                            } else {
+                                interactions.wSendChannel(message.channel, "Incorrect request");
+                            }
+                        }
                     }
                 } else if (enteredCommand == commands["sub"]) {
                     let rolename = args;
@@ -351,6 +395,80 @@ async function onMessageHandler(message, botMsg) {
         }
     } catch (e) {
         logger.logError("On message listener error. Something really bad went wrong", e);
+    }
+}
+
+/*
+--------------------------------------- SIGNUP&GEAR section ---------------------------------------
+*/
+
+function getSignedUpStatsEmbed(players, classname, day) {
+    if (itemsjson["classlist"].includes(classname)) {
+        players = players.filter(currentPlayer => currentPlayer.classname == classname);
+    } else {
+        classname = null;
+    }
+    const embed = new Discord.RichEmbed();
+    let embedTitle = ":pencil: STATS on " + util.findCorrespondingDayName(day) + (classname ? " for " + classname.charAt(0).toUpperCase() + classname.slice(1) : "");
+    let embedColor = 3447003;
+    embed.setColor(embedColor);
+    embed.setTitle(embedTitle);
+
+    let playersWithoutHidden = players.filter(currentPlayer => !currentPlayer.hidden);
+    if (playersWithoutHidden.length > 0) {
+        let avgAP = avg(playersWithoutHidden, player => {
+            return player.ap;
+        });
+        let avgAAP = avg(playersWithoutHidden, player => {
+            return player.aap;
+        });
+        let avgDP = avg(playersWithoutHidden, player => {
+            return player.dp;
+        });
+        if (!classname) {
+            let classes = [];
+            itemsjson["classlist"].forEach(currentClass => {
+                classes.push({ "className": currentClass, "count": countClassNames(players, currentClass) });
+            });
+            classes.sort((a, b) => {
+                return b["count"] - a["count"];
+            });
+            let classText = "";
+            classes.forEach(currentClass => {
+                classText += currentClass["count"] + "x " + classEmojis.find(emoji => emoji.name == currentClass["className"]) + " " + currentClass["className"].charAt(0).toUpperCase() + currentClass["className"].slice(1) + "\n";
+            });
+            embed.addField("Class list :", classText, true);
+        }
+        embed.addField("Average gear :", avgAP + " / " + avgAAP + " / " + avgDP, false);
+    } else {
+        embed.setDescription("Empty player list.");
+    }
+    return embed;
+}
+
+/**
+ * 
+ * @param {number} day 
+ * @param {Player[]} players 
+ * @returns the players if found, null if not
+ */
+async function getSignedUpPlayersGears(day, players) {
+    let signUps = await getDaySignUp(day);
+    if (signUps) {
+        let presentPlayers = [];
+        signUps.forEach(player => {
+            if (player[util.findCorrespondingDayName(day)] == "yes") {
+                for (let i = 0; i < players.length; i++) {
+                    if (player.id == players[i].id) {
+                        presentPlayers.push(players[i]);
+                        break;
+                    }
+                }
+            }
+        });
+        return presentPlayers;
+    } else {
+        return null;
     }
 }
 
@@ -400,7 +518,8 @@ function setupSignUpSchedule() {
     let dd = (today.getDay() + Number(util.isNextDay(configjson["hourSignup"]))) % 7;
     let minUntilSave = util.getMinUntil(dd, configjson["hourSignup"], 0);
     bot.setTimeout(async () => {
-        await saveSignUp();
+        let today = new Date();
+        await saveSignUp(today.getDay());
         setupSignUpSchedule();
     }, minUntilSave * 60 * 1000);
     logger.log("INFO: Sign ups save schedule set");
@@ -408,13 +527,12 @@ function setupSignUpSchedule() {
 
 /**
  * gets a signup object from the message
- * @param {Date} day 
- * @returns
+ * @param {number} day 
+ * @returns any[{ "name": [], "id": [], [dayStr]: [] }]
  */
 async function getDaySignUp(day) {
-    let dayStr = util.findCorrespondingDayName(day.getDay());
+    let dayStr = util.findCorrespondingDayName(day);
     let signUps = [];
-    //let signUps = { "name": [], "id": [], [dayStr]: [] };
     let reactionMessage = await getDaySignUpMessage(day, mySignUp);
     if (reactionMessage) {
         let yesReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
@@ -487,21 +605,24 @@ function signUpsHasId(signUps, id) {
 }
 
 /**
- * @param {Date} date 
+ * @param {number} day 
  * @param {Discord.TextChannel} channel 
  * @returns the message containing the day, null if none
  */
-async function getDaySignUpMessage(date, channel) {
+async function getDaySignUpMessage(day, channel) {
     let message;
-    let dateName = util.findCorrespondingDayName(date.getDay()).toLowerCase();
+    let dateName = util.findCorrespondingDayName(day).toLowerCase();
     await channel.fetchMessages({ limit: 100 }).then(async messages => {
         message = await messages.find(message => message.content.toLowerCase().startsWith(dateName));
     });
     return message;
 }
 
-async function saveSignUp() {
-    let signUps = await getDaySignUp(new Date());
+/**
+ * @param {number} day 
+ */
+async function saveSignUp(day) {
+    let signUps = await getDaySignUp(day);
     if (signUps) {
         signUps.sort((a, b) => {
             return a.id - b.id;
@@ -517,7 +638,7 @@ async function saveSignUp() {
             ]
         });
     } else {
-        interactions.wSendChannel(mySignUpData, "No message found for today.");
+        interactions.wSendChannel(mySignUpData, "No message found for " + util.findCorrespondingDayName(day));
     }
 }
 
