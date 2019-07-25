@@ -828,7 +828,7 @@ function getStatsEmbed(players, classname) {
 
 function getPlayersEmbed(players) {
     const embed = new Discord.RichEmbed();
-    let embedTitle = ":star: PLAYERS";
+    let embedTitle = ":star: PLAYERS (" + players.length + ")";
     let embedColor = 3447003;
     embed.setColor(embedColor);
     embed.setTitle(embedTitle);
