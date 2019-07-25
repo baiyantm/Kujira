@@ -439,7 +439,7 @@ function getSignedUpStatsEmbed(players, classname, day) {
             });
             embed.addField("Class list :", classText, true);
         }
-        embed.addField("Average gear :", avgAP + " / " + avgAAP + " / " + avgDP, false);
+        embed.addField("Average gear :", avgAP + " / " + avgAAP + " / " + avgDP, true);
     } else {
         embed.setDescription("Empty player list.");
     }
