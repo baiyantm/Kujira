@@ -323,7 +323,7 @@ async function onMessageHandler(message, botMsg) {
                     }
                 } else if (enteredCommand == commands["stats"] && checkIntPermission(message)) {
                     let split = args.split(" ");
-                    //split.lenght cannot be 0 here
+                    //split.length cannot be 0 here
                     if (split.length <= 2) {
                         if (split.length == 1) {
                             if (itemsjson["classlist"].includes(args) || !args) {
@@ -416,6 +416,7 @@ function getSignedUpStatsEmbed(players, classname, day) {
 
     let playersWithoutHidden = players.filter(currentPlayer => !currentPlayer.hidden);
     if (playersWithoutHidden.length > 0) {
+        embed.setDescription("Total players : " + playersWithoutHidden.length + " " + (playersWithoutHidden.length == players.length ? "" : (" (" + players.length + ")")));
         let avgAP = avg(playersWithoutHidden, player => {
             return player.ap;
         });
