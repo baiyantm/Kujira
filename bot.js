@@ -440,7 +440,7 @@ function getSignedUpStatsEmbed(players, classname, day) {
             });
             embed.addField("Class list :", classText, true);
         }
-        embed.addField("Average gear :", avgAP + " / " + avgAAP + " / " + avgDP, true);
+        embed.addField("Average gear :", util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
     } else {
         embed.setDescription("Empty player list.");
     }
@@ -813,7 +813,7 @@ function getStatsEmbed(players, classname) {
                 classEmojis.find(emoji => emoji.name == minClass) + " " + minClass.charAt(0).toUpperCase() + minClass.slice(1) + " (" + countClassNames(players, minClass) + ")",
                 true);
         }
-        embed.addField("Average gear :", avgAP + " / " + avgAAP + " / " + avgDP, false);
+        embed.addField("Average gear :", util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
         embed.addField("Highest GS : " + maxGS.getGS(), displayFullPlayer(maxGS), true);
         embed.addField("Highest AP : " + maxAP.getRealAP(), displayFullPlayer(maxAP), true);
         embed.addField("Highest DP : " + maxDP.dp, displayFullPlayer(maxDP), true);

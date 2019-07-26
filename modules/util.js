@@ -152,6 +152,18 @@ function displayHoursMinBefore(time) {
     }
 }
 
+/**
+ * @param {string} string
+ * @param {number} value
+ * @returns 00 + value if < 10, 0 + value if < 100
+ */
+function valueFormat(string, value) {
+    if (string < value) {
+        string = "0" + string;
+    }
+    return string;
+}
+
 module.exports.findCorrespondingDayName = findCorrespondingDayName;
 module.exports.findCorrespondingDayNumber = findCorrespondingDayNumber;
 module.exports.fillUpSpace = fillUpSpace;
@@ -162,3 +174,4 @@ module.exports.diffDays = diffDays;
 module.exports.isNextDay = isNextDay;
 module.exports.zeroString = zeroString;
 module.exports.displayHoursMinBefore = displayHoursMinBefore;
+module.exports.valueFormat = valueFormat;
