@@ -17,6 +17,16 @@ async function initLookout() {
         setupPresence();
     }
 
+    var annCache = { reference: null }; //because JavaScript
+    await cacheAnnouncements(annCache);
+    annCache.reference.forEach(async message => {
+        try {
+            await downloadFilesFromMessage(message);
+        } catch (e) {
+            //nothing to dl
+        }
+    });
+
     var botMsg = { reference: null }; //because JavaScript
     //lookup for a previous message so we keep using it
     await myGear.fetchMessages({ limit: 100 }).then(messages => {
@@ -38,13 +48,18 @@ async function initLookout() {
 
     await refreshBotMsg(myGear, botMsg, players);
 
-    bot.on("message", async message => onMessageHandler(message, botMsg));
+    bot.on("message", async message => onMessageHandler(message, botMsg, annCache));
 
     bot.on("messageReactionAdd", async messageReaction => onReactionHandler(messageReaction));
 
+    bot.on("messageUpdate", async (oldMessage, newMessage) => onEditHandler(newMessage, annCache));
+
+    bot.on("messageDelete", async deletedMessage => onDeleteHandler(deletedMessage, annCache));
+
     bot.on('raw', packet => {
         // We don't want this to run on unrelated packets
-        if (!['MESSAGE_REACTION_ADD'].includes(packet.t)) {
+        if (!['MESSAGE_REACTION_ADD'].includes(packet.t) && !['MESSAGE_UPDATE'].includes(packet.t)
+            && !['MESSAGE_DELETE'].includes(packet.t)) {
             return;
         } else {
             if (['MESSAGE_REACTION_ADD'].includes(packet.t)) {
@@ -65,6 +80,24 @@ async function initLookout() {
                     // Check which type of event it is before emitting
                     bot.emit('messageReactionAdd', reaction, bot.users.get(packet.d.user_id));
                 });
+            } else if (['MESSAGE_UPDATE'].includes(packet.t)) {
+                const channel = bot.channels.get(packet.d.channel_id);
+                // There's no need to emit if the message is cached, because the event will fire anyway for that
+                // @ts-ignore
+                if (channel.messages.has(packet.d.id)) return;
+                // Since we have confirmed the message is not cached, let's fetch it
+                // @ts-ignore
+                channel.fetchMessage(packet.d.id).then(message => {
+                    bot.emit('messageUpdate', null, message);
+                });
+            } else if (['MESSAGE_DELETE'].includes(packet.t)) {
+                const channel = bot.channels.get(packet.d.channel_id);
+                // There's no need to emit if the message is cached, because the event will fire anyway for that
+                // @ts-ignore
+                if (channel.messages.has(packet.d.id)) return;
+                // Since we have confirmed the message is not cached, let's fetch it
+                // @ts-ignore
+                bot.emit('messageDelete', { channel: { id: packet.d.channel_id }, id: packet.d.id });
             }
         }
     });
@@ -91,6 +124,28 @@ async function initLookout() {
     logger.log("INFO: ... lookout initialization done");
 }
 
+/**
+ * listener for message edit
+ * @param {Discord.Message} newMessage 
+ * @param {{reference : any}} annCache 
+ */
+async function onEditHandler(newMessage, annCache) {
+    if (newMessage.channel.id == myAnnouncement.id) {
+        await cacheAnnouncements(annCache);
+    }
+}
+
+/**
+ * listener for message edit
+ * @param {Discord.Message} deletedMessage 
+ * @param {{reference : any}} annCache 
+ */
+async function onDeleteHandler(deletedMessage, annCache) {
+    if (deletedMessage.channel.id == myAnnouncement.id) {
+        await interactions.wSendChannel(myAnnouncementData, await getHistoryEmbed(deletedMessage));
+        await cacheAnnouncements(annCache);
+    }
+}
 
 /**
  * listener for emoji add event
@@ -101,13 +156,9 @@ async function onReactionHandler(messageReaction) {
         let message = messageReaction.message;
         let yesReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["yesreaction"]).first();
         let noReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["noreaction"]).first();
-        let maybeReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["maybereaction"]).first();
         if (messageReaction.emoji.name == configjson["noreaction"]) {
             let user = noReaction.users.last();
             if (user.id != bot.user.id && (await noReaction.fetchUsers()).get(user.id)) {
-                if (maybeReaction) {
-                    maybeReaction.remove(user);
-                }
                 if (yesReaction) {
                     yesReaction.remove(user);
                 }
@@ -116,20 +167,6 @@ async function onReactionHandler(messageReaction) {
         if (messageReaction.emoji.name == configjson["yesreaction"]) {
             let user = yesReaction.users.last();
             if (user.id != bot.user.id && (await yesReaction.fetchUsers()).get(user.id)) {
-                if (maybeReaction) {
-                    maybeReaction.remove(user);
-                }
-                if (noReaction) {
-                    noReaction.remove(user);
-                }
-            }
-        }
-        if (messageReaction.emoji.name == configjson["maybereaction"]) {
-            let user = maybeReaction.users.last();
-            if (user.id != bot.user.id && (await maybeReaction.fetchUsers()).get(user.id)) {
-                if (yesReaction) {
-                    yesReaction.remove(user);
-                }
                 if (noReaction) {
                     noReaction.remove(user);
                 }
@@ -142,13 +179,19 @@ async function onReactionHandler(messageReaction) {
  * listener for message event
  * @param {Discord.Message} message the message sent
  * @param {Object} botMsg reference to the bot message
+ * @param {{reference : any}} annCache 
  */
-async function onMessageHandler(message, botMsg) {
+async function onMessageHandler(message, botMsg, annCache) {
     //if (message.author.bot) return; //bot ignores bots
     var commands;
     let enteredCommand = message.content.toLowerCase();
     try {
-        if (message.channel.id == myGate.id) {
+        if (message.channel.id == myAnnouncement.id) {
+            await cacheAnnouncements(annCache);
+            if (message.attachments.size > 0) {
+                await downloadFilesFromMessage(message);
+            }
+        } else if (message.channel.id == myGate.id) {
             // === GATE ===
             commands = itemsjson["commands"]["gate"]["guest"];
             if (enteredCommand == commands["ok"]) {
@@ -202,7 +245,6 @@ async function onMessageHandler(message, botMsg) {
                         let toReact = messages.last();
                         await toReact.react(configjson["yesreaction"]);
                         await toReact.react(configjson["noreaction"]);
-                        toReact.react(configjson["maybereaction"]);
                     });
                     await deleteCommand(message);
                 }
@@ -368,7 +410,7 @@ async function onMessageHandler(message, botMsg) {
                     }
                 } else if (enteredCommand == commands["sub"]) {
                     let rolename = args;
-                    if (rolename == configjson["lewdrole"] || (rolename == configjson["sailiesrole"] && checkIntPermission(message)) || (rolename == configjson["whalesrole"] && checkIntPermission(message))) {
+                    if (rolename == configjson["lewdrole"]) {
                         let role = message.guild.roles.find(x => x.name == rolename.charAt(0).toUpperCase() + rolename.slice(1));
                         if (message.member.roles.has(role.id)) {
                             try {
@@ -396,6 +438,90 @@ async function onMessageHandler(message, botMsg) {
     } catch (e) {
         logger.logError("On message listener error. Something really bad went wrong", e);
     }
+}
+
+/*
+--------------------------------------- HISTORY section ---------------------------------------
+*/
+
+/**
+ * @param {{reference : any}} annCache 
+ */
+async function cacheAnnouncements(annCache) {
+    await myAnnouncement.fetchMessages({ limit: 100 }).then(messages => {
+        messages.forEach(async message => {
+            await message.reactions.forEach(async reaction => {
+                await reaction.fetchUsers();
+            });
+        });
+        annCache.reference = messages;
+    });
+}
+
+/**
+ * @param {Discord.Message} message 
+ * @returns an embed containing info about the message
+ */
+async function getHistoryEmbed(message) {
+    const embed = new Discord.RichEmbed();
+    let embedColor = 3447003;
+    embed.setColor(embedColor);
+    embed.setAuthor(message.author.tag, message.author.avatarURL);
+    embed.setDescription(message.content);
+    embed.setTimestamp(message.editedTimestamp ? message.editedTimestamp : message.createdTimestamp);
+    message.attachments.forEach(attachment => {
+        embed.attachFile("./download/" + message.id + "/" + attachment.filename);
+    });
+    message.reactions.forEach(async reaction => {
+        let users = "";
+        reaction.users.forEach(user => {
+            users += user + "\n";
+        });
+        if (users) {
+            embed.addField(reaction.emoji, users, true);
+        }
+    });
+    return embed;
+}
+
+/**
+ * downloads files attached to the message and put it in download/messageid
+ * @param {Discord.Message} message
+ */
+async function downloadFilesFromMessage(message) {
+    return new Promise(async (resolve, reject) => {
+        if (message.attachments.size > 0) {
+            await message.attachments.forEach(async element => {
+                try {
+                    if (!fs.existsSync("./download/" + message.id + "/")) {
+                        fs.mkdirSync("./download/" + message.id + "/");
+                    }
+                    await files.download(element.url, "./download/" + message.id + "/" + element.filename, () => { });
+                    resolve();
+                } catch (e) {
+                    logger.logError("Could not download " + element.filename + " file", e);
+                    reject();
+                }
+            });
+            setTimeout(() => {
+                reject();
+            }, 30000);
+        } else {
+            reject();
+        }
+    });
+}
+
+/**
+ * 
+ * @param {Discord.Collection<string,Discord.MessageReaction>} messageReactions
+ */
+async function getReactions(messageReactions) {
+    let res = "";
+    messageReactions.forEach(reaction => {
+        //TODO
+    });
+    return res ? res : "No reactions";
 }
 
 /*
@@ -489,7 +615,6 @@ async function generateSignUpMessages(num) {
         let message = await interactions.wSendChannel(mySignUp, content);
         await message.react(configjson["yesreaction"]);
         await message.react(configjson["noreaction"]);
-        message.react(configjson["maybereaction"]);
     }
 }
 
@@ -507,7 +632,6 @@ async function bulkSignUpMessages(day) {
         let message = await interactions.wSendChannel(mySignUp, content);
         await message.react(configjson["yesreaction"]);
         await message.react(configjson["noreaction"]);
-        message.react(configjson["maybereaction"]);
     }
 }
 
@@ -538,7 +662,6 @@ async function getDaySignUp(day) {
     if (reactionMessage) {
         let yesReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
         let noReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
-        let maybeReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == configjson["maybereaction"]).first();
         if (noReaction) {
             let users = await noReaction.fetchUsers();
             await Promise.all(users.map(async user => {
@@ -558,19 +681,6 @@ async function getDaySignUp(day) {
                     if (member.roles.find(x => x.name == "Members")) {
                         let name = (member.nickname ? member.nickname : member.user.username);
                         let object = { "name": name, "id": user.id, [dayStr]: "yes" };
-                        signUps.push(object);
-                    }
-                }
-            }));
-        }
-        if (maybeReaction) {
-            let users = await maybeReaction.fetchUsers();
-            await Promise.all(users.map(async user => {
-                if (!signUpsHasId(signUps, user.id)) {
-                    let member = await myServer.fetchMember(await bot.fetchUser(user.id));
-                    if (member.roles.find(x => x.name == "Members")) {
-                        let name = (member.nickname ? member.nickname : member.user.username);
-                        let object = { "name": name, "id": user.id, [dayStr]: "maybe" };
                         signUps.push(object);
                     }
                 }
@@ -668,15 +778,6 @@ async function getSignUpsEmbed(signUps) {
         }
     });
 
-    let maybeToSend = "";
-    let maybe = 0;
-    signUps.forEach(element => {
-        if (element[dayStr] == "maybe") {
-            maybeToSend += "<@" + element.id + ">" + "\n";
-            maybe++;
-        }
-    });
-
     let naToSend = "";
     let na = 0;
     signUps.forEach(element => {
@@ -690,9 +791,6 @@ async function getSignUpsEmbed(signUps) {
     }
     if (noToSend) {
         embed.addField(configjson["noreaction"] + " NO (" + no + ")", noToSend, true);
-    }
-    if (maybeToSend) {
-        embed.addField(configjson["maybereaction"] + " MAYBE (" + maybe + ")", maybeToSend, true);
     }
     if (naToSend) {
         embed.addField(":question:" + " N/A (" + na + ")", naToSend, true);
@@ -1043,7 +1141,7 @@ async function fetchEmoji(name) {
 //globals
 const bot = new Discord.Client();
 var configjson = files.openJsonFile("./resources/config.json", "utf8");
-configjson = process.env.TOKEN ? configjson["kuji"] : configjson["dev"];
+configjson = process.env.TOKEN ? configjson["prod"] : configjson["dev"];
 var itemsjson = files.openJsonFile("./resources/items.json", "utf8");
 var init = false;
 
@@ -1060,6 +1158,7 @@ if (configjson && itemsjson) {
     var mySignUp;
     var mySignUpData;
     var myAnnouncement;
+    var myAnnouncementData;
     var players = [];
     var classEmojis = [];
     var loading = 1000;
@@ -1098,9 +1197,10 @@ if (configjson && itemsjson) {
             mySignUp = bot.channels.get(configjson["signUpID"]);
             mySignUpData = bot.channels.get(configjson["signUpDataID"]);
             myAnnouncement = bot.channels.get(configjson["announcementID"]);
+            myAnnouncementData = bot.channels.get(configjson["announcementDataID"]);
 
             logger.log("INFO: Booting up attempt...");
-            if (myServer && myGate && myGear && myGearData && classEmojis && mySignUp && mySignUpData && myAnnouncement) {
+            if (myServer && myGate && myGear && myGearData && classEmojis && mySignUp && mySignUpData && myAnnouncement && myAnnouncementData) {
                 clearInterval(interval);
                 logger.log("INFO: ... success !");
 
