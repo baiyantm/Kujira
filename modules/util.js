@@ -155,7 +155,7 @@ function displayHoursMinBefore(time) {
 /**
  * @param {string} string
  * @param {number} value
- * @returns 00 + value if < 10, 0 + value if < 100
+ * @returns 0 + string if string < value
  */
 function valueFormat(string, value) {
     if (string < value) {
