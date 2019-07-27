@@ -18,8 +18,7 @@
         "defaultDay": "sun",
         "defaultCount": 1,
         "yesreaction": "✅",
-        "noreaction": "❌",
-        "lewdrole": "lewd"
+        "noreaction": "❌"
     },
     "prod": {
         "botServerID": "594824222099111937",
@@ -38,7 +37,6 @@
         "defaultDay": "sun",
         "defaultCount": 1,
         "yesreaction": "✅",
-        "noreaction": "❌",
-        "lewdrole": "lewd"
+        "noreaction": "❌"
     }
 }

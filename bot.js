@@ -410,7 +410,8 @@ async function onMessageHandler(message, botMsg, annCache) {
                     }
                 } else if (enteredCommand == commands["sub"]) {
                     let rolename = args;
-                    if (rolename == configjson["lewdrole"]) {
+                    //add roles here
+                    if (false) {
                         let role = message.guild.roles.find(x => x.name == rolename.charAt(0).toUpperCase() + rolename.slice(1));
                         if (message.member.roles.has(role.id)) {
                             try {
