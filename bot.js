@@ -199,7 +199,7 @@ async function onMessageHandler(message, botMsg, annCache) {
                 if (!message.member.roles.has(publicRole.id)) {
                     await message.member.addRole(publicRole);
                     logger.log("ROLE: " + publicRole + " role added to " + message.author.tag);
-                    await interactions.wSendAuthor(message.author, itemsjson["guidelines"]);
+                    await interactions.wSendAuthor(message.author, itemsjson["gateguide"] + "\n\nReminder that you agreed to the following rules :\n" + itemsjson["gaterules"]);
                 }
             }
             deleteCommand(message);
