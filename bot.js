@@ -200,6 +200,7 @@ async function onMessageHandler(message, botMsg, annCache) {
                     await message.member.addRole(publicRole);
                     logger.log("ROLE: " + publicRole + " role added to " + message.author.tag);
                     await interactions.wSendAuthor(message.author, itemsjson["gateguide"] + "\n\nReminder that you agreed to the following rules :\n" + itemsjson["gaterules"]);
+                    await interactions.wSendChannel(myWelcome, message.author + " agreed to the rules and got the public role.");
                 }
             }
             deleteCommand(message);
@@ -1160,6 +1161,7 @@ if (configjson && itemsjson) {
     var mySignUpData;
     var myAnnouncement;
     var myAnnouncementData;
+    var myWelcome;
     var players = [];
     var classEmojis = [];
     var loading = 1000;
@@ -1199,9 +1201,11 @@ if (configjson && itemsjson) {
             mySignUpData = bot.channels.get(configjson["signUpDataID"]);
             myAnnouncement = bot.channels.get(configjson["announcementID"]);
             myAnnouncementData = bot.channels.get(configjson["announcementDataID"]);
+            myWelcome = bot.channels.get(configjson["welcomeID"]);
 
             logger.log("INFO: Booting up attempt...");
-            if (myServer && myGate && myGear && myGearData && classEmojis && mySignUp && mySignUpData && myAnnouncement && myAnnouncementData) {
+            if (myServer && myGate && myGear && myGearData && classEmojis && mySignUp
+                && mySignUpData && myAnnouncement && myAnnouncementData && myWelcome) {
                 clearInterval(interval);
                 logger.log("INFO: ... success !");
 
