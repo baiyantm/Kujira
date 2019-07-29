@@ -11,6 +11,16 @@ module.exports = class Player {
         this.aap = aap;
         this.dp = dp;
         this.hidden = hidden;
+        
+        /**
+         * @param {string} name
+         * @returns the first part of a string separated by |
+         */
+        this.applyNamePolicy = function(name) {
+            let split = name.split("|");
+            return split.length == 2 ? split[0] : name;
+        }
+        this.name = this.applyNamePolicy(this.name);
 
         /**
          * @returns a string with the name + indication whether driver

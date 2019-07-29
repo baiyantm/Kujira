@@ -738,7 +738,12 @@ async function saveSignUp(day) {
     let signUps = await getDaySignUp(day);
     if (signUps) {
         signUps.sort((a, b) => {
-            return a.id - b.id;
+            var nameA = a.name.toLowerCase(), nameB = b.name.toLowerCase();
+            if (nameA < nameB) //sort string ascending
+                return -1;
+            if (nameA > nameB)
+                return 1;
+            return 0; //default return value (no sorting)
         });
         let todayStr = Object.keys(signUps[0])[2];
         let signuppath = "./download/signups" + todayStr + ".csv";
