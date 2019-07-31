@@ -480,7 +480,7 @@ async function getHistoryEmbed(message) {
             users += user + "\n";
         });
         if (users) {
-            embed.addField("> Reacted with " + reaction.emoji, users, true);
+            embed.addField("Reacted with " + reaction.emoji, users, true);
         }
     });
     return embed;
@@ -566,9 +566,9 @@ function getSignedUpStatsEmbed(players, classname, day) {
             classes.forEach(currentClass => {
                 classText += currentClass["count"] + "x " + classEmojis.find(emoji => emoji.name == currentClass["className"]) + " " + currentClass["className"].charAt(0).toUpperCase() + currentClass["className"].slice(1) + "\n";
             });
-            embed.addField(">     Class list", classText, true);
+            embed.addField("Class list", classText, true);
         }
-        embed.addField("> Average gear", util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
+        embed.addField("Average gear", util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
     } else {
         embed.setDescription("Empty player list.");
     }
@@ -911,20 +911,20 @@ function getStatsEmbed(players, classname) {
             let maxClass = compare(itemsjson["classlist"], (max, class2) => {
                 return countClassNames(players, max) < countClassNames(players, class2);
             });
-            embed.addField(">     Most played",
+            embed.addField("Most played",
                 classEmojis.find(emoji => emoji.name == maxClass) + " " + maxClass.charAt(0).toUpperCase() + maxClass.slice(1) + " (" + countClassNames(players, maxClass) + ")",
                 true);
-            embed.addField(">     Least played",
+            embed.addField("Least played",
                 classEmojis.find(emoji => emoji.name == minClass) + " " + minClass.charAt(0).toUpperCase() + minClass.slice(1) + " (" + countClassNames(players, minClass) + ")",
                 true);
         }
-        embed.addField("> Average gear : ", util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
-        embed.addField("> Highest GS : " + maxGS.getGS(), displayFullPlayer(maxGS), true);
-        embed.addField("> Highest AP : " + maxAP.getRealAP(), displayFullPlayer(maxAP), true);
-        embed.addField("> Highest DP : " + maxDP.dp, displayFullPlayer(maxDP), true);
-        embed.addField("> Lowest GS : " + minGS.getGS(), displayFullPlayer(minGS), true);
-        embed.addField("> Lowest AP : " + minAP.getRealAP(), displayFullPlayer(minAP), true);
-        embed.addField("> Lowest DP : " + minDP.dp, displayFullPlayer(minDP), true);
+        embed.addField("Average gear : ", util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
+        embed.addField("Highest GS : " + maxGS.getGS(), displayFullPlayer(maxGS), true);
+        embed.addField("Highest AP : " + maxAP.getRealAP(), displayFullPlayer(maxAP), true);
+        embed.addField("Highest DP : " + maxDP.dp, displayFullPlayer(maxDP), true);
+        embed.addField("Lowest GS : " + minGS.getGS(), displayFullPlayer(minGS), true);
+        embed.addField("Lowest AP : " + minAP.getRealAP(), displayFullPlayer(minAP), true);
+        embed.addField("Lowest DP : " + minDP.dp, displayFullPlayer(minDP), true);
     } else {
         embed.setDescription("Empty player list.");
     }
@@ -948,7 +948,7 @@ function getPlayersEmbed(players) {
                         fieldContent += displayFullPlayer(player) + "\n";
                     }
                 });
-                embed.addField(">     " + fieldTitle, fieldContent, true);
+                embed.addField("" + fieldTitle, fieldContent, true);
             }
         });
     } else {
