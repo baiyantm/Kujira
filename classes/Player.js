@@ -18,7 +18,7 @@ module.exports = class Player {
          */
         this.applyNamePolicy = function(name) {
             let split = name.split("|");
-            return split.length == 2 ? split[0] : name;
+            return split.length == 2 ? split[0].trim() : name;
         }
         this.name = this.applyNamePolicy(this.name);
 
@@ -49,6 +49,8 @@ module.exports = class Player {
          * @returns true same, false different
          */
         this.equals = function (player) {
+            console.debug(this);
+            console.debug(player);
             var res = false;
             if (this.id && player.id) {
                 res = player.id == this.id;
