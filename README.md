@@ -1,3 +1,3 @@
 # Kujira
 
-Kujiratori services bot
+Remedy services bot (Rem#0222)
