@@ -1177,6 +1177,7 @@ if (configjson && itemsjson) {
         bot.user.setPresence({ game: { name: "booting up..." } });
 
         myServer = bot.guilds.get(configjson["botServerID"]);
+        myDevServer = bot.guilds.get(configjsonfile["dev"]["botServerID"]);
         myGearData = bot.channels.get(configjson["gearDataID"]);
 
         itemsjson["classlist"].forEach(async classname => {
