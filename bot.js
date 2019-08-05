@@ -1211,7 +1211,7 @@ if (configjson && itemsjson) {
             myWelcome = bot.channels.get(configjson["welcomeID"]);
 
             logger.log("INFO: Booting up attempt...");
-            if (myServer && myGate && myGear && myGearData && classEmojis && mySignUp
+            if (myServer && myDevServer && myGate && myGear && myGearData && classEmojis && mySignUp
                 && mySignUpData && myAnnouncement && myAnnouncementData && myWelcome) {
                 clearInterval(interval);
                 logger.log("INFO: ... success !");
