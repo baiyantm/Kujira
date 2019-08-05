@@ -1147,8 +1147,8 @@ async function fetchEmoji(name) {
 
 //globals
 const bot = new Discord.Client();
-var configjson = files.openJsonFile("./resources/config.json", "utf8");
-configjson = process.env.TOKEN ? configjson["prod"] : configjson["dev"];
+var configjsonfile = files.openJsonFile("./resources/config.json", "utf8");
+var configjson = process.env.TOKEN ? configjsonfile["prod"] : configjsonfile["dev"];
 var itemsjson = files.openJsonFile("./resources/items.json", "utf8");
 var init = false;
 
@@ -1159,6 +1159,7 @@ if (configjson && itemsjson) {
 
     //more globals
     var myServer;
+    var myDevServer;
     var myGate;
     var myGear;
     var myGearData;
@@ -1199,6 +1200,7 @@ if (configjson && itemsjson) {
         logger.log("INFO: Starting in " + loading + "ms");
         var interval = setInterval(async () => {
             myServer = bot.guilds.get(configjson["botServerID"]);
+            myDevServer = bot.guilds.get(configjsonfile["dev"]["botServerID"]);
             myGate = bot.channels.get(configjson["gateID"]);
             myGear = bot.channels.get(configjson["gearID"]);
             myGearData = bot.channels.get(configjson["gearDataID"]);
