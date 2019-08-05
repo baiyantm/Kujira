@@ -1129,7 +1129,7 @@ async function downloadGearFileFromChannel(filename, channel) {
 async function fetchEmoji(name) {
     return new Promise((resolve, reject) => {
         try {
-            myServer.emojis.find(emoji => {
+            myDevServer.emojis.find(emoji => {
                 if (emoji.name == name) {
                     resolve(emoji);
                 }
