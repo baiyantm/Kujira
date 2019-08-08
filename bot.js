@@ -984,7 +984,7 @@ async function setupPresence() {
             let issuedTimestamp = message.editedTimestamp ? message.editedTimestamp : message.createdTimestamp;
             let startDate = new Date();
             let seconds = (issuedTimestamp - startDate.getTime()) / 1000;
-            let presence = seconds > 864000 ? "Check announcements" : "Announcement " + util.displayHoursMinBefore(Math.abs(Math.round(seconds / 60))) + " ago";
+            let presence = seconds > 86400 ? "Remedy" : "Announcement " + util.displayHoursMinBefore(Math.abs(Math.round(seconds / 60))) + " ago";
             try {
                 bot.user.setPresence({
                     game:
