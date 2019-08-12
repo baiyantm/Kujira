@@ -199,6 +199,7 @@ async function onMessageHandler(message, botMsg, annCache) {
                 if (!message.member.roles.has(publicRole.id)) {
                     await message.member.addRole(publicRole);
                     logger.log("ROLE: " + publicRole + " role added to " + message.author.tag);
+                    await interactions.wSendAuthor(message.author, itemsjson["urlguildpage"]);
                     await interactions.wSendAuthor(message.author, itemsjson["gateguide"] + "\n\nReminder that you agreed to the following rules :\n" + itemsjson["gaterules"]);
                     await interactions.wSendChannel(myWelcome, message.author + " agreed to the rules and got the public role.");
                 }
