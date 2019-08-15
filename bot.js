@@ -814,10 +814,10 @@ async function getSignUpsEmbed(signUps) {
  * @param {Player} player 
  * @returns the new player list
  */
-async function removePlayer(players, player, issuer) {
+async function removePlayer(players, player, origin) {
     let content = "";
     content += player.getNameOrMention() + " removed from the gear list";
-    content += "\n(Command issuer : " + issuer + ")";
+    content += "\n(Command origin : " + origin + ")";
     await interactions.wSendChannel(myChangelog, content);
     players = players.filter(currentPlayer => !currentPlayer.equals(player));
     return players;
@@ -829,11 +829,11 @@ async function removePlayer(players, player, issuer) {
  * @param {Player} player 
  * @returns the new player list
  */
-async function addPlayer(players, player, issuer) {
+async function addPlayer(players, player, origin) {
     let oldPlayer = players.filter(currentPlayer => currentPlayer.equals(player))[0];
     let content = "";
     content += player.getNameOrMention() + "** gear update:**\n> Old : " + (oldPlayer ? displayFullPlayer(oldPlayer) : "N/A") + "\n> New : " + displayFullPlayer(player);
-    content += "\n(Command issuer : " + issuer + ")";
+    content += "\n(Command origin : " + origin + ")";
     await interactions.wSendChannel(myChangelog, content);
     players = players.filter(currentPlayer => !currentPlayer.equals(player));
     players.push(player);
