@@ -265,11 +265,11 @@ async function onMessageHandler(message, botMsg, annCache) {
                 } else if (enteredCommand == commands["remove"]) {
                     if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
                         let player = new Player(message.mentions.members.first());
-                        players = players.filter(currentPlayer => !currentPlayer.equals(player));
+                        players = await removePlayer(players, player, message.author);
                     } else {
                         let player = new Player();
                         player.name = args;
-                        players = players.filter(currentPlayer => !currentPlayer.equals(player));
+                        players = await removePlayer(players, player, message.author);
                     }
                 } else if (enteredCommand == commands["add"]) {
                     let split = args.split(" ");
@@ -289,8 +289,7 @@ async function onMessageHandler(message, botMsg, annCache) {
                                 if (!member) {
                                     player.name = name;
                                 }
-                                players = players.filter(currentPlayer => !currentPlayer.equals(player));
-                                players.push(player);
+                                players = await addPlayer(players, player, message.author);
                             } else {
                                 interactions.wSendAuthor(message.author, "Some stats are way too high, check again.");
                             }
@@ -319,15 +318,13 @@ async function onMessageHandler(message, botMsg, annCache) {
                             let dp = parseInt(split[2]);
                             if (Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
                                 let player = new Player(message.member, classToFind, ap, aap, dp, false);
-                                players = players.filter(currentPlayer => !currentPlayer.equals(player));
-                                players.push(player);
+                                players = await addPlayer(players, player, message.author);
                             } else {
                                 interactions.wSendAuthor(message.author, "Some stats are too high or not numbers.");
                             }
                         } else if (!args) {
                             let player = new Player(message.member, classToFind, null, null, null, true);
-                            players = players.filter(currentPlayer => !currentPlayer.equals(player));
-                            players.push(player);
+                            players = await addPlayer(players, player, message.author);
                         } else {
                             interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `[classname] [ap] [aap] [dp]` or `[classname]`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                         }
@@ -811,6 +808,38 @@ async function getSignUpsEmbed(signUps) {
 --------------------------------------- GEAR section ---------------------------------------
 */
 
+/**
+ * remove a player from a player list
+ * @param {Player[]} players 
+ * @param {Player} player 
+ * @returns the new player list
+ */
+async function removePlayer(players, player, issuer) {
+    let content = "";
+    content += player.getNameOrMention() + " removed from the gear list";
+    content += "\n(Command issuer : " + issuer + ")";
+    await interactions.wSendChannel(myChangelog, content);
+    players = players.filter(currentPlayer => !currentPlayer.equals(player));
+    return players;
+}
+
+/**
+ * remove and add (readd) a player to a player list
+ * @param {Player[]} players 
+ * @param {Player} player 
+ * @returns the new player list
+ */
+async function addPlayer(players, player, issuer) {
+    let oldPlayer = players.filter(currentPlayer => currentPlayer.equals(player))[0];
+    let content = "";
+    content += player.getNameOrMention() + "** gear update:**\n> Old : " + (oldPlayer ? displayFullPlayer(oldPlayer) : "N/A") + "\n> New : " + displayFullPlayer(player);
+    content += "\n(Command issuer : " + issuer + ")";
+    await interactions.wSendChannel(myChangelog, content);
+    players = players.filter(currentPlayer => !currentPlayer.equals(player));
+    players.push(player);
+    return players;
+}
+
 async function savePlayers() {
     let playerspath = "./download/players.json";
     await files.writeObjectToFile(playerspath, players);
@@ -1169,6 +1198,7 @@ if (configjson && itemsjson) {
     var myAnnouncement;
     var myAnnouncementData;
     var myWelcome;
+    var myChangelog;
     var players = [];
     var classEmojis = [];
     var loading = 1000;
@@ -1211,10 +1241,11 @@ if (configjson && itemsjson) {
             myAnnouncement = bot.channels.get(configjson["announcementID"]);
             myAnnouncementData = bot.channels.get(configjson["announcementDataID"]);
             myWelcome = bot.channels.get(configjson["welcomeID"]);
+            myChangelog = bot.channels.get(configjson["changelogID"]);
 
             logger.log("INFO: Booting up attempt...");
             if (myServer && myDevServer && myGate && myGear && myGearData && classEmojis && mySignUp
-                && mySignUpData && myAnnouncement && myAnnouncementData && myWelcome) {
+                && mySignUpData && myAnnouncement && myAnnouncementData && myWelcome && myChangelog) {
                 clearInterval(interval);
                 logger.log("INFO: ... success !");
 
