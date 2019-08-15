@@ -30,6 +30,13 @@ module.exports = class Player {
         };
 
         /**
+         * @returns a string with the name + indication whether driver
+         */
+        this.displayNoName = function () {
+            return this.valueFormat(this.ap) + " / " + this.valueFormat(this.aap) + " / " + this.valueFormat(this.dp);
+        };
+
+        /**
          * @param {number} value
          * @returns 00 + value if < 10, 0 + value if < 100
          */
@@ -49,8 +56,6 @@ module.exports = class Player {
          * @returns true same, false different
          */
         this.equals = function (player) {
-            console.debug(this);
-            console.debug(player);
             var res = false;
             if (this.id && player.id) {
                 res = player.id == this.id;
@@ -59,6 +64,10 @@ module.exports = class Player {
             }
             return res;
         };
+
+        this.getNameOrMention = function () {
+            return this.id ? "<@" + this.id + ">" : this.name;
+        }
 
         this.toString = function () {
             return this.display();
