@@ -812,12 +812,13 @@ async function getSignUpsEmbed(signUps) {
  * remove a player from a player list
  * @param {Player[]} players 
  * @param {Player} player 
- * @returns the new player list
+ * @param {Discord.GuildMember} origin
+ * @returns the player list with player removed
  */
 async function removePlayer(players, player, origin) {
     let content = "";
-    content += player.getNameOrMention() + " removed from the gear list";
-    content += "\n(Command origin : " + origin + ")";
+    content += player.getNameOrMention() + " removed from gear list.";
+    content += "\n(Command origin: " + origin + ")";
     await interactions.wSendChannel(myChangelog, content);
     players = players.filter(currentPlayer => !currentPlayer.equals(player));
     return players;
@@ -827,13 +828,14 @@ async function removePlayer(players, player, origin) {
  * remove and add (readd) a player to a player list
  * @param {Player[]} players 
  * @param {Player} player 
- * @returns the new player list
+ * @param {Discord.GuildMember} origin
+ * @returns the player list with player added
  */
 async function addPlayer(players, player, origin) {
     let oldPlayer = players.filter(currentPlayer => currentPlayer.equals(player))[0];
     let content = "";
-    content += player.getNameOrMention() + "** gear update:**\n> Old : " + (oldPlayer ? displayFullPlayer(oldPlayer) : "N/A") + "\n> New : " + displayFullPlayer(player);
-    content += "\n(Command origin : " + origin + ")";
+    content += player.getNameOrMention() + "** gear update**\n> Old: " + (oldPlayer ? displayFullPlayer(oldPlayer) : "N/A") + "\n> New: " + displayFullPlayer(player);
+    content += "\n(Command origin: " + origin + ")";
     await interactions.wSendChannel(myChangelog, content);
     players = players.filter(currentPlayer => !currentPlayer.equals(player));
     players.push(player);
@@ -1014,7 +1016,7 @@ async function setupPresence() {
             let issuedTimestamp = message.editedTimestamp ? message.editedTimestamp : message.createdTimestamp;
             let startDate = new Date();
             let seconds = (issuedTimestamp - startDate.getTime()) / 1000;
-            let presence = seconds > 86400 ? "Remedy" : "Announcement " + util.displayHoursMinBefore(Math.abs(Math.round(seconds / 60))) + " ago";
+            let presence = Math.abs(seconds) > 86400 ? "Remedy" : "Announcement " + util.displayHoursMinBefore(Math.abs(Math.round(seconds / 60))) + " ago";
             try {
                 bot.user.setPresence({
                     game:
