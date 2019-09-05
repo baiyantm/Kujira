@@ -976,7 +976,6 @@ function getPlayersEmbed(players) {
     sortedList.sort((a, b) => {
         return b.count - a.count;
     });
-    console.log(sortedList);
     if (players.length > 0) {
         sortedList.forEach(classname => {
             let classcount = countClassNames(players, classname.name);
