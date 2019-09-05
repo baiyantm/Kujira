@@ -969,14 +969,22 @@ function getPlayersEmbed(players) {
     let embedColor = 3447003;
     embed.setColor(embedColor);
     embed.setTitle(embedTitle);
+    let sortedList = [];
+    itemsjson["classlist"].forEach(element => {
+        sortedList.push({ name: element, count: countClassNames(players, element) });
+    });
+    sortedList.sort((a, b) => {
+        return b.count - a.count;
+    });
+    console.log(sortedList);
     if (players.length > 0) {
-        itemsjson["classlist"].forEach(classname => {
-            let classcount = countClassNames(players, classname);
+        sortedList.forEach(classname => {
+            let classcount = countClassNames(players, classname.name);
             if (classcount > 0) {
                 let fieldContent = "";
-                let fieldTitle = classname.charAt(0).toUpperCase() + classname.slice(1) + " (" + classcount + ")\n";
+                let fieldTitle = classname.name.charAt(0).toUpperCase() + classname.name.slice(1) + " (" + classcount + ")\n";
                 players.forEach(player => {
-                    if (player.classname == classname) {
+                    if (player.classname == classname.name) {
                         fieldContent += displayFullPlayer(player) + "\n";
                     }
                 });
