@@ -983,10 +983,22 @@ function getPlayersEmbed(players) {
             if (classcount > 0) {
                 let fieldContent = "";
                 let fieldTitle = classname.name.charAt(0).toUpperCase() + classname.name.slice(1) + " (" + classcount + ")\n";
+                let playersToShow = [];
                 players.forEach(player => {
                     if (player.classname == classname.name) {
-                        fieldContent += displayFullPlayer(player) + "\n";
+                        playersToShow.push(player);
                     }
+                });
+                playersToShow.sort((a, b) => {
+                    var nameA = a.name.toLowerCase(), nameB = b.name.toLowerCase();
+                    if (nameA < nameB) //sort string ascending
+                        return -1;
+                    if (nameA > nameB)
+                        return 1;
+                    return 0; //default return value (no sorting)
+                });
+                playersToShow.forEach(player => {
+                    fieldContent += displayFullPlayer(player) + "\n";
                 });
                 embed.addField("" + fieldTitle, fieldContent, true);
             }
