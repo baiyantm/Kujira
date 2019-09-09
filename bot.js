@@ -937,17 +937,42 @@ function getStatsEmbed(players, classname) {
             return player.dp;
         });
         if (!classname) {
-            let minClass = compare(itemsjson["classlist"], (min, class2) => {
-                return countClassNames(players, min) > countClassNames(players, class2);
+            let countedClasses = [];
+            itemsjson["classlist"].forEach(className => {
+                countedClasses[className] = 0;
+                players.forEach(player => {
+                    if(player.classname == className) {
+                        countedClasses[className]++;
+                    }
+                });
             });
-            let maxClass = compare(itemsjson["classlist"], (max, class2) => {
-                return countClassNames(players, max) < countClassNames(players, class2);
-            });
+            let max = 0;
+            for (let index in countedClasses) {
+                max = Math.max(max, countedClasses[index]);
+            }
+            let maxStr = "";
+            for (let index in countedClasses) {
+                let value = countedClasses[index];
+                if(value == max) {
+                    maxStr += classEmojis.find(emoji => emoji.name == index) + " " + index.charAt(0).toUpperCase() + index.slice(1) + " **(" + value + ")**\n";
+                }
+            }
+            let min = 999;
+            for (let index in countedClasses) {
+                min = Math.min(min, countedClasses[index]);
+            }
+            let minStr = "";
+            for (let index in countedClasses) {
+                let value = countedClasses[index];
+                if(value == min) {
+                    minStr += classEmojis.find(emoji => emoji.name == index) + " " + index.charAt(0).toUpperCase() + index.slice(1) + " **(" + value + ")**\n";
+                }
+            }
             embed.addField("Most played",
-                classEmojis.find(emoji => emoji.name == maxClass) + " " + maxClass.charAt(0).toUpperCase() + maxClass.slice(1) + " (" + countClassNames(players, maxClass) + ")",
+                maxStr,
                 true);
             embed.addField("Least played",
-                classEmojis.find(emoji => emoji.name == minClass) + " " + minClass.charAt(0).toUpperCase() + minClass.slice(1) + " (" + countClassNames(players, minClass) + ")",
+                minStr,
                 true);
         }
         embed.addField("Average gear : ", util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
@@ -976,7 +1001,6 @@ function getPlayersEmbed(players) {
     sortedList.sort((a, b) => {
         return b.count - a.count;
     });
-    console.log(sortedList);
     if (players.length > 0) {
         sortedList.forEach(classname => {
             let classcount = countClassNames(players, classname.name);
