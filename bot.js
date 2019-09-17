@@ -820,6 +820,7 @@ async function removePlayer(players, player, origin) {
     content += player.getNameOrMention() + " removed from gear list.";
     content += "\n(Command origin: " + origin + ")";
     await interactions.wSendChannel(myChangelog, content);
+    await interactions.wSendChannel(myChangelog2, content);
     players = players.filter(currentPlayer => !currentPlayer.equals(player));
     return players;
 }
@@ -837,6 +838,7 @@ async function addPlayer(players, player, origin) {
     content += player.getNameOrMention() + "** gear update**\n> Old: " + (oldPlayer ? displayFullPlayer(oldPlayer) : "N/A") + "\n> New: " + displayFullPlayer(player);
     content += "\n(Command origin: " + origin + ")";
     await interactions.wSendChannel(myChangelog, content);
+    await interactions.wSendChannel(myChangelog2, content);
     players = players.filter(currentPlayer => !currentPlayer.equals(player));
     players.push(player);
     return players;
@@ -1245,6 +1247,7 @@ if (configjson && itemsjson) {
     var myAnnouncementData;
     var myWelcome;
     var myChangelog;
+    var myChangelog2;
     var players = [];
     var classEmojis = [];
     var loading = 1000;
@@ -1288,10 +1291,11 @@ if (configjson && itemsjson) {
             myAnnouncementData = bot.channels.get(configjson["announcementDataID"]);
             myWelcome = bot.channels.get(configjson["welcomeID"]);
             myChangelog = bot.channels.get(configjson["changelogID"]);
+            myChangelog2= bot.channels.get(configjson["changelogID2"]);
 
             logger.log("INFO: Booting up attempt...");
             if (myServer && myDevServer && myGate && myGear && myGearData && classEmojis && mySignUp
-                && mySignUpData && myAnnouncement && myAnnouncementData && myWelcome && myChangelog) {
+                && mySignUpData && myAnnouncement && myAnnouncementData && myWelcome && myChangelog && myChangelog2) {
                 clearInterval(interval);
                 logger.log("INFO: ... success !");
 
