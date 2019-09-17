@@ -18,7 +18,7 @@ module.exports = class Player {
          */
         this.applyNamePolicy = function(name) {
             let split = name.split("|");
-            return split.length == 2 ? split[0].trim() : name;
+            return split.length > 1 ? split[0].trim() : name;
         }
         this.name = this.applyNamePolicy(this.name);
 
