@@ -791,7 +791,7 @@ async function saveSignUp(day) {
         }
     } catch (e) {
         if (e.message == 'Unknown Member') {
-            await cleanMissingMembersFromSignups();
+            await cleanMissingMembersFromSignups(day);
             await saveSignUp(day);
         } else {
             throw e;
