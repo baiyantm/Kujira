@@ -729,7 +729,7 @@ async function getDaySignUpMessage(day, channel) {
     return message;
 }
 
-async function cleanMissingMembersFromReactions(day) {
+async function cleanMissingMembersFromSignups(day) {
     let found = false;
     let reactionMessage = await getDaySignUpMessage(day, mySignUp);
     let yesReaction = reactionMessage.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["yesreaction"]).first();
@@ -765,7 +765,6 @@ async function cleanMissingMembersFromReactions(day) {
  * @param {number} day 
  */
 async function saveSignUp(day) {
-    await cleanMissingMembersFromReactions(day);
     try {
         let signUps = await getDaySignUp(day);
         if (signUps) {
@@ -792,7 +791,8 @@ async function saveSignUp(day) {
         }
     } catch (e) {
         if (e.message == 'Unknown Member') {
-            cleanMissingMembers();
+            await cleanMissingMembersFromSignups(day);
+            await saveSignUp(day);
         } else {
             throw e;
         }
