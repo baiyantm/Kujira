@@ -729,32 +729,73 @@ async function getDaySignUpMessage(day, channel) {
     return message;
 }
 
+async function cleanMissingMembersFromReactions(day) {
+    let found = false;
+    let reactionMessage = await getDaySignUpMessage(day, mySignUp);
+    let yesReaction = reactionMessage.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["yesreaction"]).first();
+    let noReaction = reactionMessage.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["noreaction"]).first();
+    let users = await noReaction.fetchUsers();
+    await Promise.all(users.map(async user => {
+        try {
+            await myServer.fetchMember(await bot.fetchUser(user.id));
+        } catch (e) {
+            noReaction.remove(user);
+            yesReaction.remove(user);
+            found = true;
+        }
+    }));
+    if (!found) {
+        users = await yesReaction.fetchUsers();
+        await Promise.all(users.map(async user => {
+            try {
+                await myServer.fetchMember(await bot.fetchUser(user.id));
+            } catch (e) {
+                noReaction.remove(user);
+                yesReaction.remove(user);
+                found = true;
+            }
+        }));
+    }
+    if (!found) {
+        await interactions.wSendChannel(mySignUpData, "There was an error. I tried but I couldn't fix it, sorry :(");
+    }
+}
+
 /**
  * @param {number} day 
  */
 async function saveSignUp(day) {
-    let signUps = await getDaySignUp(day);
-    if (signUps) {
-        signUps.sort((a, b) => {
-            var nameA = a.name.toLowerCase(), nameB = b.name.toLowerCase();
-            if (nameA < nameB) //sort string ascending
-                return -1;
-            if (nameA > nameB)
-                return 1;
-            return 0; //default return value (no sorting)
-        });
-        let todayStr = Object.keys(signUps[0])[2];
-        let signuppath = "./download/signups" + todayStr + ".csv";
-        const csv = parse(signUps, { unwind: ["name", "id", todayStr] });
-        files.writeToFile(signuppath, csv);
-        mySignUpData.send({
-            embed: await getSignUpsEmbed(signUps),
-            files: [
-                signuppath
-            ]
-        });
-    } else {
-        interactions.wSendChannel(mySignUpData, "No message found for " + util.findCorrespondingDayName(day));
+    await cleanMissingMembersFromReactions(day);
+    try {
+        let signUps = await getDaySignUp(day);
+        if (signUps) {
+            signUps.sort((a, b) => {
+                var nameA = a.name.toLowerCase(), nameB = b.name.toLowerCase();
+                if (nameA < nameB) //sort string ascending
+                    return -1;
+                if (nameA > nameB)
+                    return 1;
+                return 0; //default return value (no sorting)
+            });
+            let todayStr = Object.keys(signUps[0])[2];
+            let signuppath = "./download/signups" + todayStr + ".csv";
+            const csv = parse(signUps, { unwind: ["name", "id", todayStr] });
+            files.writeToFile(signuppath, csv);
+            mySignUpData.send({
+                embed: await getSignUpsEmbed(signUps),
+                files: [
+                    signuppath
+                ]
+            });
+        } else {
+            interactions.wSendChannel(mySignUpData, "No message found for " + util.findCorrespondingDayName(day));
+        }
+    } catch (e) {
+        if (e.message == 'Unknown Member') {
+            cleanMissingMembers();
+        } else {
+            throw e;
+        }
     }
 }
 
@@ -943,7 +984,7 @@ function getStatsEmbed(players, classname) {
             itemsjson["classlist"].forEach(className => {
                 countedClasses[className] = 0;
                 players.forEach(player => {
-                    if(player.classname == className) {
+                    if (player.classname == className) {
                         countedClasses[className]++;
                     }
                 });
@@ -955,7 +996,7 @@ function getStatsEmbed(players, classname) {
             let maxStr = "";
             for (let index in countedClasses) {
                 let value = countedClasses[index];
-                if(value == max) {
+                if (value == max) {
                     maxStr += classEmojis.find(emoji => emoji.name == index) + " " + index.charAt(0).toUpperCase() + index.slice(1) + " **(" + value + ")**\n";
                 }
             }
@@ -966,7 +1007,7 @@ function getStatsEmbed(players, classname) {
             let minStr = "";
             for (let index in countedClasses) {
                 let value = countedClasses[index];
-                if(value == min) {
+                if (value == min) {
                     minStr += classEmojis.find(emoji => emoji.name == index) + " " + index.charAt(0).toUpperCase() + index.slice(1) + " **(" + value + ")**\n";
                 }
             }
@@ -1291,7 +1332,7 @@ if (configjson && itemsjson) {
             myAnnouncementData = bot.channels.get(configjson["announcementDataID"]);
             myWelcome = bot.channels.get(configjson["welcomeID"]);
             myChangelog = bot.channels.get(configjson["changelogID"]);
-            myChangelog2= bot.channels.get(configjson["changelogID2"]);
+            myChangelog2 = bot.channels.get(configjson["changelogID2"]);
 
             logger.log("INFO: Booting up attempt...");
             if (myServer && myDevServer && myGate && myGear && myGearData && classEmojis && mySignUp
