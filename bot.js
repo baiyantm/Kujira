@@ -48,6 +48,8 @@ async function initLookout() {
 
     await refreshBotMsg(myGear, botMsg, players);
 
+    bot.on("guildMemberRemove", member => onLeaveHandler(member));
+
     bot.on("message", async message => onMessageHandler(message, botMsg, annCache));
 
     bot.on("messageReactionAdd", async messageReaction => onReactionHandler(messageReaction));
@@ -122,6 +124,16 @@ async function initLookout() {
     });
 
     logger.log("INFO: ... lookout initialization done");
+}
+
+/**
+ * listener for member leaving guild
+ * @param {Discord.GuildMember} member 
+ */
+async function onLeaveHandler(member) {
+    if(member.guild.id == myServer.id) {
+        interactions.wSendChannel(myWelcome, member + "(" + member.user.username + ") has left the server.");
+    }
 }
 
 /**
@@ -749,6 +761,7 @@ async function cleanMissingMembersFromSignups(day) {
         await Promise.all(users.map(async user => {
             try {
                 await myServer.fetchMember(await bot.fetchUser(user.id));
+                found = true;
             } catch (e) {
                 noReaction.remove(user);
                 yesReaction.remove(user);
