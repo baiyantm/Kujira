@@ -909,7 +909,7 @@ async function savePlayers() {
  * @returns a string containing the server class emoji and the player display
  */
 function displayFullPlayer(player) {
-    return classEmojis.find(emoji => emoji.name == player.classname) + " " + player;
+    return classEmojis.find(emoji => emoji.name == player.classname) + "\xa0" + player;
 }
 
 /**
@@ -1058,11 +1058,12 @@ function getPlayersEmbed(players) {
         return b.count - a.count;
     });
     if (players.length > 0) {
+        let fields = 0;
         sortedList.forEach(classname => {
             let classcount = countClassNames(players, classname.name);
             if (classcount > 0) {
                 let fieldContent = "";
-                let fieldTitle = classname.name.charAt(0).toUpperCase() + classname.name.slice(1) + " (" + classcount + ")\n";
+                let fieldTitle = "**" + classname.name.charAt(0).toUpperCase() + classname.name.slice(1) + " (" + classcount + ")**\n";
                 let playersToShow = [];
                 players.forEach(player => {
                     if (player.classname == classname.name) {
@@ -1081,6 +1082,10 @@ function getPlayersEmbed(players) {
                     fieldContent += displayFullPlayer(player) + "\n";
                 });
                 embed.addField("" + fieldTitle, fieldContent, true);
+                fields++;
+                if(fields%2 == 0) {
+                    embed.addBlankField(true);
+                }
             }
         });
     } else {
