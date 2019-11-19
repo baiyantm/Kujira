@@ -1030,13 +1030,17 @@ function getStatsEmbed(players, classname) {
             embed.addField("Least played",
                 minStr,
                 true);
+            embed.addBlankField(true);
         }
         embed.addField("Average gear : ", util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
         embed.addField("Highest GS : " + maxGS.getGS(), displayFullPlayer(maxGS), true);
+        embed.addBlankField(true);
         embed.addField("Highest AP : " + maxAP.getRealAP(), displayFullPlayer(maxAP), true);
         embed.addField("Highest DP : " + maxDP.dp, displayFullPlayer(maxDP), true);
+        embed.addBlankField(true);
         embed.addField("Lowest GS : " + minGS.getGS(), displayFullPlayer(minGS), true);
         embed.addField("Lowest AP : " + minAP.getRealAP(), displayFullPlayer(minAP), true);
+        embed.addBlankField(true);
         embed.addField("Lowest DP : " + minDP.dp, displayFullPlayer(minDP), true);
     } else {
         embed.setDescription("Empty player list.");
@@ -1063,7 +1067,7 @@ function getPlayersEmbed(players) {
             let classcount = countClassNames(players, classname.name);
             if (classcount > 0) {
                 let fieldContent = "";
-                let fieldTitle = "**" + classname.name.charAt(0).toUpperCase() + classname.name.slice(1) + " (" + classcount + ")**\n";
+                let fieldTitle = classname.name.charAt(0).toUpperCase() + classname.name.slice(1) + " (" + classcount + ")\n";
                 let playersToShow = [];
                 players.forEach(player => {
                     if (player.classname == classname.name) {
