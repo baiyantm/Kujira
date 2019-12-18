@@ -874,7 +874,9 @@ async function removePlayer(players, player, origin) {
     content += player.getNameOrMention() + " removed from gear list.";
     content += "\n(Command origin: " + origin + ")";
     await interactions.wSendChannel(myChangelog, content);
-    await interactions.wSendChannel(myChangelog2, content);
+    if(environment == "prod") {
+        await interactions.wSendChannel(myChangelog2, content);
+    }
     players = players.filter(currentPlayer => !currentPlayer.equals(player));
     return players;
 }
@@ -892,7 +894,9 @@ async function addPlayer(players, player, origin) {
     content += player.getNameOrMention() + "** gear update**\n> Old: " + (oldPlayer ? displayFullPlayer(oldPlayer) : "N/A") + "\n> New: " + displayFullPlayer(player);
     content += "\n(Command origin: " + origin + ")";
     await interactions.wSendChannel(myChangelog, content);
-    await interactions.wSendChannel(myChangelog2, content);
+    if(environment == "prod") {
+        await interactions.wSendChannel(myChangelog2, content);
+    }
     players = players.filter(currentPlayer => !currentPlayer.equals(player));
     players.push(player);
     return players;
@@ -968,21 +972,57 @@ function getStatsEmbed(players, classname) {
         let minAP = compare(playersWithoutHidden, (min, player) => {
             return min.getRealAP() > player.getRealAP();
         });
+        let minAPplayers = playersWithoutHidden.filter(element => element.getRealAP() == minAP.getRealAP());
+        let minAPstring = "";
+        minAPplayers.forEach(player => {
+            minAPstring += displayFullPlayer(player) + "\n";
+        });
+
         let minDP = compare(playersWithoutHidden, (min, player) => {
             return min.dp > player.dp;
         });
+        let minDPplayers = playersWithoutHidden.filter(element => element.dp == minDP.dp);
+        let minDPstring = "";
+        minDPplayers.forEach(player => {
+            minDPstring += displayFullPlayer(player) + "\n";
+        });
+
         let minGS = compare(playersWithoutHidden, (min, player) => {
             return min.getGS() > player.getGS();
         });
+        let minGSplayers = playersWithoutHidden.filter(element => element.getGS() == minGS.getGS());
+        let minGSstring = "";
+        minGSplayers.forEach(player => {
+            minGSstring += displayFullPlayer(player) + "\n";
+        });
+
         let maxAP = compare(playersWithoutHidden, (max, player) => {
             return max.getRealAP() < player.getRealAP();
         });
+        let maxAPplayers = playersWithoutHidden.filter(element => element.getRealAP() == maxAP.getRealAP());
+        let maxAPstring = "";
+        maxAPplayers.forEach(player => {
+            maxAPstring += displayFullPlayer(player) + "\n";
+        });
+
         let maxDP = compare(playersWithoutHidden, (max, player) => {
             return max.dp < player.dp;
         });
+        let maxDPplayers = playersWithoutHidden.filter(element => element.dp == maxDP.dp);
+        let maxDPstring = "";
+        maxDPplayers.forEach(player => {
+            maxDPstring += displayFullPlayer(player) + "\n";
+        });
+
         let maxGS = compare(playersWithoutHidden, (max, player) => {
             return max.getGS() < player.getGS();
         });
+        let maxGSplayers = playersWithoutHidden.filter(element => element.getGS() == maxGS.getGS());
+        let maxGSstring = "";
+        maxGSplayers.forEach(player => {
+            maxGSstring += displayFullPlayer(player) + "\n";
+        });
+
         let avgAP = avg(playersWithoutHidden, player => {
             return player.ap;
         });
@@ -1033,15 +1073,15 @@ function getStatsEmbed(players, classname) {
             embed.addBlankField(true);
         }
         embed.addField("Average gear : ", util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
-        embed.addField("Highest GS : " + maxGS.getGS(), displayFullPlayer(maxGS), true);
+        embed.addField("Highest GS : " + maxGS.getGS(), maxGSstring, true);
         embed.addBlankField(true);
-        embed.addField("Highest AP : " + maxAP.getRealAP(), displayFullPlayer(maxAP), true);
-        embed.addField("Highest DP : " + maxDP.dp, displayFullPlayer(maxDP), true);
+        embed.addField("Highest AP : " + maxAP.getRealAP(), maxAPstring, true);
+        embed.addField("Highest DP : " + maxDP.dp, maxDPstring, true);
         embed.addBlankField(true);
-        embed.addField("Lowest GS : " + minGS.getGS(), displayFullPlayer(minGS), true);
-        embed.addField("Lowest AP : " + minAP.getRealAP(), displayFullPlayer(minAP), true);
+        embed.addField("Lowest GS : " + minGS.getGS(), minGSstring, true);
+        embed.addField("Lowest AP : " + minAP.getRealAP(), minAPstring, true);
         embed.addBlankField(true);
-        embed.addField("Lowest DP : " + minDP.dp, displayFullPlayer(minDP), true);
+        embed.addField("Lowest DP : " + minDP.dp, minDPstring, true);
     } else {
         embed.setDescription("Empty player list.");
     }
@@ -1290,6 +1330,7 @@ async function fetchEmoji(name) {
 const bot = new Discord.Client();
 var configjsonfile = files.openJsonFile("./resources/config.json", "utf8");
 var configjson = process.env.TOKEN ? configjsonfile["prod"] : configjsonfile["dev"];
+var environment = process.env.TOKEN ? "prod" : "dev";
 var itemsjson = files.openJsonFile("./resources/items.json", "utf8");
 var init = false;
 
