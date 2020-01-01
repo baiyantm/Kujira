@@ -131,7 +131,7 @@ async function initLookout() {
  * @param {Discord.GuildMember} member 
  */
 async function onLeaveHandler(member) {
-    if(member.guild.id == myServer.id) {
+    if (member.guild.id == myServer.id) {
         interactions.wSendChannel(myWelcome, member + "(" + member.user.username + ") has left the server.");
     }
 }
@@ -578,7 +578,7 @@ function getSignedUpStatsEmbed(players, classname, day) {
             });
             embed.addField("Class list", classText, true);
         }
-        embed.addField("Average gear", util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
+        embed.addField("Average gear (" + ((avgAP + avgAAP) / 2 + avgDP) + ")", util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
     } else {
         embed.setDescription("Empty player list.");
     }
@@ -874,7 +874,7 @@ async function removePlayer(players, player, origin) {
     content += player.getNameOrMention() + " removed from gear list.";
     content += "\n(Command origin: " + origin + ")";
     await interactions.wSendChannel(myChangelog, content);
-    if(environment == "prod") {
+    if (environment == "prod") {
         await interactions.wSendChannel(myChangelog2, content);
     }
     players = players.filter(currentPlayer => !currentPlayer.equals(player));
@@ -894,7 +894,7 @@ async function addPlayer(players, player, origin) {
     content += player.getNameOrMention() + "** gear update**\n> Old: " + (oldPlayer ? displayFullPlayer(oldPlayer) : "N/A") + "\n> New: " + displayFullPlayer(player);
     content += "\n(Command origin: " + origin + ")";
     await interactions.wSendChannel(myChangelog, content);
-    if(environment == "prod") {
+    if (environment == "prod") {
         await interactions.wSendChannel(myChangelog2, content);
     }
     players = players.filter(currentPlayer => !currentPlayer.equals(player));
@@ -1127,7 +1127,7 @@ function getPlayersEmbed(players) {
                 });
                 embed.addField("" + fieldTitle, fieldContent, true);
                 fields++;
-                if(fields%2 == 0) {
+                if (fields % 2 == 0) {
                     embed.addBlankField(true);
                 }
             }
