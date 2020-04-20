@@ -392,9 +392,9 @@ async function onMessageHandler(message, botMsg, annCache) {
                                 }
                                 if (day != null) {
                                     message.react("✅");
-                                    let playersGear = await getSignedUpPlayersGears(day, players);
-                                    if (playersGear) {
-                                        interactions.wSendChannel(message.channel, getSignedUpStatsEmbed(playersGear, args, day));
+                                    let signedUpPlayers = await getPlayersWithStatus(day, players, "yes");
+                                    if (signedUpPlayers) {
+                                        interactions.wSendChannel(message.channel, getSignedUpStatsEmbed(signedUpPlayers, args, day));
                                     } else {
                                         interactions.wSendChannel(message.channel, "No message found for " + util.findCorrespondingDayName(day));
                                     }
@@ -408,9 +408,9 @@ async function onMessageHandler(message, botMsg, annCache) {
                             let day = possibleDay0 ? possibleDay0 : (possibleDay1 ? possibleDay1 : null);
                             message.react("✅");
                             if (day != null && className != null) {
-                                let playersGear = await getSignedUpPlayersGears(day, players);
-                                if (playersGear) {
-                                    interactions.wSendChannel(message.channel, getSignedUpStatsEmbed(playersGear, className, day));
+                                let signedUpPlayers = await getPlayersWithStatus(day, players, "yes");
+                                if (signedUpPlayers) {
+                                    interactions.wSendChannel(message.channel, getSignedUpStatsEmbed(signedUpPlayers, className, day));
                                 } else {
                                     interactions.wSendChannel(message.channel, "No message found for " + util.findCorrespondingDayName(day));
                                 }
@@ -444,6 +444,20 @@ async function onMessageHandler(message, botMsg, annCache) {
                             }
                         }
                     }
+                } else if (enteredCommand == commands["reminder"] && checkAdvPermission(message)) {
+                    let today = new Date();
+                    let day = today.getDay();
+                    let naPlayers = await getPlayersWithStatus(day, players, "N/A");
+                    let reminderMessage = "";
+                    if(naPlayers.length > 0) {
+                        naPlayers.forEach(player => {
+                            reminderMessage += "<@" + player.id + ">\n";
+                        });
+                        reminderMessage += "Please vote for today :)";
+                    } else {
+                        reminderMessage += "Everyone voted for today 👍";
+                    }
+                    interactions.wSendChannel(message.channel, reminderMessage);
                 }
             }
         }
@@ -589,23 +603,24 @@ function getSignedUpStatsEmbed(players, classname, day) {
  * 
  * @param {number} day 
  * @param {Player[]} players 
- * @returns the players if found, null if not
+ * @param {string} status
+ * @returns the players with that particular status if found, null if not
  */
-async function getSignedUpPlayersGears(day, players) {
+async function getPlayersWithStatus(day, players, status) {
     let signUps = await getDaySignUp(day);
     if (signUps) {
-        let presentPlayers = [];
+        let correspondingPlayers = [];
         signUps.forEach(player => {
-            if (player[util.findCorrespondingDayName(day)] == "yes") {
+            if (player.status == status) {
                 for (let i = 0; i < players.length; i++) {
                     if (player.id == players[i].id) {
-                        presentPlayers.push(players[i]);
+                        correspondingPlayers.push(players[i]);
                         break;
                     }
                 }
             }
         });
-        return presentPlayers;
+        return correspondingPlayers;
     } else {
         return null;
     }

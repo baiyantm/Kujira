@@ -9,7 +9,8 @@
             "guest": {
                 "gear": "gear",
                 "stats": "stats",
-                "sub": "sub"
+                "sub": "sub",
+                "reminder": "reminder"
             }
         },
         "gear": {
