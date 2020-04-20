@@ -668,7 +668,6 @@ function setupSignUpSchedule() {
  * @returns any[{ "name": [], "id": [], [dayStr]: [] }]
  */
 async function getDaySignUp(day) {
-    let dayStr = util.findCorrespondingDayName(day);
     let signUps = [];
     let reactionMessage = await getDaySignUpMessage(day, mySignUp);
     if (reactionMessage) {
@@ -679,35 +678,44 @@ async function getDaySignUp(day) {
             await Promise.all(users.map(async user => {
                 let member = await myServer.fetchMember(await bot.fetchUser(user.id));
                 if (member.roles.find(x => x.name == "Members")) {
-                    let name = (member.nickname ? member.nickname : member.user.username);
-                    let object = { "name": name, "id": user.id, [dayStr]: "no" };
-                    signUps.push(object);
+                    addMemberToSignUps(member, signUps, "no");
                 }
             }));
         }
         if (yesReaction) {
             let users = await yesReaction.fetchUsers();
             await Promise.all(users.map(async user => {
-                if (!signUpsHasId(signUps, user.id)) {
-                    let member = await myServer.fetchMember(await bot.fetchUser(user.id));
-                    if (member.roles.find(x => x.name == "Members")) {
-                        let name = (member.nickname ? member.nickname : member.user.username);
-                        let object = { "name": name, "id": user.id, [dayStr]: "yes" };
-                        signUps.push(object);
-                    }
+                let member = await myServer.fetchMember(await bot.fetchUser(user.id));
+                if (member.roles.find(x => x.name == "Members")) {
+                    addMemberToSignUps(member, signUps, "yes");
                 }
             }));
         }
         myServer.members.forEach(member => {
             if (member.roles.find(x => x.name == "Members")) {
-                if (!signUpsHasId(signUps, member.id) && member.id != bot.user.id) {
-                    let name = (member.nickname ? member.nickname : member.user.username);
-                    let object = { "name": name, "id": member.id, [dayStr]: "N/A" };
-                    signUps.push(object);
-                }
+                addMemberToSignUps(member, signUps, "N/A");
             }
         });
         return signUps;
+    }
+}
+
+/**
+ * 
+ * @param {Discord.GuildMember} member 
+ * @param {any[]} signUps 
+ * @param {string} status 
+ */
+function addMemberToSignUps(member, signUps, status) {
+    if (!signUpsHasId(signUps, member.id) && member.id != bot.user.id) {
+        let player = players.find((player) => {
+            return player.id == member.id;
+        });
+        if (player) {
+            let playerInfo = player.getInfo();
+            playerInfo.status = status;
+            signUps.push(playerInfo);
+        }
     }
 }
 
@@ -778,6 +786,7 @@ async function cleanMissingMembersFromSignups(day) {
  * @param {number} day 
  */
 async function saveSignUp(day) {
+    let dayStr = util.findCorrespondingDayName(day);
     try {
         let signUps = await getDaySignUp(day);
         if (signUps) {
@@ -789,9 +798,8 @@ async function saveSignUp(day) {
                     return 1;
                 return 0; //default return value (no sorting)
             });
-            let todayStr = Object.keys(signUps[0])[2];
-            let signuppath = "./download/signups" + todayStr + ".csv";
-            const csv = parse(signUps, { unwind: ["name", "id", todayStr] });
+            let signuppath = "./download/signups" + dayStr + ".csv";
+            const csv = parse(signUps);
             files.writeToFile(signuppath, csv);
             mySignUpData.send({
                 embed: await getSignUpsEmbed(signUps),
@@ -822,7 +830,7 @@ async function getSignUpsEmbed(signUps) {
     let yesToSend = "";
     let yes = 0;
     signUps.forEach(element => {
-        if (element[dayStr] == "yes") {
+        if (element.status == "yes") {
             yesToSend += "<@" + element.id + ">" + "\n";
             yes++;
         }
@@ -831,7 +839,7 @@ async function getSignUpsEmbed(signUps) {
     let noToSend = "";
     let no = 0;
     signUps.forEach(element => {
-        if (element[dayStr] == "no") {
+        if (element.status == "no") {
             noToSend += "<@" + element.id + ">" + "\n";
             no++;
         }
@@ -840,7 +848,7 @@ async function getSignUpsEmbed(signUps) {
     let naToSend = "";
     let na = 0;
     signUps.forEach(element => {
-        if (element[dayStr] == "N/A") {
+        if (element.status == "N/A") {
             naToSend += "<@" + element.id + ">" + "\n";
             na++;
         }
@@ -874,9 +882,6 @@ async function removePlayer(players, player, origin) {
     content += player.getNameOrMention() + " removed from gear list.";
     content += "\n(Command origin: " + origin + ")";
     await interactions.wSendChannel(myChangelog, content);
-    if (environment == "prod") {
-        await interactions.wSendChannel(myChangelog2, content);
-    }
     players = players.filter(currentPlayer => !currentPlayer.equals(player));
     return players;
 }
@@ -894,9 +899,6 @@ async function addPlayer(players, player, origin) {
     content += player.getNameOrMention() + "** gear update**\n> Old: " + (oldPlayer ? displayFullPlayer(oldPlayer) : "N/A") + "\n> New: " + displayFullPlayer(player);
     content += "\n(Command origin: " + origin + ")";
     await interactions.wSendChannel(myChangelog, content);
-    if (environment == "prod") {
-        await interactions.wSendChannel(myChangelog2, content);
-    }
     players = players.filter(currentPlayer => !currentPlayer.equals(player));
     players.push(player);
     return players;
@@ -1351,7 +1353,6 @@ if (configjson && itemsjson) {
     var myAnnouncementData;
     var myWelcome;
     var myChangelog;
-    var myChangelog2;
     var players = [];
     var classEmojis = [];
     var loading = 1000;
@@ -1395,11 +1396,10 @@ if (configjson && itemsjson) {
             myAnnouncementData = bot.channels.get(configjson["announcementDataID"]);
             myWelcome = bot.channels.get(configjson["welcomeID"]);
             myChangelog = bot.channels.get(configjson["changelogID"]);
-            myChangelog2 = bot.channels.get(configjson["changelogID2"]);
 
             logger.log("INFO: Booting up attempt...");
             if (myServer && myDevServer && myGate && myGear && myGearData && classEmojis && mySignUp
-                && mySignUpData && myAnnouncement && myAnnouncementData && myWelcome && myChangelog && myChangelog2) {
+                && mySignUpData && myAnnouncement && myAnnouncementData && myWelcome && myChangelog) {
                 clearInterval(interval);
                 logger.log("INFO: ... success !");
 

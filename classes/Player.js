@@ -11,12 +11,12 @@ module.exports = class Player {
         this.aap = aap;
         this.dp = dp;
         this.hidden = hidden;
-        
+
         /**
          * @param {string} name
          * @returns the first part of a string separated by |
          */
-        this.applyNamePolicy = function(name) {
+        this.applyNamePolicy = function (name) {
             let split = name.split("|");
             return split.length > 1 ? split[0].trim() : name;
         }
@@ -85,6 +85,13 @@ module.exports = class Player {
          */
         this.getGS = function () {
             return this.hidden ? null : Math.round(this.getRealAP() + parseInt(dp));
+        }
+
+        /**
+         * @returns an object containing only attributes of a Player
+         */
+        this.getInfo = function () {
+            return { "id": this.id, "name": this.name, "class": this.classname, "ap": this.ap, "aap": this.aap, "dp": this.dp, "gs" : this.getGS() }
         }
     }
 }
