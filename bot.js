@@ -7,6 +7,7 @@ const interactions = require("./modules/interactions");
 const logger = require("./modules/logger");
 const util = require("./modules/util");
 var Player = require('./classes/Player');
+var PlayerArray = require('./classes/PlayerArray');
 
 async function initLookout() {
     logger.log("INFO: Initializing lookout ...");
@@ -581,7 +582,7 @@ function getSignedUpStatsEmbed(players, classname, day) {
         if (!classname) {
             let classes = [];
             itemsjson["classlist"].forEach(currentClass => {
-                classes.push({ "className": currentClass, "count": countClassNames(players, currentClass) });
+                classes.push({ "className": currentClass, "count": players.countClassNames(currentClass) });
             });
             classes.sort((a, b) => {
                 return b["count"] - a["count"];
@@ -1049,6 +1050,9 @@ function getStatsEmbed(players, classname) {
         let avgDP = avg(playersWithoutHidden, player => {
             return player.dp;
         });
+        let avgGS = avg(playersWithoutHidden, player => {
+            return player.getGS();
+        });
         if (!classname) {
             let countedClasses = [];
             itemsjson["classlist"].forEach(className => {
@@ -1089,7 +1093,7 @@ function getStatsEmbed(players, classname) {
                 true);
             embed.addBlankField(true);
         }
-        embed.addField("Average gear : ", util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
+        embed.addField("Average gear : " + avgGS, util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
         embed.addField("Highest GS : " + maxGS.getGS(), maxGSstring, true);
         embed.addBlankField(true);
         embed.addField("Highest AP : " + maxAP.getRealAP(), maxAPstring, true);
@@ -1113,7 +1117,7 @@ function getPlayersEmbed(players) {
     embed.setTitle(embedTitle);
     let sortedList = [];
     itemsjson["classlist"].forEach(element => {
-        sortedList.push({ name: element, count: countClassNames(players, element) });
+        sortedList.push({ name: element, count: players.countClassNames(element) });
     });
     sortedList.sort((a, b) => {
         return b.count - a.count;
@@ -1121,7 +1125,7 @@ function getPlayersEmbed(players) {
     if (players.length > 0) {
         let fields = 0;
         sortedList.forEach(classname => {
-            let classcount = countClassNames(players, classname.name);
+            let classcount = players.countClassNames(classname.name);
             if (classcount > 0) {
                 let fieldContent = "";
                 let fieldTitle = classname.name.charAt(0).toUpperCase() + classname.name.slice(1) + " (" + classcount + ")\n";
@@ -1153,22 +1157,6 @@ function getPlayersEmbed(players) {
         embed.setDescription("Player list is empty :(");
     }
     return embed;
-}
-
-/**
- * @param {Player[]} players 
- * @param {string} classname 
- * @returns the number of players that have this classname
- */
-function countClassNames(players, classname) {
-    let res = 0;
-    for (let i = 0; i < players.length; i++) {
-        let player = players[i];
-        if (player.classname == classname) {
-            res++;
-        }
-    }
-    return res;
 }
 
 /*
@@ -1347,7 +1335,6 @@ async function fetchEmoji(name) {
 const bot = new Discord.Client();
 var configjsonfile = files.openJsonFile("./resources/config.json", "utf8");
 var configjson = process.env.TOKEN ? configjsonfile["prod"] : configjsonfile["dev"];
-var environment = process.env.TOKEN ? "prod" : "dev";
 var itemsjson = files.openJsonFile("./resources/items.json", "utf8");
 var init = false;
 
@@ -1368,7 +1355,7 @@ if (configjson && itemsjson) {
     var myAnnouncementData;
     var myWelcome;
     var myChangelog;
-    var players = [];
+    var players = new PlayerArray();
     var classEmojis = [];
     var loading = 1000;
 

@@ -23,14 +23,14 @@ module.exports = class Player {
         this.name = this.applyNamePolicy(this.name);
 
         /**
-         * @returns a string with the name + indication whether driver
+         * @returns a string with the name
          */
         this.display = function () {
             return this.hidden ? this.name : this.name + "\xa0\xa0" + this.valueFormat(this.ap) + "\xa0/\xa0" + this.valueFormat(this.aap) + "\xa0/\xa0" + this.valueFormat(this.dp);
         };
 
         /**
-         * @returns a string with the name + indication whether driver
+         * @returns a string with the name
          */
         this.displayNoName = function () {
             return this.valueFormat(this.ap) + "\xa0/\xa0" + this.valueFormat(this.aap) + "\xa0/\xa0" + this.valueFormat(this.dp);
