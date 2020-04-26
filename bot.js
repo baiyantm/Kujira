@@ -1050,6 +1050,9 @@ function getStatsEmbed(players, classname) {
         let avgDP = avg(playersWithoutHidden, player => {
             return player.dp;
         });
+        let avgGS = avg(playersWithoutHidden, player => {
+            return player.getGS();
+        });
         if (!classname) {
             let countedClasses = [];
             itemsjson["classlist"].forEach(className => {
@@ -1090,7 +1093,7 @@ function getStatsEmbed(players, classname) {
                 true);
             embed.addBlankField(true);
         }
-        embed.addField("Average gear : ", util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
+        embed.addField("Average gear : " + avgGS, util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
         embed.addField("Highest GS : " + maxGS.getGS(), maxGSstring, true);
         embed.addBlankField(true);
         embed.addField("Highest AP : " + maxAP.getRealAP(), maxAPstring, true);
