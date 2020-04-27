@@ -149,7 +149,7 @@ async function onEditHandler(newMessage, annCache) {
 }
 
 /**
- * listener for message edit
+ * listener for message delete
  * @param {Discord.Message} deletedMessage 
  * @param {{reference : any}} annCache 
  */
@@ -988,12 +988,21 @@ function getStatsEmbed(players, classname) {
     let playersWithoutHidden = players.filter(currentPlayer => !currentPlayer.hidden);
     if (playersWithoutHidden.length > 0) {
         let minAP = compare(playersWithoutHidden, (min, player) => {
-            return min.getRealAP() > player.getRealAP();
+            return min.ap > player.ap;
         });
-        let minAPplayers = playersWithoutHidden.filter(element => element.getRealAP() == minAP.getRealAP());
+        let minAPplayers = playersWithoutHidden.filter(element => element.ap == minAP.ap);
         let minAPstring = "";
         minAPplayers.forEach(player => {
             minAPstring += displayFullPlayer(player) + "\n";
+        });
+
+        let minAAP = compare(playersWithoutHidden, (min, player) => {
+            return min.aap > player.aap;
+        });
+        let minAAPplayers = playersWithoutHidden.filter(element => element.aap == minAAP.aap);
+        let minAAPstring = "";
+        minAAPplayers.forEach(player => {
+            minAAPstring += displayFullPlayer(player) + "\n";
         });
 
         let minDP = compare(playersWithoutHidden, (min, player) => {
@@ -1015,12 +1024,21 @@ function getStatsEmbed(players, classname) {
         });
 
         let maxAP = compare(playersWithoutHidden, (max, player) => {
-            return max.getRealAP() < player.getRealAP();
+            return max.ap < player.ap;
         });
-        let maxAPplayers = playersWithoutHidden.filter(element => element.getRealAP() == maxAP.getRealAP());
+        let maxAPplayers = playersWithoutHidden.filter(element => element.ap == maxAP.ap);
         let maxAPstring = "";
         maxAPplayers.forEach(player => {
             maxAPstring += displayFullPlayer(player) + "\n";
+        });
+
+        let maxAAP = compare(playersWithoutHidden, (max, player) => {
+            return max.aap < player.aap;
+        });
+        let maxAAPplayers = playersWithoutHidden.filter(element => element.aap == maxAAP.aap);
+        let maxAAPstring = "";
+        maxAAPplayers.forEach(player => {
+            maxAAPstring += displayFullPlayer(player) + "\n";
         });
 
         let maxDP = compare(playersWithoutHidden, (max, player) => {
@@ -1096,11 +1114,14 @@ function getStatsEmbed(players, classname) {
         embed.addField("Average gear : " + avgGS, util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
         embed.addField("Highest GS : " + maxGS.getGS(), maxGSstring, true);
         embed.addBlankField(true);
-        embed.addField("Highest AP : " + maxAP.getRealAP(), maxAPstring, true);
-        embed.addField("Highest DP : " + maxDP.dp, maxDPstring, true);
+        embed.addField("Highest AP : " + maxAP.ap, maxAPstring, true);
+        embed.addField("Highest AAP : " + maxAAP.aap, maxAAPstring, true);
         embed.addBlankField(true);
+        embed.addField("Highest DP : " + maxDP.dp, maxDPstring, true);
         embed.addField("Lowest GS : " + minGS.getGS(), minGSstring, true);
-        embed.addField("Lowest AP : " + minAP.getRealAP(), minAPstring, true);
+        embed.addBlankField(true);
+        embed.addField("Lowest AP : " + minAP.ap, minAPstring, true);
+        embed.addField("Lowest AAP : " + minAAP.aap, minAAPstring, true);
         embed.addBlankField(true);
         embed.addField("Lowest DP : " + minDP.dp, minDPstring, true);
     } else {
