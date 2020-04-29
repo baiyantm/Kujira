@@ -27,7 +27,7 @@ module.exports = class Player {
          * @returns a string with the name
          */
         this.display = function () {
-            return this.hidden ? this.name : this.name + "\n\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" + this.displayNoName();
+            return this.hidden ? "**" + this.name + "**" : "**" + this.name + "**" + "\n\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" + this.displayNoName();
         };
 
         /**
@@ -48,7 +48,7 @@ module.exports = class Player {
             if (value < 100) {
                 value = "0" + value;
             }
-            return "**" + value + "**";
+            return value;
         }
 
         /**
@@ -59,15 +59,15 @@ module.exports = class Player {
          */
         this.equals = function (player) {
             let equals = false;
-            if(player) {
+            if (player) {
                 let playerId = "";
-                if(player instanceof Player) {
+                if (player instanceof Player) {
                     playerId = player.id;
                 } else {
                     playerId = player;
                 }
                 equals = this.id.toLowerCase() == playerId.toLowerCase();
-                if(!equals) {
+                if (!equals) {
                     equals = this.name.toLowerCase() == playerId.toLowerCase();
                 }
             }
@@ -100,7 +100,7 @@ module.exports = class Player {
          * @returns an object containing only attributes of a Player
          */
         this.getInfo = function () {
-            return { "id": this.id, "name": this.name, "class": this.classname, "ap": this.ap, "aap": this.aap, "dp": this.dp, "gs" : this.getGS() }
+            return { "id": this.id, "name": this.name, "class": this.classname, "ap": this.ap, "aap": this.aap, "dp": this.dp, "gs": this.getGS() }
         }
     }
 }
