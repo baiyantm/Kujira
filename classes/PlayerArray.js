@@ -252,16 +252,12 @@ module.exports = class PlayerArray extends Array {
             }
             embed.addField("Average gear : " + avgGS, util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
             embed.addField("Highest GS : " + maxGS.getGS(), maxGSstring, true);
-            embed.addBlankField(true);
             embed.addField("Highest AP : " + maxAP.ap, maxAPstring, true);
             embed.addField("Highest AAP : " + maxAAP.aap, maxAAPstring, true);
-            embed.addBlankField(true);
             embed.addField("Highest DP : " + maxDP.dp, maxDPstring, true);
             embed.addField("Lowest GS : " + minGS.getGS(), minGSstring, true);
-            embed.addBlankField(true);
             embed.addField("Lowest AP : " + minAP.ap, minAPstring, true);
             embed.addField("Lowest AAP : " + minAAP.aap, minAAPstring, true);
-            embed.addBlankField(true);
             embed.addField("Lowest DP : " + minDP.dp, minDPstring, true);
         } else {
             embed.setDescription("Empty player list.");
@@ -359,7 +355,7 @@ module.exports = class PlayerArray extends Array {
                     playersToShow.forEach(player => {
                         fieldContent += this.displayFullPlayer(player) + "\n";
                     });
-                    embed.addField(fieldTitle, fieldContent, false);
+                    embed.addField(fieldTitle, fieldContent, true);
                 }
             });
         } else {
