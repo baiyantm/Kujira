@@ -27,7 +27,7 @@ module.exports = class Player {
          * @returns a string with the name
          */
         this.display = function () {
-            return this.hidden ? "**" + this.name + "**" : "**" + this.name + "**" + "\n\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" + this.displayNoName();
+            return this.hidden ? this.name : this.name + "\n\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" + this.displayNoName();
         };
 
         /**
