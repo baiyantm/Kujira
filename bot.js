@@ -274,16 +274,15 @@ async function onMessageHandler(message, botMsg, annCache) {
                 if (enteredCommand == commands["clear"]) {
                     await clearChannel(message.channel);
                 } else if (enteredCommand == commands["removeall"]) {
-                    players = [];
+                    players.length = 0;
                 } else if (enteredCommand == commands["remove"]) {
+                    let playerId = "";
                     if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
-                        let player = new Player(message.mentions.members.first());
-                        players = await removePlayer(players, player, message.author);
+                        playerId = message.mentions.members.first().id;
                     } else {
-                        let player = new Player();
-                        player.name = args;
-                        players = await removePlayer(players, player, message.author);
+                        playerId = args;
                     }
+                    await removePlayer(players, playerId, message.author);
                 } else if (enteredCommand == commands["add"]) {
                     let split = args.split(" ");
                     if (split.length == 5) {
@@ -298,11 +297,13 @@ async function onMessageHandler(message, botMsg, annCache) {
                             let aap = parseInt(split[3]);
                             let dp = parseInt(split[4]);
                             if (Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
-                                let player = new Player(member, classToFind, ap, aap, dp, false);
+                                let player;
                                 if (!member) {
-                                    player.name = name;
+                                    player = new Player(name, classToFind, ap, aap, dp, false, false);
+                                } else {
+                                    player = new Player(member, classToFind, ap, aap, dp, false, true);
                                 }
-                                players = await addPlayer(players, player, message.author);
+                                await addPlayer(players, player, message.author);
                             } else {
                                 interactions.wSendAuthor(message.author, "Some stats are way too high, check again.");
                             }
@@ -330,14 +331,14 @@ async function onMessageHandler(message, botMsg, annCache) {
                             let aap = parseInt(split[1]);
                             let dp = parseInt(split[2]);
                             if (Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
-                                let player = new Player(message.member, classToFind, ap, aap, dp, false);
-                                players = await addPlayer(players, player, message.author);
+                                let player = new Player(message.member, classToFind, ap, aap, dp, false, true);
+                                await addPlayer(players, player, message.author);
                             } else {
                                 interactions.wSendAuthor(message.author, "Some stats are too high or not numbers.");
                             }
                         } else if (!args) {
-                            let player = new Player(message.member, classToFind, null, null, null, true);
-                            players = await addPlayer(players, player, message.author);
+                            let player = new Player(message.member, classToFind, null, null, null, true, true);
+                            await addPlayer(players, player, message.author);
                         } else {
                             interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `[classname] [ap] [aap] [dp]` or `[classname]`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                         }
@@ -362,61 +363,41 @@ async function onMessageHandler(message, botMsg, annCache) {
                 enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
                 if (enteredCommand == commands["gear"] && checkIntPermission(message)) {
                     message.react("✅");
-                    let player;
+                    let idToFind;
                     if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
-                        player = new Player(message.mentions.members.first());
+                        idToFind = message.mentions.members.first().id;
                     } else {
-                        player = new Player();
-                        player.name = args;
+                        idToFind = args;
                     }
-                    let playersFound = players.filter(currentPlayer => currentPlayer.equals(player));
-                    if (playersFound.length > 0) {
-                        interactions.wSendChannel(message.channel, displayFullPlayer(playersFound[0]));
+                    let playerFound = players.get(idToFind);
+                    if (playerFound) {
+                        interactions.wSendChannel(message.channel, players.displayFullPlayer(playerFound));
                     } else {
                         interactions.wSendChannel(message.channel, "Couldn't find this player.");
                     }
                 } else if (enteredCommand == commands["stats"] && checkIntPermission(message)) {
                     let split = args.split(" ");
                     //split.length cannot be 0 here
-                    if (split.length <= 2) {
-                        if (split.length == 1) {
-                            if (itemsjson["classlist"].includes(args) || !args) {
-                                message.react("✅");
-                                interactions.wSendChannel(message.channel, getStatsEmbed(players, args));
-                            } else {
-                                let day;
-                                if (args == "today") {
-                                    let today = new Date();
-                                    day = today.getDay();
-                                } else if (util.findCorrespondingDayNumber(args) != null) {
-                                    day = util.findCorrespondingDayNumber(args);
-                                }
-                                if (day != null) {
-                                    message.react("✅");
-                                    let signedUpPlayers = await getPlayersWithStatus(day, players, "yes");
-                                    if (signedUpPlayers) {
-                                        interactions.wSendChannel(message.channel, getSignedUpStatsEmbed(signedUpPlayers, args, day));
-                                    } else {
-                                        interactions.wSendChannel(message.channel, "No message found for " + util.findCorrespondingDayName(day));
-                                    }
-                                }
-                            }
-                        } else {
-                            let className = itemsjson["classlist"].includes(split[0]) ? split[0] : (itemsjson["classlist"].includes(split[1]) ? split[1] : null);
-                            let today = new Date();
-                            let possibleDay0 = split[0] == "today" ? today.getDay() : util.findCorrespondingDayNumber(split[0]);
-                            let possibleDay1 = split[1] == "today" ? today.getDay() : util.findCorrespondingDayNumber(split[1]);
-                            let day = possibleDay0 ? possibleDay0 : (possibleDay1 ? possibleDay1 : null);
+                    if (split.length == 1) {
+                        if (itemsjson["classlist"].includes(args) || !args) {
                             message.react("✅");
-                            if (day != null && className != null) {
+                            interactions.wSendChannel(message.channel, players.getStatsEmbed(args));
+                        } else {
+                            let day;
+                            if (args == "today") {
+                                let today = new Date();
+                                day = today.getDay();
+                            } else if (util.findCorrespondingDayNumber(args) != null) {
+                                day = util.findCorrespondingDayNumber(args);
+                            }
+                            if (day != null) {
+                                message.react("✅");
                                 let signedUpPlayers = await getPlayersWithStatus(day, players, "yes");
                                 if (signedUpPlayers) {
-                                    interactions.wSendChannel(message.channel, getSignedUpStatsEmbed(signedUpPlayers, className, day));
+                                    interactions.wSendChannel(message.channel, players.getSignedUpStatsEmbed(signedUpPlayers, args, day));
                                 } else {
                                     interactions.wSendChannel(message.channel, "No message found for " + util.findCorrespondingDayName(day));
                                 }
-                            } else {
-                                interactions.wSendChannel(message.channel, "Incorrect request");
                             }
                         }
                     }
@@ -450,7 +431,7 @@ async function onMessageHandler(message, botMsg, annCache) {
                     let day = today.getDay();
                     let naPlayers = await getPlayersWithStatus(day, players, "N/A");
                     let reminderMessage = "";
-                    if(naPlayers.length > 0) {
+                    if (naPlayers.length > 0) {
                         naPlayers.forEach(player => {
                             reminderMessage += "<@" + player.id + ">\n";
                         });
@@ -555,67 +536,22 @@ async function getReactions(messageReactions) {
 --------------------------------------- SIGNUP&GEAR section ---------------------------------------
 */
 
-function getSignedUpStatsEmbed(players, classname, day) {
-    if (itemsjson["classlist"].includes(classname)) {
-        players = players.filter(currentPlayer => currentPlayer.classname == classname);
-    } else {
-        classname = null;
-    }
-    const embed = new Discord.RichEmbed();
-    let embedTitle = ":pencil: STATS on " + util.findCorrespondingDayName(day) + (classname ? " for " + classname.charAt(0).toUpperCase() + classname.slice(1) : "");
-    let embedColor = 3447003;
-    embed.setColor(embedColor);
-    embed.setTitle(embedTitle);
-
-    let playersWithoutHidden = players.filter(currentPlayer => !currentPlayer.hidden);
-    if (playersWithoutHidden.length > 0) {
-        embed.setDescription("Total players : " + playersWithoutHidden.length + " " + (playersWithoutHidden.length == players.length ? "" : (" (" + players.length + ")")));
-        let avgAP = avg(playersWithoutHidden, player => {
-            return player.ap;
-        });
-        let avgAAP = avg(playersWithoutHidden, player => {
-            return player.aap;
-        });
-        let avgDP = avg(playersWithoutHidden, player => {
-            return player.dp;
-        });
-        if (!classname) {
-            let classes = [];
-            itemsjson["classlist"].forEach(currentClass => {
-                classes.push({ "className": currentClass, "count": players.countClassNames(currentClass) });
-            });
-            classes.sort((a, b) => {
-                return b["count"] - a["count"];
-            });
-            let classText = "";
-            classes.forEach(currentClass => {
-                classText += currentClass["count"] + "x " + classEmojis.find(emoji => emoji.name == currentClass["className"]) + " " + currentClass["className"].charAt(0).toUpperCase() + currentClass["className"].slice(1) + "\n";
-            });
-            embed.addField("Class list", classText, true);
-        }
-        embed.addField("Average gear (" + ((avgAP + avgAAP) / 2 + avgDP) + ")", util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
-    } else {
-        embed.setDescription("Empty player list.");
-    }
-    return embed;
-}
-
 /**
  * 
  * @param {number} day 
- * @param {Player[]} players 
+ * @param {PlayerArray} players 
  * @param {string} status
  * @returns the players with that particular status if found, null if not
  */
 async function getPlayersWithStatus(day, players, status) {
     let signUps = await getDaySignUp(day);
     if (signUps) {
-        let correspondingPlayers = [];
+        let correspondingPlayers = new PlayerArray();
         signUps.forEach(player => {
             if (player.status == status) {
                 for (let i = 0; i < players.length; i++) {
                     if (player.id == players[i].id) {
-                        correspondingPlayers.push(players[i]);
+                        correspondingPlayers.add(players[i]);
                         break;
                     }
                 }
@@ -888,36 +824,33 @@ async function getSignUpsEmbed(signUps) {
 
 /**
  * remove a player from a player list
- * @param {Player[]} players 
- * @param {Player} player 
+ * @param {PlayerArray} players 
+ * @param {string} playerId 
  * @param {Discord.GuildMember} origin
- * @returns the player list with player removed
  */
-async function removePlayer(players, player, origin) {
-    let content = "";
-    content += player.getNameOrMention() + " removed from gear list.";
-    content += "\n(Command origin: " + origin + ")";
-    await interactions.wSendChannel(myChangelog, content);
-    players = players.filter(currentPlayer => !currentPlayer.equals(player));
-    return players;
+async function removePlayer(players, playerId, origin) {
+    let removed = players.remove(playerId);
+    if(removed) {
+        let content = "";
+        content += playerId + " removed from gear list.";
+        content += "\n(Command origin: " + origin + ")";
+        await interactions.wSendChannel(myChangelog, content);
+    }
 }
 
 /**
  * remove and add (readd) a player to a player list
- * @param {Player[]} players 
+ * @param {PlayerArray} players 
  * @param {Player} player 
  * @param {Discord.GuildMember} origin
- * @returns the player list with player added
  */
 async function addPlayer(players, player, origin) {
     let oldPlayer = players.filter(currentPlayer => currentPlayer.equals(player))[0];
     let content = "";
-    content += player.getNameOrMention() + "** gear update**\n> Old: " + (oldPlayer ? displayFullPlayer(oldPlayer) : "N/A") + "\n> New: " + displayFullPlayer(player);
+    content += player.getNameOrMention() + "** gear update**\n> Old: " + (oldPlayer ? players.displayFullPlayer(oldPlayer) : "N/A") + "\n> New: " + players.displayFullPlayer(player);
     content += "\n(Command origin: " + origin + ")";
     await interactions.wSendChannel(myChangelog, content);
-    players = players.filter(currentPlayer => !currentPlayer.equals(player));
-    players.push(player);
-    return players;
+    players.findAndReplace(player);
 }
 
 async function savePlayers() {
@@ -927,30 +860,22 @@ async function savePlayers() {
 }
 
 /**
- * @param {Player} player 
- * @returns a string containing the server class emoji and the player display
- */
-function displayFullPlayer(player) {
-    return classEmojis.find(emoji => emoji.name == player.classname) + "\xa0" + player;
-}
-
-/**
  * if the bot message exists, edits it
  * if not, sends a new one
  * @param {Discord.Message} channel the channel where the original message comes from
  * @param {Object} botMsg the bot message
- * @param {Player[]} players
+ * @param {PlayerArray} players
  * @returns the new message
  */
 async function refreshBotMsg(channel, botMsg, players) {
     if (!botMsg.reference) {
         //no bot message to begin with, create a new one
-        botMsg.reference = await newBotMessage(channel, getPlayersEmbed(players));
+        botMsg.reference = await newBotMessage(channel, players.getEmbed());
     } else {
-        if (!await interactions.wEditMsg(botMsg.reference, getPlayersEmbed(players))) {
+        if (!await interactions.wEditMsg(botMsg.reference, players.getEmbed())) {
             //message probably got deleted or something, either way creating a new one
             logger.log("INFO: Couldn't find the existing bot message to edit, creating a new one");
-            botMsg.reference = await newBotMessage(channel, getPlayersEmbed(players));
+            botMsg.reference = await newBotMessage(channel, players.getEmbed());
         }
     }
 }
@@ -973,211 +898,6 @@ async function clearChannel(channel) {
     } catch (e) {
         logger.logError("bulkDelete error", e);
     }
-}
-
-function getStatsEmbed(players, classname) {
-    if (classname) {
-        players = players.filter(currentPlayer => currentPlayer.classname == classname);
-    }
-    const embed = new Discord.RichEmbed();
-    let embedTitle = ":pencil: STATS" + (classname ? " for " + classname.charAt(0).toUpperCase() + classname.slice(1) : "");
-    let embedColor = 3447003;
-    embed.setColor(embedColor);
-    embed.setTitle(embedTitle);
-
-    let playersWithoutHidden = players.filter(currentPlayer => !currentPlayer.hidden);
-    if (playersWithoutHidden.length > 0) {
-        let minAP = compare(playersWithoutHidden, (min, player) => {
-            return min.ap > player.ap;
-        });
-        let minAPplayers = playersWithoutHidden.filter(element => element.ap == minAP.ap);
-        let minAPstring = "";
-        minAPplayers.forEach(player => {
-            minAPstring += displayFullPlayer(player) + "\n";
-        });
-
-        let minAAP = compare(playersWithoutHidden, (min, player) => {
-            return min.aap > player.aap;
-        });
-        let minAAPplayers = playersWithoutHidden.filter(element => element.aap == minAAP.aap);
-        let minAAPstring = "";
-        minAAPplayers.forEach(player => {
-            minAAPstring += displayFullPlayer(player) + "\n";
-        });
-
-        let minDP = compare(playersWithoutHidden, (min, player) => {
-            return min.dp > player.dp;
-        });
-        let minDPplayers = playersWithoutHidden.filter(element => element.dp == minDP.dp);
-        let minDPstring = "";
-        minDPplayers.forEach(player => {
-            minDPstring += displayFullPlayer(player) + "\n";
-        });
-
-        let minGS = compare(playersWithoutHidden, (min, player) => {
-            return min.getGS() > player.getGS();
-        });
-        let minGSplayers = playersWithoutHidden.filter(element => element.getGS() == minGS.getGS());
-        let minGSstring = "";
-        minGSplayers.forEach(player => {
-            minGSstring += displayFullPlayer(player) + "\n";
-        });
-
-        let maxAP = compare(playersWithoutHidden, (max, player) => {
-            return max.ap < player.ap;
-        });
-        let maxAPplayers = playersWithoutHidden.filter(element => element.ap == maxAP.ap);
-        let maxAPstring = "";
-        maxAPplayers.forEach(player => {
-            maxAPstring += displayFullPlayer(player) + "\n";
-        });
-
-        let maxAAP = compare(playersWithoutHidden, (max, player) => {
-            return max.aap < player.aap;
-        });
-        let maxAAPplayers = playersWithoutHidden.filter(element => element.aap == maxAAP.aap);
-        let maxAAPstring = "";
-        maxAAPplayers.forEach(player => {
-            maxAAPstring += displayFullPlayer(player) + "\n";
-        });
-
-        let maxDP = compare(playersWithoutHidden, (max, player) => {
-            return max.dp < player.dp;
-        });
-        let maxDPplayers = playersWithoutHidden.filter(element => element.dp == maxDP.dp);
-        let maxDPstring = "";
-        maxDPplayers.forEach(player => {
-            maxDPstring += displayFullPlayer(player) + "\n";
-        });
-
-        let maxGS = compare(playersWithoutHidden, (max, player) => {
-            return max.getGS() < player.getGS();
-        });
-        let maxGSplayers = playersWithoutHidden.filter(element => element.getGS() == maxGS.getGS());
-        let maxGSstring = "";
-        maxGSplayers.forEach(player => {
-            maxGSstring += displayFullPlayer(player) + "\n";
-        });
-
-        let avgAP = avg(playersWithoutHidden, player => {
-            return player.ap;
-        });
-        let avgAAP = avg(playersWithoutHidden, player => {
-            return player.aap;
-        });
-        let avgDP = avg(playersWithoutHidden, player => {
-            return player.dp;
-        });
-        let avgGS = avg(playersWithoutHidden, player => {
-            return player.getGS();
-        });
-        if (!classname) {
-            let countedClasses = [];
-            itemsjson["classlist"].forEach(className => {
-                countedClasses[className] = 0;
-                players.forEach(player => {
-                    if (player.classname == className) {
-                        countedClasses[className]++;
-                    }
-                });
-            });
-            let max = 0;
-            for (let index in countedClasses) {
-                max = Math.max(max, countedClasses[index]);
-            }
-            let maxStr = "";
-            for (let index in countedClasses) {
-                let value = countedClasses[index];
-                if (value == max) {
-                    maxStr += classEmojis.find(emoji => emoji.name == index) + " " + index.charAt(0).toUpperCase() + index.slice(1) + " **(" + value + ")**\n";
-                }
-            }
-            let min = 999;
-            for (let index in countedClasses) {
-                min = Math.min(min, countedClasses[index]);
-            }
-            let minStr = "";
-            for (let index in countedClasses) {
-                let value = countedClasses[index];
-                if (value == min) {
-                    minStr += classEmojis.find(emoji => emoji.name == index) + " " + index.charAt(0).toUpperCase() + index.slice(1) + " **(" + value + ")**\n";
-                }
-            }
-            embed.addField("Most played",
-                maxStr,
-                true);
-            embed.addField("Least played",
-                minStr,
-                true);
-            embed.addBlankField(true);
-        }
-        embed.addField("Average gear : " + avgGS, util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
-        embed.addField("Highest GS : " + maxGS.getGS(), maxGSstring, true);
-        embed.addBlankField(true);
-        embed.addField("Highest AP : " + maxAP.ap, maxAPstring, true);
-        embed.addField("Highest AAP : " + maxAAP.aap, maxAAPstring, true);
-        embed.addBlankField(true);
-        embed.addField("Highest DP : " + maxDP.dp, maxDPstring, true);
-        embed.addField("Lowest GS : " + minGS.getGS(), minGSstring, true);
-        embed.addBlankField(true);
-        embed.addField("Lowest AP : " + minAP.ap, minAPstring, true);
-        embed.addField("Lowest AAP : " + minAAP.aap, minAAPstring, true);
-        embed.addBlankField(true);
-        embed.addField("Lowest DP : " + minDP.dp, minDPstring, true);
-    } else {
-        embed.setDescription("Empty player list.");
-    }
-    return embed;
-}
-
-function getPlayersEmbed(players) {
-    const embed = new Discord.RichEmbed();
-    let embedTitle = ":star: PLAYERS (" + players.length + ")";
-    let embedColor = 3447003;
-    embed.setColor(embedColor);
-    embed.setTitle(embedTitle);
-    let sortedList = [];
-    itemsjson["classlist"].forEach(element => {
-        sortedList.push({ name: element, count: players.countClassNames(element) });
-    });
-    sortedList.sort((a, b) => {
-        return b.count - a.count;
-    });
-    if (players.length > 0) {
-        let fields = 0;
-        sortedList.forEach(classname => {
-            let classcount = players.countClassNames(classname.name);
-            if (classcount > 0) {
-                let fieldContent = "";
-                let fieldTitle = classname.name.charAt(0).toUpperCase() + classname.name.slice(1) + " (" + classcount + ")\n";
-                let playersToShow = [];
-                players.forEach(player => {
-                    if (player.classname == classname.name) {
-                        playersToShow.push(player);
-                    }
-                });
-                playersToShow.sort((a, b) => {
-                    var nameA = a.name.toLowerCase(), nameB = b.name.toLowerCase();
-                    if (nameA < nameB) //sort string ascending
-                        return -1;
-                    if (nameA > nameB)
-                        return 1;
-                    return 0; //default return value (no sorting)
-                });
-                playersToShow.forEach(player => {
-                    fieldContent += displayFullPlayer(player) + "\n";
-                });
-                embed.addField("" + fieldTitle, fieldContent, true);
-                fields++;
-                if (fields % 2 == 0) {
-                    embed.addBlankField(true);
-                }
-            }
-        });
-    } else {
-        embed.setDescription("Player list is empty :(");
-    }
-    return embed;
 }
 
 /*
@@ -1205,35 +925,6 @@ async function setupPresence() {
             }
         });
     }, 60000);
-}
-
-/**
- * @param {any[]} list 
- * @param {function} comparator 
- * @returns the result of the function applied to all players in the list
- */
-function compare(list, comparator) {
-    let res = list[0];
-    list.forEach(element => {
-        //min : min > element
-        //max : max < element
-        if (comparator(res, element)) {
-            res = element;
-        }
-    });
-    return res;
-}
-
-/**
- * @param {any[]} list 
- * @param {function} aggregate 
- */
-function avg(list, aggregate) {
-    let res = 0;
-    list.forEach(element => {
-        res += aggregate(element);
-    });
-    return Math.round(res / list.length);
 }
 
 /**
@@ -1278,7 +969,6 @@ async function checkAdvPermission(message) {
 
 /**
  * @param {string} id the player's id
- * @param {string} name his display name (if doesn't have id)
  * @param {string} classname
  * @param {string} ap
  * @param {string} aap
@@ -1286,14 +976,9 @@ async function checkAdvPermission(message) {
  * @param {boolean} hidden
  * @returns a player object with the given data
  */
-async function revivePlayer(id, name, classname, ap, aap, dp, hidden) {
-    if (id) {
-        return new Player(await myServer.fetchMember(await bot.fetchUser(id)), classname, ap, aap, dp, hidden);
-    } else {
-        let player = new Player(null, classname, ap, aap, dp, hidden);
-        player.name = name;
-        return player;
-    }
+async function revivePlayer(id, classname, ap, aap, dp, hidden, real) {
+    let playerId = real ? await myServer.fetchMember(await bot.fetchUser(id)) : id;
+    return new Player(playerId, classname, ap, aap, dp, hidden, real);
 }
 
 /**
@@ -1376,7 +1061,7 @@ if (configjson && itemsjson) {
     var myAnnouncementData;
     var myWelcome;
     var myChangelog;
-    var players = new PlayerArray();
+    var players = new PlayerArray(itemsjson["classlist"]);
     var classEmojis = [];
     var loading = 1000;
 
@@ -1391,6 +1076,7 @@ if (configjson && itemsjson) {
         itemsjson["classlist"].forEach(async classname => {
             classEmojis.push(await fetchEmoji(classname));
         });
+        players.setClassEmojis(classEmojis);
 
         //attempt to load a previously saved state
         try {
@@ -1402,7 +1088,7 @@ if (configjson && itemsjson) {
         var playersjson = files.openJsonFile("./download/players.json", "utf8");
         if (playersjson) {
             playersjson.forEach(async currentPlayer => {
-                players.push(await revivePlayer(currentPlayer["id"], currentPlayer["name"], currentPlayer["classname"], currentPlayer["ap"], currentPlayer["aap"], currentPlayer["dp"], currentPlayer["hidden"]));
+                players.add(await revivePlayer(currentPlayer["id"], currentPlayer["classname"], currentPlayer["ap"], currentPlayer["aap"], currentPlayer["dp"], currentPlayer["hidden"], currentPlayer["real"]));
             });
         }
 
