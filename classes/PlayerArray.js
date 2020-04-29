@@ -359,7 +359,7 @@ module.exports = class PlayerArray extends Array {
                     playersToShow.forEach(player => {
                         fieldContent += this.displayFullPlayer(player) + "\n";
                     });
-                    embed.addField(fieldTitle, fieldContent, true);
+                    embed.addField(fieldTitle, fieldContent, false);
                 }
             });
         } else {
