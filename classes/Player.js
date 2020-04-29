@@ -27,14 +27,14 @@ module.exports = class Player {
          * @returns a string with the name
          */
         this.display = function () {
-            return this.hidden ? this.name : this.name + "\xa0\xa0" + this.valueFormat(this.ap) + "\xa0/\xa0" + this.valueFormat(this.aap) + "\xa0/\xa0" + this.valueFormat(this.dp);
+            return this.hidden ? this.name : this.name + "\n\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" + this.displayNoName();
         };
 
         /**
          * @returns a string with the name
          */
         this.displayNoName = function () {
-            return this.valueFormat(this.ap) + "\xa0/\xa0" + this.valueFormat(this.aap) + "\xa0/\xa0" + this.valueFormat(this.dp);
+            return this.valueFormat(this.ap) + " / " + this.valueFormat(this.aap) + " / " + this.valueFormat(this.dp);
         };
 
         /**
@@ -48,7 +48,7 @@ module.exports = class Player {
             if (value < 100) {
                 value = "0" + value;
             }
-            return value;
+            return "**" + value + "**";
         }
 
         /**
