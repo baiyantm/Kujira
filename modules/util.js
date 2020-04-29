@@ -164,6 +164,35 @@ function valueFormat(string, value) {
     return string;
 }
 
+/**
+* @param {any[]} list 
+* @param {function} comparator 
+* @returns the result of the function applied to all elements in the list
+*/
+function compare(list, comparator) {
+    let res = list[0];
+    list.forEach(element => {
+        //min : min > element
+        //max : max < element
+        if (comparator(res, element)) {
+            res = element;
+        }
+    });
+    return res;
+}
+
+/**
+ * @param {any[]} list 
+ * @param {function} aggregate 
+ */
+function avg(list, aggregate) {
+    let res = 0;
+    list.forEach(element => {
+        res += aggregate(element);
+    });
+    return Math.round(res / list.length);
+}
+
 module.exports.findCorrespondingDayName = findCorrespondingDayName;
 module.exports.findCorrespondingDayNumber = findCorrespondingDayNumber;
 module.exports.fillUpSpace = fillUpSpace;
@@ -175,3 +204,5 @@ module.exports.isNextDay = isNextDay;
 module.exports.zeroString = zeroString;
 module.exports.displayHoursMinBefore = displayHoursMinBefore;
 module.exports.valueFormat = valueFormat;
+module.exports.compare = compare;
+module.exports.avg = avg;

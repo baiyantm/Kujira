@@ -1,16 +1,17 @@
 /**
- * Player class (member: GuildMember, classname: string, ap: string, aap: string, dp:string)
+ * Player class (member: GuildMember | string, classname: string, ap: string, aap: string, dp:string, hidden:boolean, real:boolean)
  */
 module.exports = class Player {
-    constructor(member, classname, ap, aap, dp, hidden) {
+    constructor(member, classname, ap, aap, dp, hidden, real) {
         //id can be null
-        this.id = member ? member.id : undefined;
-        this.name = member ? member.displayName : "default";
+        this.id = real ? member.id : member;
+        this.name = real ? member.displayName : member;
         this.classname = classname;
         this.ap = ap;
         this.aap = aap;
         this.dp = dp;
         this.hidden = hidden;
+        this.real = real;
 
         /**
          * @param {string} name
@@ -51,22 +52,30 @@ module.exports = class Player {
         }
 
         /**
-         * compares two players to see if they're the same person (their id is the same or else their name is the same)
-         * @param {Player} player
+         * compares two players to see if have the same id or the same name
+         * also accepts player ID as parameter
+         * @param {Player | string} player
          * @returns true same, false different
          */
         this.equals = function (player) {
-            var res = false;
-            if (this.id && player.id) {
-                res = player.id == this.id;
-            } else {
-                res = player.name.toLowerCase() == this.name.toLowerCase();
+            let equals = false;
+            if(player) {
+                let playerId = "";
+                if(player instanceof Player) {
+                    playerId = player.id;
+                } else {
+                    playerId = player;
+                }
+                equals = this.id.toLowerCase() == playerId.toLowerCase();
+                if(!equals) {
+                    equals = this.name.toLowerCase() == playerId.toLowerCase();
+                }
             }
-            return res;
+            return equals;
         };
 
         this.getNameOrMention = function () {
-            return this.id ? "<@" + this.id + ">" : this.name;
+            return this.real ? "<@" + this.id + ">" : this.id;
         }
 
         this.toString = function () {
