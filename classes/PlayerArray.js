@@ -337,7 +337,6 @@ module.exports = class PlayerArray extends Array {
             return b.count - a.count;
         });
         if (this.length > 0) {
-            let fields = 0;
             sortedList.forEach(classname => {
                 let classcount = this.countClassNames(classname.name);
                 if (classcount > 0) {
@@ -360,11 +359,7 @@ module.exports = class PlayerArray extends Array {
                     playersToShow.forEach(player => {
                         fieldContent += this.displayFullPlayer(player) + "\n";
                     });
-                    embed.addField("" + fieldTitle, fieldContent, true);
-                    fields++;
-                    if (fields % 2 == 0) {
-                        embed.addBlankField(true);
-                    }
+                    embed.addField(fieldTitle, fieldContent, true);
                 }
             });
         } else {
