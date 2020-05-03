@@ -268,7 +268,7 @@ async function onMessageHandler(message, botMsg, annCache) {
             // === GEAR ===
             if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
                 commands = itemsjson["commands"]["gear"]["adv"];
-                enteredCommand = enteredCommand.substr(1);
+                enteredCommand = enteredCommand.substr(1); // remove ?
                 let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
                 enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
                 if (enteredCommand == commands["clear"]) {
@@ -285,17 +285,27 @@ async function onMessageHandler(message, botMsg, annCache) {
                     await removePlayer(players, playerId, message.author);
                 } else if (enteredCommand == commands["add"]) {
                     let split = args.split(" ");
-                    if (split.length == 5) {
+                    if (split.length >= 5) {
                         let member = null;
                         if (message.mentions.members.size == 1) {
                             member = message.mentions.members.first();
                         }
-                        let classToFind = itemsjson["classlist"].find(currentclassname => currentclassname == split[1]);
+                        let name = split[0];
+                        split.splice(0, 1); // remove name
+                        let classToFind = itemsjson["classlist"].find(currentclassname => currentclassname == split[0]);
                         if (classToFind) {
-                            let name = split[0];
-                            let ap = parseInt(split[2]);
-                            let aap = parseInt(split[3]);
-                            let dp = parseInt(split[4]);
+                            split.splice(0, 1); // remove classname
+                            split[0].startsWith(split[0]);
+                            if (split.length == 4) {
+                                if (split[0].startsWith(commands["succession"]) &&
+                                    itemsjson["classlistSucc"].find(currentclassname => currentclassname == classToFind)) {
+                                    classToFind += "Succ";
+                                }
+                                split.splice(0, 1); // remove succ
+                            }
+                            let ap = parseInt(split[0]);
+                            let aap = parseInt(split[1]);
+                            let dp = parseInt(split[2]);
                             if (Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
                                 let player;
                                 if (!member) {
@@ -305,13 +315,13 @@ async function onMessageHandler(message, botMsg, annCache) {
                                 }
                                 await addPlayer(players, player, message.author);
                             } else {
-                                interactions.wSendAuthor(message.author, "Some stats are way too high, check again.");
+                                interactions.wSendAuthor(message.author, "Some stats are too high or not numbers.");
                             }
                         } else {
-                            interactions.wSendAuthor(message.author, enteredCommand.split(" ")[0] + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
+                            interactions.wSendAuthor(message.author, split[0] + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                         }
                     } else {
-                        interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `[name] [classname] [ap] [aap] [dp]`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
+                        interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `<name> <classname> [succession] <ap> <aap> <dp>`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                     }
                 }
             } else if (!enteredCommand.startsWith("! ") && !enteredCommand.startsWith("?")) {
@@ -324,8 +334,15 @@ async function onMessageHandler(message, botMsg, annCache) {
                 } else {
                     let classToFind = itemsjson["classlist"].find(currentclassname => currentclassname == enteredCommand.split(" ")[0]);
                     if (classToFind) {
-                        let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
+                        let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase(); // remove classname
                         let split = args.split(" ");
+                        if (split.length == 4) {
+                            if (split[0].startsWith(commands["succession"]) &&
+                                itemsjson["classlistSucc"].find(currentclassname => currentclassname == classToFind)) {
+                                classToFind += "Succ";
+                            }
+                            split.splice(0, 1); // remove succ
+                        }
                         if (split.length == 3) {
                             let ap = parseInt(split[0]);
                             let aap = parseInt(split[1]);
@@ -340,7 +357,7 @@ async function onMessageHandler(message, botMsg, annCache) {
                             let player = new Player(message.member, classToFind, null, null, null, true, true);
                             await addPlayer(players, player, message.author);
                         } else {
-                            interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `[classname] [ap] [aap] [dp]` or `[classname]`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
+                            interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `<classname> [succession] <ap> <aap> <dp>` or `<classname> [succession]`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                         }
                     } else {
                         interactions.wSendAuthor(message.author, enteredCommand.split(" ")[0] + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
@@ -376,27 +393,33 @@ async function onMessageHandler(message, botMsg, annCache) {
                         interactions.wSendChannel(message.channel, "Couldn't find this player.");
                     }
                 } else if (enteredCommand == commands["stats"] && checkIntPermission(message)) {
-                    let split = args.split(" ");
-                    //split.length cannot be 0 here
-                    if (split.length == 1) {
-                        if (itemsjson["classlist"].includes(args) || !args) {
-                            message.react("✅");
-                            interactions.wSendChannel(message.channel, players.getStatsEmbed(args));
-                        } else {
-                            let day;
-                            if (args == "today") {
-                                let today = new Date();
-                                day = today.getDay();
-                            } else if (util.findCorrespondingDayNumber(args) != null) {
-                                day = util.findCorrespondingDayNumber(args);
-                            }
-                            if (day != null) {
+                    if (!args) {
+                        message.react("✅");
+                        interactions.wSendChannel(message.channel, players.getStatsEmbed(null));
+                    } else {
+                        let split = args.split(" ");
+                        if (split.length == 1) {
+                            if(itemsjson["classlist"].includes(split[0])) {
                                 message.react("✅");
-                                let signedUpPlayers = await getPlayersWithStatus(day, players, "yes");
-                                if (signedUpPlayers) {
-                                    interactions.wSendChannel(message.channel, players.getSignedUpStatsEmbed(signedUpPlayers, args, day));
-                                } else {
-                                    interactions.wSendChannel(message.channel, "No message found for " + util.findCorrespondingDayName(day));
+                                interactions.wSendChannel(message.channel, players.getStatsEmbed(split[0]));
+                            } else {
+                                let day;
+                                if(split[0]) {
+                                    if (split[0] == "today") {
+                                        let today = new Date();
+                                        day = today.getDay();
+                                    } else if (util.findCorrespondingDayNumber(split[0]) != null) {
+                                        day = util.findCorrespondingDayNumber(split[0]);
+                                    }
+                                    if (day != undefined) {
+                                        message.react("✅");
+                                        let signedUpPlayers = await getPlayersWithStatus(day, players, "yes");
+                                        if (signedUpPlayers) {
+                                            interactions.wSendChannel(message.channel, players.getSignedUpStatsEmbed(signedUpPlayers, day));
+                                        } else {
+                                            interactions.wSendChannel(message.channel, "No message found for " + util.findCorrespondingDayName(day));
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -830,7 +853,7 @@ async function getSignUpsEmbed(signUps) {
  */
 async function removePlayer(players, playerId, origin) {
     let removed = players.remove(playerId);
-    if(removed) {
+    if (removed) {
         let content = "";
         content += playerId + " removed from gear list.";
         content += "\n(Command origin: " + origin + ")";
@@ -1075,6 +1098,9 @@ if (configjson && itemsjson) {
 
         itemsjson["classlist"].forEach(async classname => {
             classEmojis.push(await fetchEmoji(classname));
+        });
+        itemsjson["classlistSucc"].forEach(async classname => {
+            classEmojis.push(await fetchEmoji(classname + "Succ"));
         });
         players.setClassEmojis(classEmojis);
 

@@ -92,7 +92,7 @@ module.exports = class PlayerArray extends Array {
         let res = 0;
         for (let i = 0; i < this.length; i++) {
             let player = this[i];
-            if (player.classname == classname) {
+            if (player.getClassName() == classname) {
                 res++;
             }
         }
@@ -104,7 +104,7 @@ module.exports = class PlayerArray extends Array {
      * @returns array of players having this classname
      */
     getPlayersWithClass(classname) {
-        return players.filter(currentPlayer => currentPlayer.classname == classname);
+        return this.filter(currentPlayer => currentPlayer.getClassName() == classname);
     }
 
     // ----- DISPLAY -----
@@ -215,7 +215,7 @@ module.exports = class PlayerArray extends Array {
                 this.classList.forEach(className => {
                     countedClasses[className] = 0;
                     players.forEach(player => {
-                        if (player.classname == className) {
+                        if (player.getClassName() == className) {
                             countedClasses[className]++;
                         }
                     });
@@ -266,18 +266,12 @@ module.exports = class PlayerArray extends Array {
     }
 
     /**
-     * @param {string} classname 
      * @param {number} day
      * @returns discord embed
      */
-    getSignedUpStatsEmbed(players, classname, day) {
-        if (this.classList.includes(className)) {
-            players = players.getPlayersWithClass(classname);
-        } else {
-            classname = null;
-        }
+    getSignedUpStatsEmbed(players, day) {
         const embed = new Discord.RichEmbed();
-        let embedTitle = ":pencil: STATS on " + util.findCorrespondingDayName(day) + (classname ? " for " + classname.charAt(0).toUpperCase() + classname.slice(1) : "");
+        let embedTitle = ":pencil: STATS on " + util.findCorrespondingDayName(day);
         let embedColor = 3447003;
         embed.setColor(embedColor);
         embed.setTitle(embedTitle);
@@ -294,20 +288,18 @@ module.exports = class PlayerArray extends Array {
             let avgDP = util.avg(playersWithoutHidden, player => {
                 return player.dp;
             });
-            if (!classname) {
-                let classes = [];
-                this.classList.forEach(currentClass => {
-                    classes.push({ "className": currentClass, "count": players.countClassNames(currentClass) });
-                });
-                classes.sort((a, b) => {
-                    return b["count"] - a["count"];
-                });
-                let classText = "";
-                classes.forEach(currentClass => {
-                    classText += currentClass["count"] + "x " + this.classEmojis.find(emoji => emoji.name == currentClass["className"]) + " " + currentClass["className"].charAt(0).toUpperCase() + currentClass["className"].slice(1) + "\n";
-                });
-                embed.addField("Class list", classText, true);
-            }
+            let classes = [];
+            this.classList.forEach(currentClass => {
+                classes.push({ "className": currentClass, "count": players.countClassNames(currentClass) });
+            });
+            classes.sort((a, b) => {
+                return b["count"] - a["count"];
+            });
+            let classText = "";
+            classes.forEach(currentClass => {
+                classText += currentClass["count"] + "x " + this.classEmojis.find(emoji => emoji.name == currentClass["className"]) + " " + currentClass["className"].charAt(0).toUpperCase() + currentClass["className"].slice(1) + "\n";
+            });
+            embed.addField("Class list", classText, true);
             embed.addField("Average gear (" + ((avgAP + avgAAP) / 2 + avgDP) + ")", util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
         } else {
             embed.setDescription("Empty player list.");
@@ -333,14 +325,14 @@ module.exports = class PlayerArray extends Array {
             return b.count - a.count;
         });
         if (this.length > 0) {
-            sortedList.forEach(classname => {
-                let classcount = this.countClassNames(classname.name);
+            sortedList.forEach(classListElement => {
+                let classcount = this.countClassNames(classListElement.name);
                 if (classcount > 0) {
                     let fieldContent = "";
-                    let fieldTitle = classname.name.charAt(0).toUpperCase() + classname.name.slice(1) + " (" + classcount + ")\n";
+                    let fieldTitle = classListElement.name.charAt(0).toUpperCase() + classListElement.name.slice(1) + " (" + classcount + ")\n";
                     let playersToShow = [];
                     this.forEach(player => {
-                        if (player.classname == classname.name) {
+                        if (player.getClassName() == classListElement.name) {
                             playersToShow.push(player);
                         }
                     });
@@ -369,6 +361,6 @@ module.exports = class PlayerArray extends Array {
      * @returns a string containing the server class emoji and the player display
      */
     displayFullPlayer(player) {
-        return this.classEmojis.find(emoji => emoji.name == player.classname) + "\xa0" + player;
+        return this.classEmojis.find(emoji => emoji.name == player.getEmojiClassName()) + "\xa0" + player;
     }
 }
