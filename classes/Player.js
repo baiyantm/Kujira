@@ -86,7 +86,17 @@ module.exports = class Player {
          * @returns (ap+aap)/2
          */
         this.getRealAP = function () {
-            return this.hidden ? null : Math.round((parseInt(ap) + parseInt(aap)) / 2);
+            let realAP;
+            if(this.hidden) {
+                realAP = null;
+            } else {
+                if(this.isSuccession()) {
+                    realAP = this.ap;
+                } else {
+                    realAP = Math.round((parseInt(ap) + parseInt(aap)) / 2);
+                }
+            }
+            return realAP;
         }
 
         /**
@@ -100,7 +110,34 @@ module.exports = class Player {
          * @returns an object containing only attributes of a Player
          */
         this.getInfo = function () {
-            return { "id": this.id, "name": this.name, "class": this.classname, "ap": this.ap, "aap": this.aap, "dp": this.dp, "gs": this.getGS() }
+            return { "id": this.id, "name": this.name, "class": this.getClassName(), "ap": this.ap, "aap": this.aap, "dp": this.dp, "gs": this.getGS(), "succession": (this.isSuccession() ? "yes" : "no") }
+        }
+
+        /**
+         * @returns whether the player is in succession
+         */
+        this.isSuccession = function () {
+            return this.classname.endsWith("Succ");
+        }
+
+        /**
+         * @returns the class striped down of any succ term
+         */
+        this.getClassName = function () {
+            let classname = "";
+            if (this.isSuccession()) {
+                classname = this.classname.split("Succ")[0];
+            } else {
+                classname = this.classname;
+            }
+            return classname;
+        }
+
+        /**
+         * @returns the class name for emoji
+         */
+        this.getEmojiClassName = function () {
+            return this.classname;
         }
     }
 }
