@@ -1000,12 +1000,11 @@ async function checkAdvPermission(message) {
  * @param {string} ap
  * @param {string} aap
  * @param {string} dp
- * @param {boolean} hidden
  * @returns a player object with the given data
  */
-async function revivePlayer(id, classname, ap, aap, dp, hidden, real) {
+async function revivePlayer(id, classname, ap, aap, dp, real) {
     let playerId = real ? await myServer.fetchMember(await bot.fetchUser(id)) : id;
-    return new Player(playerId, classname, ap, aap, dp, hidden, real);
+    return new Player(playerId, classname, ap, aap, dp, real);
 }
 
 /**
@@ -1118,7 +1117,7 @@ if (configjson && itemsjson) {
         var playersjson = files.openJsonFile("./download/players.json", "utf8");
         if (playersjson) {
             playersjson.forEach(async currentPlayer => {
-                players.add(await revivePlayer(currentPlayer["id"], currentPlayer["classname"], currentPlayer["ap"], currentPlayer["aap"], currentPlayer["dp"], currentPlayer["hidden"], currentPlayer["real"]));
+                players.add(await revivePlayer(currentPlayer["id"], currentPlayer["classname"], currentPlayer["ap"], currentPlayer["aap"], currentPlayer["dp"], currentPlayer["real"]));
             });
         }
 
