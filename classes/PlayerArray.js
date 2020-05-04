@@ -72,15 +72,22 @@ module.exports = class PlayerArray extends Array {
     }
 
     /**
-     * replace data of existing player or adds player if doesn't exist yet
+     * update data for existing player or add it
      * @param {Player} player 
+     * @param {Player} succ 
      */
-    findAndReplace(player) {
+    findAndUpdate(player, succ) {
         let index = this.indexOf(player);
         if (index >= 0) {
-            this[index] = player;
+            this[index].updateStats(player.ap, player.aap, player.dp);
+            if(succ != null && succ != this[index].isSuccession()) {
+                this[index].toggleSucc();
+            }
         } else {
             this.add(player);
+            if(succ) {
+                player.toggleSucc();
+            }
         }
     }
 

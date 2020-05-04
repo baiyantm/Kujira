@@ -41,7 +41,7 @@
     },
     "gateguide" : "Welcome to the discord, if you are there for mercing please contact an officer if not already done.\nIf you are a new recruit an officer should already be taking care of you.",
     "gaterules" : "- Be respectful to everyone regardless of gender, race, orientation or religion\n- Excessive usage of inappropriate language is not tolerated.\n- No doxing or linking to any personal information outside from the origin of it.\n- No witch-hunting/name-shaming.",
-    "gearhelp": "> Commands\n`<classname> [succession] <ap> <aap> <dp>` - register your class and gear in the list, replace any previous entry\nor `<classname> [succession]` - register your class in the list, replace any previous entry\n`?gear <name>` (any channel) - show the gear of the player by name\n`?gear <mention>` (any channel) - show the gear of the player by mention\n`?stats [classname]` (any channel) - show stats for all classes or specified class\nor `?stats [dayname]` (any channel) - show info about players signed up as yes on specified day",
+    "gearhelp": "> Commands\n`<classname> [succession|awakening] <ap> <aap> <dp>` - update your class and gear in the list\n`?gear <name>` (any channel) - show the gear of the player by name\n`?gear <mention>` (any channel) - show the gear of the player by mention\n`?stats [classname]` (any channel) - show stats for all classes or specified class\nor `?stats [dayname]` (any channel) - show info about players signed up as yes on specified day",
     "urlguildpage": "https://i.imgur.com/s8n2lBa.png",
     "classlist": [
         "warrior",

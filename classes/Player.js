@@ -87,10 +87,10 @@ module.exports = class Player {
          */
         this.getRealAP = function () {
             let realAP;
-            if(this.hidden) {
+            if (this.hidden) {
                 realAP = null;
             } else {
-                if(this.isSuccession()) {
+                if (this.isSuccession()) {
                     realAP = this.ap;
                 } else {
                     realAP = Math.round((parseInt(ap) + parseInt(aap)) / 2);
@@ -138,6 +138,35 @@ module.exports = class Player {
          */
         this.getEmojiClassName = function () {
             return this.classname;
+        }
+
+        this.setAP = function (ap) {
+            this.ap = ap;
+        }
+
+        this.setAAP = function (aap) {
+            this.aap = aap;
+        }
+
+        this.setDP = function (dp) {
+            this.dp = dp;
+        }
+
+        /**
+         * sets ap, aap and dp
+         */
+        this.updateStats = function (ap, aap, dp) {
+            this.setAP(ap);
+            this.setAAP(aap);
+            this.setDP(dp);
+        }
+
+        this.toggleSucc = function() {
+            if(this.isSuccession()) {
+                this.classname = this.classname.substring(0, this.classname.length - 4);
+            } else {
+                this.classname += "Succ";
+            }
         }
     }
 }
