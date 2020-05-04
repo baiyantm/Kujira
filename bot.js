@@ -312,14 +312,16 @@ async function onMessageHandler(message, botMsg, annCache) {
                             if (Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
                                 let player;
                                 if (!member) {
-                                    player = new Player(name, classToFind, ap, aap, dp, false, false);
+                                    player = new Player(name, classToFind, ap, aap, dp, false);
                                 } else {
-                                    player = new Player(member, classToFind, ap, aap, dp, false, true);
+                                    player = new Player(member, classToFind, ap, aap, dp, true);
                                 }
                                 await updatePlayer(players, player, succ, message.author);
                             } else {
                                 interactions.wSendAuthor(message.author, "Some stats are too high or not numbers.");
                             }
+                        } else if (split.length == 3) {
+
                         } else {
                             interactions.wSendAuthor(message.author, split[0] + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                         }
@@ -354,7 +356,7 @@ async function onMessageHandler(message, botMsg, annCache) {
                             let aap = parseInt(split[1]);
                             let dp = parseInt(split[2]);
                             if (Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
-                                let player = new Player(message.member, classToFind, ap, aap, dp, false, true);
+                                let player = new Player(message.member, classToFind, ap, aap, dp, true);
                                 await updatePlayer(players, player, succ, message.author);
                             } else {
                                 interactions.wSendAuthor(message.author, "Some stats are too high or not numbers.");
