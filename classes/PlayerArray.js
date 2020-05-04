@@ -57,7 +57,7 @@ module.exports = class PlayerArray extends Array {
     remove(id) {
         let removed = null;
         let index = this.indexOf(id);
-        if(index != -1) {
+        if (index != -1) {
             removed = this.splice(index, 1);
         }
         return removed;
@@ -72,15 +72,22 @@ module.exports = class PlayerArray extends Array {
     }
 
     /**
-     * replace data of existing player or adds player if doesn't exist yet
+     * update data for existing player or add it
      * @param {Player} player 
+     * @param {Player} succ 
      */
-    findAndReplace(player) {
+    findAndUpdate(player, succ) {
         let index = this.indexOf(player);
         if (index >= 0) {
-            this[index] = player;
+            this[index].updateStats(player.ap, player.aap, player.dp);
+            if (succ != null && succ != this[index].isSuccession()) {
+                this[index].toggleSucc();
+            }
         } else {
             this.add(player);
+            if (succ) {
+                player.toggleSucc();
+            }
         }
     }
 
@@ -124,90 +131,89 @@ module.exports = class PlayerArray extends Array {
         embed.setColor(embedColor);
         embed.setTitle(embedTitle);
 
-        let playersWithoutHidden = players.filter(currentPlayer => !currentPlayer.hidden);
-        if (playersWithoutHidden.length > 0) {
-            let minAP = util.compare(playersWithoutHidden, (min, player) => {
+        if (players.length > 0) {
+            let minAP = util.compare(players, (min, player) => {
                 return min.ap > player.ap;
             });
-            let minAPplayers = playersWithoutHidden.filter(element => element.ap == minAP.ap);
+            let minAPplayers = players.filter(element => element.ap == minAP.ap);
             let minAPstring = "";
             minAPplayers.forEach(player => {
                 minAPstring += this.displayFullPlayer(player) + "\n";
             });
 
-            let minAAP = util.compare(playersWithoutHidden, (min, player) => {
+            let minAAP = util.compare(players, (min, player) => {
                 return min.aap > player.aap;
             });
-            let minAAPplayers = playersWithoutHidden.filter(element => element.aap == minAAP.aap);
+            let minAAPplayers = players.filter(element => element.aap == minAAP.aap);
             let minAAPstring = "";
             minAAPplayers.forEach(player => {
                 minAAPstring += this.displayFullPlayer(player) + "\n";
             });
 
-            let minDP = util.compare(playersWithoutHidden, (min, player) => {
+            let minDP = util.compare(players, (min, player) => {
                 return min.dp > player.dp;
             });
-            let minDPplayers = playersWithoutHidden.filter(element => element.dp == minDP.dp);
+            let minDPplayers = players.filter(element => element.dp == minDP.dp);
             let minDPstring = "";
             minDPplayers.forEach(player => {
                 minDPstring += this.displayFullPlayer(player) + "\n";
             });
 
-            let minGS = util.compare(playersWithoutHidden, (min, player) => {
+            let minGS = util.compare(players, (min, player) => {
                 return min.getGS() > player.getGS();
             });
-            let minGSplayers = playersWithoutHidden.filter(element => element.getGS() == minGS.getGS());
+            let minGSplayers = players.filter(element => element.getGS() == minGS.getGS());
             let minGSstring = "";
             minGSplayers.forEach(player => {
                 minGSstring += this.displayFullPlayer(player) + "\n";
             });
 
-            let maxAP = util.compare(playersWithoutHidden, (max, player) => {
+            let maxAP = util.compare(players, (max, player) => {
                 return max.ap < player.ap;
             });
-            let maxAPplayers = playersWithoutHidden.filter(element => element.ap == maxAP.ap);
+            let maxAPplayers = players.filter(element => element.ap == maxAP.ap);
             let maxAPstring = "";
             maxAPplayers.forEach(player => {
                 maxAPstring += this.displayFullPlayer(player) + "\n";
             });
 
-            let maxAAP = util.compare(playersWithoutHidden, (max, player) => {
+            let maxAAP = util.compare(players, (max, player) => {
                 return max.aap < player.aap;
             });
-            let maxAAPplayers = playersWithoutHidden.filter(element => element.aap == maxAAP.aap);
+            let maxAAPplayers = players.filter(element => element.aap == maxAAP.aap);
             let maxAAPstring = "";
             maxAAPplayers.forEach(player => {
                 maxAAPstring += this.displayFullPlayer(player) + "\n";
             });
 
-            let maxDP = util.compare(playersWithoutHidden, (max, player) => {
+            let maxDP = util.compare(players, (max, player) => {
                 return max.dp < player.dp;
             });
-            let maxDPplayers = playersWithoutHidden.filter(element => element.dp == maxDP.dp);
+            let maxDPplayers = players.filter(element => element.dp == maxDP.dp);
             let maxDPstring = "";
             maxDPplayers.forEach(player => {
                 maxDPstring += this.displayFullPlayer(player) + "\n";
             });
 
-            let maxGS = util.compare(playersWithoutHidden, (max, player) => {
+            let maxGS = util.compare(players, (max, player) => {
                 return max.getGS() < player.getGS();
             });
-            let maxGSplayers = playersWithoutHidden.filter(element => element.getGS() == maxGS.getGS());
+            let maxGSplayers = players.filter(element => element.getGS() == maxGS.getGS());
             let maxGSstring = "";
             maxGSplayers.forEach(player => {
                 maxGSstring += this.displayFullPlayer(player) + "\n";
             });
 
-            let avgAP = util.avg(playersWithoutHidden, player => {
+            let avgAP = util.avg(players, player => {
                 return player.ap;
             });
-            let avgAAP = util.avg(playersWithoutHidden, player => {
+            let avgAAP = util.avg(players, player => {
                 return player.aap;
             });
-            let avgDP = util.avg(playersWithoutHidden, player => {
+            let avgDP = util.avg(players, player => {
                 return player.dp;
             });
-            let avgGS = util.avg(playersWithoutHidden, player => {
+            let avgGS = util.avg(players, player => {
                 return player.getGS();
             });
             if (!classname) {
@@ -276,16 +282,15 @@ module.exports = class PlayerArray extends Array {
         embed.setColor(embedColor);
         embed.setTitle(embedTitle);
 
-        let playersWithoutHidden = players.filter(currentPlayer => !currentPlayer.hidden);
-        if (playersWithoutHidden.length > 0) {
-            embed.setDescription("Total players : " + playersWithoutHidden.length + " " + (playersWithoutHidden.length == players.length ? "" : (" (" + players.length + ")")));
-            let avgAP = util.avg(playersWithoutHidden, player => {
+        if (players.length > 0) {
+            embed.setDescription("Total players : " + players.length + " " + (players.length == players.length ? "" : (" (" + players.length + ")")));
+            let avgAP = util.avg(players, player => {
                 return player.ap;
             });
-            let avgAAP = util.avg(playersWithoutHidden, player => {
+            let avgAAP = util.avg(players, player => {
                 return player.aap;
             });
-            let avgDP = util.avg(playersWithoutHidden, player => {
+            let avgDP = util.avg(players, player => {
                 return player.dp;
             });
             let classes = [];

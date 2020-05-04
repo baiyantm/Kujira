@@ -1,8 +1,8 @@
 /**
- * Player class (member: GuildMember | string, classname: string, ap: string, aap: string, dp:string, hidden:boolean, real:boolean)
+ * Player class (member: GuildMember | string, classname: string, ap: string, aap: string, dp:string, real:boolean)
  */
 module.exports = class Player {
-    constructor(member, classname, ap, aap, dp, hidden, real) {
+    constructor(member, classname, ap, aap, dp, real) {
         //id can be null
         this.id = real ? member.id : member;
         this.name = real ? member.displayName : member;
@@ -10,7 +10,6 @@ module.exports = class Player {
         this.ap = ap;
         this.aap = aap;
         this.dp = dp;
-        this.hidden = hidden;
         this.real = real;
 
         /**
@@ -27,7 +26,7 @@ module.exports = class Player {
          * @returns a string with the name
          */
         this.display = function () {
-            return this.hidden ? this.name : this.name + "\n\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" + this.displayNoName();
+            return this.name + "\n\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" + this.displayNoName();
         };
 
         /**
@@ -87,14 +86,10 @@ module.exports = class Player {
          */
         this.getRealAP = function () {
             let realAP;
-            if(this.hidden) {
-                realAP = null;
+            if (this.isSuccession()) {
+                realAP = this.ap;
             } else {
-                if(this.isSuccession()) {
-                    realAP = this.ap;
-                } else {
-                    realAP = Math.round((parseInt(ap) + parseInt(aap)) / 2);
-                }
+                realAP = Math.round((parseInt(ap) + parseInt(aap)) / 2);
             }
             return realAP;
         }
@@ -103,7 +98,7 @@ module.exports = class Player {
          * @returns sum of real ap+dp
          */
         this.getGS = function () {
-            return this.hidden ? null : Math.round(this.getRealAP() + parseInt(dp));
+            return Math.round(this.getRealAP() + parseInt(dp));
         }
 
         /**
@@ -138,6 +133,43 @@ module.exports = class Player {
          */
         this.getEmojiClassName = function () {
             return this.classname;
+        }
+
+        this.setAP = function (ap) {
+            this.ap = ap;
+        }
+
+        this.setAAP = function (aap) {
+            this.aap = aap;
+        }
+
+        this.setDP = function (dp) {
+            this.dp = dp;
+        }
+
+        /**
+         * sets ap, aap and dp
+         */
+        this.updateStats = function (ap, aap, dp) {
+            this.setAP(ap);
+            this.setAAP(aap);
+            this.setDP(dp);
+        }
+
+        this.toggleSucc = function () {
+            if (this.isSuccession()) {
+                this.unsetSucc();
+            } else {
+                this.setSucc();
+            }
+        }
+
+        this.setSucc = function () {
+            this.classname += "Succ";
+        }
+
+        this.unsetSucc = function () {
+            this.classname = this.classname.substring(0, this.classname.length - 4);
         }
     }
 }

@@ -296,10 +296,13 @@ async function onMessageHandler(message, botMsg, annCache) {
                         if (classToFind) {
                             split.splice(0, 1); // remove classname
                             split[0].startsWith(split[0]);
+                            let succ = null;
                             if (split.length == 4) {
                                 if (split[0].startsWith(commands["succession"]) &&
                                     itemsjson["classlistSucc"].find(currentclassname => currentclassname == classToFind)) {
-                                    classToFind += "Succ";
+                                    succ = true;
+                                } else if (split[0].startsWith(commands["awakening"])) {
+                                    succ = false;
                                 }
                                 split.splice(0, 1); // remove succ
                             }
@@ -309,11 +312,11 @@ async function onMessageHandler(message, botMsg, annCache) {
                             if (Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
                                 let player;
                                 if (!member) {
-                                    player = new Player(name, classToFind, ap, aap, dp, false, false);
+                                    player = new Player(name, classToFind, ap, aap, dp, false);
                                 } else {
-                                    player = new Player(member, classToFind, ap, aap, dp, false, true);
+                                    player = new Player(member, classToFind, ap, aap, dp, true);
                                 }
-                                await addPlayer(players, player, message.author);
+                                await updatePlayer(players, player, succ, message.author);
                             } else {
                                 interactions.wSendAuthor(message.author, "Some stats are too high or not numbers.");
                             }
@@ -321,25 +324,54 @@ async function onMessageHandler(message, botMsg, annCache) {
                             interactions.wSendAuthor(message.author, split[0] + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                         }
                     } else {
-                        interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `<name> <classname> [succession] <ap> <aap> <dp>`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
+                        interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `<name> <classname> [succession|awakening] <ap> <aap> <dp>`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                     }
                 }
             } else if (!enteredCommand.startsWith("! ") && !enteredCommand.startsWith("?")) {
-                commands = itemsjson["commands"]["gear"]["guest"];
-                if (enteredCommand == commands["help"]) {
-                    let helpMessage = await interactions.wSendChannel(message.channel, itemsjson["gearhelp"]);
-                    bot.setTimeout(() => {
-                        interactions.wDelete(helpMessage);
-                    }, 60000);
+                let classToFind = itemsjson["classlist"].find(currentclassname => currentclassname == enteredCommand.split(" ")[0]);
+                let firstSplit = enteredCommand.split(" ");
+                if (firstSplit.length == 3) {
+                    let playerToFind = players.get(message.author.id);
+                    let ap = parseInt(firstSplit[0]);
+                    let aap = parseInt(firstSplit[1]);
+                    let dp = parseInt(firstSplit[2]);
+                    if (playerToFind && Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
+                        let player = new Player(message.member, playerToFind.classname, ap, aap, dp, true);
+                        await updatePlayer(players, player, null, message.author);
+                    } else {
+                        interactions.wSendAuthor(message.author, "Invalid command. Not registered to update stats.");
+                    }
                 } else {
-                    let classToFind = itemsjson["classlist"].find(currentclassname => currentclassname == enteredCommand.split(" ")[0]);
-                    if (classToFind) {
-                        let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase(); // remove classname
-                        let split = args.split(" ");
+                    let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase(); // remove classname
+                    let split = args.split(" ");
+                    commands = itemsjson["commands"]["gear"]["guest"];
+                    if (enteredCommand == commands["help"]) {
+                        let helpMessage = await interactions.wSendChannel(message.channel, itemsjson["gearhelp"]);
+                        bot.setTimeout(() => {
+                            interactions.wDelete(helpMessage);
+                        }, 60000);
+                    } else if (enteredCommand == commands["succession"]) {
+                        let playerToFind = players.get(message.author.id);
+                        if (playerToFind) {
+                            await updatePlayer(players, playerToFind, true, message.author);
+                        } else {
+                            interactions.wSendAuthor(message.author, "Invalid command. Not registered to update to succession.");
+                        }
+                    } else if (enteredCommand == commands["awakening"]) {
+                        let playerToFind = players.get(message.author.id);
+                        if (playerToFind) {
+                            await updatePlayer(players, playerToFind, false, message.author);
+                        } else {
+                            interactions.wSendAuthor(message.author, "Invalid command. Not registered to update to awakening.");
+                        }
+                    } else if (classToFind) {
+                        let succ = null;
                         if (split.length == 4) {
                             if (split[0].startsWith(commands["succession"]) &&
                                 itemsjson["classlistSucc"].find(currentclassname => currentclassname == classToFind)) {
-                                classToFind += "Succ";
+                                succ = true;
+                            } else if (split[0].startsWith(commands["awakening"])) {
+                                succ = false;
                             }
                             split.splice(0, 1); // remove succ
                         }
@@ -348,16 +380,13 @@ async function onMessageHandler(message, botMsg, annCache) {
                             let aap = parseInt(split[1]);
                             let dp = parseInt(split[2]);
                             if (Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
-                                let player = new Player(message.member, classToFind, ap, aap, dp, false, true);
-                                await addPlayer(players, player, message.author);
+                                let player = new Player(message.member, classToFind, ap, aap, dp, true);
+                                await updatePlayer(players, player, succ, message.author);
                             } else {
                                 interactions.wSendAuthor(message.author, "Some stats are too high or not numbers.");
                             }
-                        } else if (!args) {
-                            let player = new Player(message.member, classToFind, null, null, null, true, true);
-                            await addPlayer(players, player, message.author);
                         } else {
-                            interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `<classname> [succession] <ap> <aap> <dp>` or `<classname> [succession]`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
+                            interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `<classname> [succession|awakening] <ap> <aap> <dp>`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                         }
                     } else {
                         interactions.wSendAuthor(message.author, enteredCommand.split(" ")[0] + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
@@ -399,12 +428,12 @@ async function onMessageHandler(message, botMsg, annCache) {
                     } else {
                         let split = args.split(" ");
                         if (split.length == 1) {
-                            if(itemsjson["classlist"].includes(split[0])) {
+                            if (itemsjson["classlist"].includes(split[0])) {
                                 message.react("✅");
                                 interactions.wSendChannel(message.channel, players.getStatsEmbed(split[0]));
                             } else {
                                 let day;
-                                if(split[0]) {
+                                if (split[0]) {
                                     if (split[0] == "today") {
                                         let today = new Date();
                                         day = today.getDay();
@@ -865,15 +894,19 @@ async function removePlayer(players, playerId, origin) {
  * remove and add (readd) a player to a player list
  * @param {PlayerArray} players 
  * @param {Player} player 
+ * @param {boolean} succ succ was true or not (null if no succ info given)
  * @param {Discord.GuildMember} origin
  */
-async function addPlayer(players, player, origin) {
-    let oldPlayer = players.filter(currentPlayer => currentPlayer.equals(player))[0];
+async function updatePlayer(players, player, succ, origin) {
+    let oldPlayerString;
+    if(players.get(player.id)) {
+        oldPlayerString = players.displayFullPlayer(player);
+    }
+    players.findAndUpdate(player, succ);
     let content = "";
-    content += player.getNameOrMention() + "** gear update**\n> Old: " + (oldPlayer ? players.displayFullPlayer(oldPlayer) : "N/A") + "\n> New: " + players.displayFullPlayer(player);
+    content += player.getNameOrMention() + "** gear update**\n> Old: " + (oldPlayerString ? oldPlayerString : "N/A") + "\n> New: " + players.displayFullPlayer(player);
     content += "\n(Command origin: " + origin + ")";
     await interactions.wSendChannel(myChangelog, content);
-    players.findAndReplace(player);
 }
 
 async function savePlayers() {
@@ -996,12 +1029,11 @@ async function checkAdvPermission(message) {
  * @param {string} ap
  * @param {string} aap
  * @param {string} dp
- * @param {boolean} hidden
  * @returns a player object with the given data
  */
-async function revivePlayer(id, classname, ap, aap, dp, hidden, real) {
+async function revivePlayer(id, classname, ap, aap, dp, real) {
     let playerId = real ? await myServer.fetchMember(await bot.fetchUser(id)) : id;
-    return new Player(playerId, classname, ap, aap, dp, hidden, real);
+    return new Player(playerId, classname, ap, aap, dp, real);
 }
 
 /**
@@ -1114,7 +1146,7 @@ if (configjson && itemsjson) {
         var playersjson = files.openJsonFile("./download/players.json", "utf8");
         if (playersjson) {
             playersjson.forEach(async currentPlayer => {
-                players.add(await revivePlayer(currentPlayer["id"], currentPlayer["classname"], currentPlayer["ap"], currentPlayer["aap"], currentPlayer["dp"], currentPlayer["hidden"], currentPlayer["real"]));
+                players.add(await revivePlayer(currentPlayer["id"], currentPlayer["classname"], currentPlayer["ap"], currentPlayer["aap"], currentPlayer["dp"], currentPlayer["real"]));
             });
         }
 
