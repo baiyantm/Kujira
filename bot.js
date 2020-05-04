@@ -320,8 +320,6 @@ async function onMessageHandler(message, botMsg, annCache) {
                             } else {
                                 interactions.wSendAuthor(message.author, "Some stats are too high or not numbers.");
                             }
-                        } else if (split.length == 3) {
-
                         } else {
                             interactions.wSendAuthor(message.author, split[0] + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                         }
@@ -330,17 +328,43 @@ async function onMessageHandler(message, botMsg, annCache) {
                     }
                 }
             } else if (!enteredCommand.startsWith("! ") && !enteredCommand.startsWith("?")) {
-                commands = itemsjson["commands"]["gear"]["guest"];
-                if (enteredCommand == commands["help"]) {
-                    let helpMessage = await interactions.wSendChannel(message.channel, itemsjson["gearhelp"]);
-                    bot.setTimeout(() => {
-                        interactions.wDelete(helpMessage);
-                    }, 60000);
+                let classToFind = itemsjson["classlist"].find(currentclassname => currentclassname == enteredCommand.split(" ")[0]);
+                let firstSplit = enteredCommand.split(" ");
+                if (firstSplit.length == 3) {
+                    let playerToFind = players.get(message.author.id);
+                    let ap = parseInt(firstSplit[0]);
+                    let aap = parseInt(firstSplit[1]);
+                    let dp = parseInt(firstSplit[2]);
+                    if (playerToFind && Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
+                        let player = new Player(message.member, playerToFind.classname, ap, aap, dp, true);
+                        await updatePlayer(players, player, null, message.author);
+                    } else {
+                        interactions.wSendAuthor(message.author, "Invalid command. Not registered to update stats.");
+                    }
                 } else {
-                    let classToFind = itemsjson["classlist"].find(currentclassname => currentclassname == enteredCommand.split(" ")[0]);
-                    if (classToFind) {
-                        let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase(); // remove classname
-                        let split = args.split(" ");
+                    let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase(); // remove classname
+                    let split = args.split(" ");
+                    commands = itemsjson["commands"]["gear"]["guest"];
+                    if (enteredCommand == commands["help"]) {
+                        let helpMessage = await interactions.wSendChannel(message.channel, itemsjson["gearhelp"]);
+                        bot.setTimeout(() => {
+                            interactions.wDelete(helpMessage);
+                        }, 60000);
+                    } else if (enteredCommand == commands["succession"]) {
+                        let playerToFind = players.get(message.author.id);
+                        if (playerToFind) {
+                            await updatePlayer(players, playerToFind, true, message.author);
+                        } else {
+                            interactions.wSendAuthor(message.author, "Invalid command. Not registered to update to succession.");
+                        }
+                    } else if (enteredCommand == commands["awakening"]) {
+                        let playerToFind = players.get(message.author.id);
+                        if (playerToFind) {
+                            await updatePlayer(players, playerToFind, false, message.author);
+                        } else {
+                            interactions.wSendAuthor(message.author, "Invalid command. Not registered to update to awakening.");
+                        }
+                    } else if (classToFind) {
                         let succ = null;
                         if (split.length == 4) {
                             if (split[0].startsWith(commands["succession"]) &&
@@ -874,12 +898,15 @@ async function removePlayer(players, playerId, origin) {
  * @param {Discord.GuildMember} origin
  */
 async function updatePlayer(players, player, succ, origin) {
-    let oldPlayer = players.filter(currentPlayer => currentPlayer.equals(player))[0];
+    let oldPlayerString;
+    if(players.get(player.id)) {
+        oldPlayerString = players.displayFullPlayer(player);
+    }
+    players.findAndUpdate(player, succ);
     let content = "";
-    content += player.getNameOrMention() + "** gear update**\n> Old: " + (oldPlayer ? players.displayFullPlayer(oldPlayer) : "N/A") + "\n> New: " + players.displayFullPlayer(player);
+    content += player.getNameOrMention() + "** gear update**\n> Old: " + (oldPlayerString ? oldPlayerString : "N/A") + "\n> New: " + players.displayFullPlayer(player);
     content += "\n(Command origin: " + origin + ")";
     await interactions.wSendChannel(myChangelog, content);
-    players.findAndUpdate(player, succ);
 }
 
 async function savePlayers() {

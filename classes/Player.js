@@ -158,10 +158,18 @@ module.exports = class Player {
 
         this.toggleSucc = function () {
             if (this.isSuccession()) {
-                this.classname = this.classname.substring(0, this.classname.length - 4);
+                this.unsetSucc();
             } else {
-                this.classname += "Succ";
+                this.setSucc();
             }
+        }
+
+        this.setSucc = function () {
+            this.classname += "Succ";
+        }
+
+        this.unsetSucc = function () {
+            this.classname = this.classname.substring(0, this.classname.length - 4);
         }
     }
 }
