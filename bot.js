@@ -352,10 +352,10 @@ async function onMessageHandler(message, botMsg, annCache) {
                         }, 60000);
                     } else if (enteredCommand == commands["succession"]) {
                         let playerToFind = players.get(message.author.id);
-                        if (playerToFind) {
+                        if (playerToFind && itemsjson["classlistSucc"].find(currentclassname => currentclassname == playerToFind.classname)) {
                             await updatePlayer(players, playerToFind, true, message.author);
                         } else {
-                            interactions.wSendAuthor(message.author, "Invalid command. Not registered to update to succession.");
+                            interactions.wSendAuthor(message.author, "Invalid command. Not registered to update to succession or not a succession class.");
                         }
                     } else if (enteredCommand == commands["awakening"]) {
                         let playerToFind = players.get(message.author.id);
@@ -899,12 +899,14 @@ async function removePlayer(players, playerId, origin) {
  */
 async function updatePlayer(players, player, succ, origin) {
     let oldPlayerString;
-    if(players.get(player.id)) {
-        oldPlayerString = players.displayFullPlayer(player);
+    let oldPlayer = players.get(player.id);
+    if (oldPlayer) {
+        oldPlayerString = players.displayFullPlayer(oldPlayer);
     }
     players.findAndUpdate(player, succ);
+    let newPlayer = players.get(player.id);
     let content = "";
-    content += player.getNameOrMention() + "** gear update**\n> Old: " + (oldPlayerString ? oldPlayerString : "N/A") + "\n> New: " + players.displayFullPlayer(player);
+    content += player.getNameOrMention() + "** gear update**\n> Old: " + (oldPlayerString ? oldPlayerString : "N/A") + "\n> New: " + players.displayFullPlayer(newPlayer);
     content += "\n(Command origin: " + origin + ")";
     await interactions.wSendChannel(myChangelog, content);
 }
