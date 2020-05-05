@@ -352,10 +352,10 @@ async function onMessageHandler(message, botMsg, annCache) {
                         }, 60000);
                     } else if (enteredCommand == commands["succession"]) {
                         let playerToFind = players.get(message.author.id);
-                        if (playerToFind) {
+                        if (playerToFind && itemsjson["classlistSucc"].find(currentclassname => currentclassname == playerToFind.classname)) {
                             await updatePlayer(players, playerToFind, true, message.author);
                         } else {
-                            interactions.wSendAuthor(message.author, "Invalid command. Not registered to update to succession.");
+                            interactions.wSendAuthor(message.author, "Invalid command. Not registered to update to succession or not a succession class.");
                         }
                     } else if (enteredCommand == commands["awakening"]) {
                         let playerToFind = players.get(message.author.id);

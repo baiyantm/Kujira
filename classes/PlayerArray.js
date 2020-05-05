@@ -80,8 +80,15 @@ module.exports = class PlayerArray extends Array {
         let index = this.indexOf(player);
         if (index >= 0) {
             this[index].updateStats(player.ap, player.aap, player.dp);
-            if (succ != null && succ != this[index].isSuccession()) {
-                this[index].toggleSucc();
+            if(this[index].getClassName() == player.getClassName()) {
+                if (succ != null && succ != this[index].isSuccession()) {
+                    this[index].toggleSucc();
+                }
+            } else {
+                this[index].classname = player.classname;
+                if (succ) {
+                    this[index].toggleSucc();
+                }
             }
         } else {
             this.add(player);
