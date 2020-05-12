@@ -98,7 +98,7 @@ module.exports = class Player {
          * @returns sum of real ap+dp
          */
         this.getGS = function () {
-            return this.getRealAP() + parseInt(dp);
+            return this.getRealAP() + parseInt(this.dp);
         }
 
         /**
