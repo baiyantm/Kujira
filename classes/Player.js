@@ -89,7 +89,7 @@ module.exports = class Player {
             if (this.isSuccession()) {
                 realAP = this.ap;
             } else {
-                realAP = Math.round((parseInt(ap) + parseInt(aap)) / 2);
+                realAP = Math.round((parseInt(this.ap) + parseInt(this.aap)) / 2);
             }
             return realAP;
         }
