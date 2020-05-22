@@ -884,7 +884,7 @@ async function removePlayer(players, playerId, origin) {
     let removed = players.remove(playerId);
     if (removed) {
         let content = "";
-        content += playerId + " removed from gear list.";
+        content += players.displayFullPlayer(removed[0]) + "\nRemoved from gear list.";
         content += "\n(Command origin: " + origin + ")";
         await interactions.wSendChannel(myChangelog, content);
     }
