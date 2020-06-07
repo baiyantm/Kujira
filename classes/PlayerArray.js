@@ -80,7 +80,7 @@ module.exports = class PlayerArray extends Array {
         let index = this.indexOf(player);
         if (index >= 0) {
             this[index].updateStats(player.ap, player.aap, player.dp);
-            if(this[index].getClassName() == player.getClassName()) {
+            if (this[index].getClassName() == player.getClassName()) {
                 if (succ != null && succ != this[index].isSuccession()) {
                     this[index].toggleSucc();
                 }
@@ -138,7 +138,7 @@ module.exports = class PlayerArray extends Array {
         embed.setColor(embedColor);
         embed.setTitle(embedTitle);
 
-        if (players.length > 0) {
+        if (players.length > 1) {
             let minAP = util.compare(players, (min, player) => {
                 return min.ap > player.ap;
             });
@@ -272,6 +272,8 @@ module.exports = class PlayerArray extends Array {
             embed.addField("Lowest AP : " + minAP.ap, minAPstring, true);
             embed.addField("Lowest AAP : " + minAAP.aap, minAAPstring, true);
             embed.addField("Lowest DP : " + minDP.dp, minDPstring, true);
+        } else if (players.length > 0) {
+            embed.setDescription(this.displayFullPlayer(players[0]));
         } else {
             embed.setDescription("Empty player list.");
         }
