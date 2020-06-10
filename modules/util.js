@@ -186,11 +186,17 @@ function compare(list, comparator) {
  * @param {function} aggregate 
  */
 function avg(list, aggregate) {
+    let size = list.length;
     let res = 0;
     list.forEach(element => {
-        res += aggregate(element);
+        agg = aggregate(element);
+        if(agg > 0) {
+            res += aggregate(element);
+        } else {
+            size--;
+        }
     });
-    return Math.round(res / list.length);
+    return Math.round(res / size);
 }
 
 module.exports.findCorrespondingDayName = findCorrespondingDayName;

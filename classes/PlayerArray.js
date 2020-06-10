@@ -140,7 +140,7 @@ module.exports = class PlayerArray extends Array {
 
         if (players.length > 1) {
             let minAP = util.compare(players, (min, player) => {
-                return min.ap > player.ap;
+                return player.isDpBuild() ? false : min.ap > player.ap;
             });
             let minAPplayers = players.filter(element => element.ap == minAP.ap);
             let minAPstring = "";
@@ -149,7 +149,7 @@ module.exports = class PlayerArray extends Array {
             });
 
             let minAAP = util.compare(players, (min, player) => {
-                return min.aap > player.aap;
+                return player.isDpBuild() ? false : min.aap > player.aap;
             });
             let minAAPplayers = players.filter(element => element.aap == minAAP.aap);
             let minAAPstring = "";
@@ -212,16 +212,16 @@ module.exports = class PlayerArray extends Array {
             });
 
             let avgAP = util.avg(players, player => {
-                return player.ap;
+                return player.isDpBuild() ? 0 : player.ap;
             });
             let avgAAP = util.avg(players, player => {
-                return player.aap;
+                return player.isDpBuild() ? 0 : player.aap;
             });
             let avgDP = util.avg(players, player => {
-                return player.dp;
+                return player.isDpBuild() ? 0 : player.dp;
             });
             let avgGS = util.avg(players, player => {
-                return player.getGS();
+                return player.isDpBuild() ? 0 : player.getGS();
             });
             if (!classname) {
                 let countedClasses = [];
@@ -294,13 +294,16 @@ module.exports = class PlayerArray extends Array {
         if (players.length > 0) {
             embed.setDescription("Total players : " + players.length + " " + (players.length == players.length ? "" : (" (" + players.length + ")")));
             let avgAP = util.avg(players, player => {
-                return player.ap;
+                return player.isDpBuild() ? 0 : player.ap;
             });
             let avgAAP = util.avg(players, player => {
-                return player.aap;
+                return player.isDpBuild() ? 0 : player.aap;
             });
             let avgDP = util.avg(players, player => {
-                return player.dp;
+                return player.isDpBuild() ? 0 : player.dp;
+            });
+            let avgGS = util.avg(players, player => {
+                return player.isDpBuild() ? 0 : player.getGS();
             });
             let classes = [];
             this.classList.forEach(currentClass => {
@@ -314,7 +317,7 @@ module.exports = class PlayerArray extends Array {
                 classText += currentClass["count"] + "x " + this.classEmojis.find(emoji => emoji.name == currentClass["className"]) + " " + currentClass["className"].charAt(0).toUpperCase() + currentClass["className"].slice(1) + "\n";
             });
             embed.addField("Class list", classText, true);
-            embed.addField("Average gear (" + ((avgAP + avgAAP) / 2 + avgDP) + ")", util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
+            embed.addField("Average gear (" + avgGS + ")", util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
         } else {
             embed.setDescription("Empty player list.");
         }
