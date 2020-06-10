@@ -140,7 +140,7 @@ module.exports = class PlayerArray extends Array {
 
         if (players.length > 1) {
             let minAP = util.compare(players, (min, player) => {
-                return player.isDpBuild() ? false : min.ap > player.ap;
+                return player.isDpBuild() || player.name == "Uchaguzi" ? false : min.ap > player.ap;
             });
             let minAPplayers = players.filter(element => element.ap == minAP.ap);
             let minAPstring = "";
@@ -149,7 +149,7 @@ module.exports = class PlayerArray extends Array {
             });
 
             let minAAP = util.compare(players, (min, player) => {
-                return player.isDpBuild() || player.isSuccession() ? false : min.aap > player.aap;
+                return player.isDpBuild() || player.isSuccession() || player.name == "Uchaguzi" ? false : min.aap > player.aap;
             });
             let minAAPplayers = players.filter(element => element.aap == minAAP.aap);
             let minAAPstring = "";
