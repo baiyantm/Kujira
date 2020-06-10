@@ -142,7 +142,7 @@ module.exports = class PlayerArray extends Array {
             let minAP = util.compare(players, (min, player) => {
                 return player.isDpBuild() || player.name == "Uchaguzi" ? false : min.ap > player.ap;
             });
-            let minAPplayers = players.filter(element => element.ap == minAP.ap);
+            let minAPplayers = players.filter(element => player.isDpBuild() || player.name == "Uchaguzi" ? false : element.ap == minAP.ap);
             let minAPstring = "";
             minAPplayers.forEach(player => {
                 minAPstring += this.displayFullPlayer(player) + "\n";
@@ -151,7 +151,7 @@ module.exports = class PlayerArray extends Array {
             let minAAP = util.compare(players, (min, player) => {
                 return player.isDpBuild() || player.isSuccession() || player.name == "Uchaguzi" ? false : min.aap > player.aap;
             });
-            let minAAPplayers = players.filter(element => element.aap == minAAP.aap);
+            let minAAPplayers = players.filter(element => player.isDpBuild() || player.isSuccession() || player.name == "Uchaguzi" ? false : element.aap == minAAP.aap);
             let minAAPstring = "";
             minAAPplayers.forEach(player => {
                 minAAPstring += this.displayFullPlayer(player) + "\n";
@@ -215,7 +215,7 @@ module.exports = class PlayerArray extends Array {
                 return player.isDpBuild() ? 0 : player.ap;
             });
             let avgAAP = util.avg(players, player => {
-                return player.isDpBuild() ? 0 : player.aap;
+                return player.isDpBuild() || player.isSuccession() ? 0 : player.aap;
             });
             let avgDP = util.avg(players, player => {
                 return player.isDpBuild() ? 0 : player.dp;
@@ -297,7 +297,7 @@ module.exports = class PlayerArray extends Array {
                 return player.isDpBuild() ? 0 : player.ap;
             });
             let avgAAP = util.avg(players, player => {
-                return player.isDpBuild() ? 0 : player.aap;
+                return player.isDpBuild() || player.isSuccession() ? 0 : player.aap;
             });
             let avgDP = util.avg(players, player => {
                 return player.isDpBuild() ? 0 : player.dp;
