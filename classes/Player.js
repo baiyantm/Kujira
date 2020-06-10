@@ -171,5 +171,9 @@ module.exports = class Player {
         this.unsetSucc = function () {
             this.classname = this.classname.substring(0, this.classname.length - 4);
         }
+
+        this.isDpBuild = function () {
+            return this.dp >= 400;
+        }
     }
 }
