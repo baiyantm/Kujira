@@ -478,7 +478,7 @@ async function onMessageHandler(message, botMsg, annCache) {
                             }
                         }
                     }
-                } else if (enteredCommand == commands["reminder"] && checkAdvPermission(message)) {
+                } else if (enteredCommand == commands["reminder"] && await checkAdvPermission(message)) {
                     let today = new Date();
                     let day = today.getDay();
                     let naPlayers = await getPlayersWithStatus(day, players, "N/A");
