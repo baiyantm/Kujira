@@ -8,6 +8,7 @@ const logger = require("./modules/logger");
 const util = require("./modules/util");
 var Player = require('./classes/Player');
 var PlayerArray = require('./classes/PlayerArray');
+const { deepStrictEqual } = require('assert');
 
 async function initLookout() {
     logger.log("INFO: Initializing lookout ...");
@@ -366,7 +367,7 @@ async function onMessageHandler(message, botMsg, annCache) {
                             interactions.wSendAuthor(message.author, "Invalid command. Not registered to update to awakening.");
                         }
                     } else if (enteredCommand == commands["axe"]) {
-                        if(split.length == 1) {
+                        if (split.length == 1) {
                             await updatePlayerAxe(message.author.id, args);
                         } else {
                             // too many arguments !
@@ -906,17 +907,44 @@ async function removePlayer(players, playerId, origin) {
  * @param {Discord.GuildMember} origin
  */
 async function updatePlayer(players, player, succ, origin) {
-    let oldPlayerString;
-    let oldPlayer = players.get(player.id);
-    if (oldPlayer) {
-        oldPlayerString = players.displayFullPlayer(oldPlayer);
-    }
+    let oldPlayer = { ...players.get(player.id) };
     players.findAndUpdate(player, succ);
-    let newPlayer = players.get(player.id);
     let content = "";
-    content += player.getNameOrMention() + "** gear update**\n> Old: " + (oldPlayerString ? oldPlayerString : "N/A") + "\n> New: " + players.displayFullPlayer(newPlayer);
-    content += "\n(Command origin: " + origin + ")";
+    content += "Updated " + player.getNameOrMention() + "'s gear :\n";
+    content += changeLogFormatter("Class : ", oldPlayer.classname, player.classname, players.getClassEmoji(oldPlayer), players.getClassEmoji(player));
+    let statsContent = "";
+    statsContent += changeLogFormatter("AP  : ", oldPlayer.ap, player.ap);
+    statsContent += changeLogFormatter("AAP : ", oldPlayer.aap, player.aap);
+    statsContent += changeLogFormatter("DP  : ", oldPlayer.dp, player.dp);
+    if(statsContent != "") {
+        content += "```ml\n" + statsContent + "```";
+    }
+    content += "(Command origin: " + origin + ")";
     await interactions.wSendChannel(myChangelog, content);
+}
+
+/**
+ * @param {string} prefix 
+ * @param {any} value1 
+ * @param {any} dspvalue1 how value1 is displayed
+ * @param {any} value2 
+ * @param {any} dspvalue2 how value2 is displayed
+ * @returns examples : 250 -> 255 (+5), 200 -> 200, name -> name
+ */
+function changeLogFormatter(prefix, value1, value2, dspvalue1 = value1, dspvalue2 = value2) {
+    if (value1 != value2) {
+        let display = prefix + dspvalue1 + " -> " + dspvalue2;
+        let diff = "";
+        if (parseInt(value1) && parseInt(value2)) {
+            let diffNumber = (parseInt(value2) - parseInt(value1));
+            console.log(diffNumber);
+            diff = diffNumber != 0 ? (" (" + (diffNumber > 0 ? ("+" + diffNumber) : diffNumber) + ")") : "";
+        }
+        display += diff;
+        display += "\n";
+        return display;
+    }
+    return "";
 }
 
 /**
@@ -928,7 +956,7 @@ async function updatePlayerAxe(id, args) {
     let playerToFind = players.get(id);
     let oldAxe = playerToFind.getAxe();
     playerToFind.updateAxe(args);
-    await interactions.wSendChannel(myChangelog, "Updated " + playerToFind.getNameOrMention() + "'s axe : " + oldAxe + " -> " + playerToFind.getAxe());
+    await interactions.wSendChannel(myChangelog, "Updated " + playerToFind.getNameOrMention() + "'s axe : **" + oldAxe + "** -> **" + playerToFind.getAxe() + "**");
 }
 
 async function savePlayers() {

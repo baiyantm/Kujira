@@ -378,6 +378,10 @@ module.exports = class PlayerArray extends Array {
      * @returns a string containing the server class emoji and the player display
      */
     displayFullPlayer(player) {
-        return this.classEmojis.find(emoji => emoji.name == player.getEmojiClassName()) + "\xa0" + player;
+        return this.getClassEmoji(player) + "\xa0" + player;
+    }
+
+    getClassEmoji(player) {
+        return this.classEmojis.find(emoji => emoji.name == player.getEmojiClassName());
     }
 }
