@@ -184,7 +184,7 @@ module.exports = class Player {
         /**
          * @param {string | number} newAxe
          */
-        this.updateAxe = function (newAxe) {
+        this.setAxe = function (newAxe) {
             if (Number.isInteger(newAxe) && newAxe >= 0 && newAxe <= 5) {
                 this.axe = newAxe;
             } else {

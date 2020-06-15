@@ -955,7 +955,7 @@ function changeLogFormatter(prefix, value1, value2, dspvalue1 = value1, dspvalue
 async function updatePlayerAxe(id, args) {
     let playerToFind = players.get(id);
     let oldAxe = playerToFind.getAxe();
-    playerToFind.updateAxe(args);
+    playerToFind.setAxe(args);
     await interactions.wSendChannel(myChangelog, "Updated " + playerToFind.getNameOrMention() + "'s axe : **" + oldAxe + "** -> **" + playerToFind.getAxe() + "**");
 }
 
@@ -1085,7 +1085,7 @@ async function checkAdvPermission(message) {
 async function revivePlayer(id, classname, ap, aap, dp, axe = 0, real) {
     let playerId = real ? await myServer.fetchMember(await bot.fetchUser(id)) : id;
     let newPlayer = new Player(playerId, classname, ap, aap, dp, real);
-    newPlayer.updateAxe(axe);
+    newPlayer.setAxe(axe);
     return newPlayer;
 }
 
