@@ -11,6 +11,7 @@ module.exports = class Player {
         this.aap = aap;
         this.dp = dp;
         this.real = real;
+        this.axe = 0;
 
         /**
          * @param {string} name
@@ -26,7 +27,7 @@ module.exports = class Player {
          * @returns a string with the name
          */
         this.display = function () {
-            return this.name + "\n\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" + this.displayNoName();
+            return this.name + " " + (this.hasAxe() ? "(**" + this.getAxe() + "**)" : "") + "\n\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" + this.displayNoName();
         };
 
         /**
@@ -105,7 +106,7 @@ module.exports = class Player {
          * @returns an object containing only attributes of a Player
          */
         this.getInfo = function () {
-            return { "id": this.id, "name": this.name, "class": this.getClassName(), "ap": this.ap, "aap": this.aap, "dp": this.dp, "gs": this.getGS(), "succession": (this.isSuccession() ? "yes" : "no") }
+            return { "id": this.id, "name": this.name, "class": this.getClassName(), "ap": this.ap, "aap": this.aap, "dp": this.dp, "gs": this.getGS(), "succession": (this.isSuccession() ? "yes" : "no"), "axe": this.axe }
         }
 
         /**
@@ -174,6 +175,50 @@ module.exports = class Player {
 
         this.isDpBuild = function () {
             return this.dp >= 400;
+        }
+
+        this.hasAxe = function () {
+            return this.axe;
+        }
+
+        /**
+         * @param {string | number} newAxe
+         */
+        this.setAxe = function (newAxe) {
+            if (Number.isInteger(newAxe) && newAxe >= 0 && newAxe <= 5) {
+                this.axe = newAxe;
+            } else {
+                if (newAxe.toLowerCase().startsWith("pri") || newAxe.toLowerCase() == "i") {
+                    this.axe = 1;
+                } else if (newAxe.toLowerCase().startsWith("duo") || newAxe.toLowerCase() == "ii") {
+                    this.axe = 2;
+                } else if (newAxe.toLowerCase().startsWith("tri") || newAxe.toLowerCase() == "iii") {
+                    this.axe = 3;
+                } else if (newAxe.toLowerCase().startsWith("tet") || newAxe.toLowerCase() == "iv") {
+                    this.axe = 4;
+                } else if (newAxe.toLowerCase().startsWith("pen") || newAxe.toLowerCase() == "v") {
+                    this.axe = 5;
+                } else {
+                    this.axe = 0;
+                }
+            }
+        }
+
+        this.getAxe = function () {
+            switch (this.axe) {
+                case 1:
+                    return "I"
+                case 2:
+                    return "II"
+                case 3:
+                    return "III"
+                case 4:
+                    return "IV"
+                case 5:
+                    return "V"
+                default:
+                    return "";
+            }
         }
     }
 }

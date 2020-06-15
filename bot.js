@@ -342,8 +342,9 @@ async function onMessageHandler(message, botMsg, annCache) {
                         interactions.wSendAuthor(message.author, "Invalid command. Not registered to update stats.");
                     }
                 } else {
-                    let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase(); // remove classname
+                    let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase(); // all but first word
                     let split = args.split(" ");
+                    enteredCommand = enteredCommand.split(" ")[0]; // only first word
                     commands = itemsjson["commands"]["gear"]["guest"];
                     if (enteredCommand == commands["help"]) {
                         let helpMessage = await interactions.wSendChannel(message.channel, itemsjson["gearhelp"]);
@@ -363,6 +364,13 @@ async function onMessageHandler(message, botMsg, annCache) {
                             await updatePlayer(players, playerToFind, false, message.author);
                         } else {
                             interactions.wSendAuthor(message.author, "Invalid command. Not registered to update to awakening.");
+                        }
+                    } else if (enteredCommand == commands["axe"]) {
+                        if (split.length == 1) {
+                            await updatePlayerAxe(message.author, args);
+                        } else {
+                            // too many arguments !
+                            interactions.wSendAuthor(message.author, "Invalid axe command.");
                         }
                     } else if (classToFind) {
                         let succ = null;
@@ -389,7 +397,7 @@ async function onMessageHandler(message, botMsg, annCache) {
                             interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `<classname> [succession|awakening] <ap> <aap> <dp>`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                         }
                     } else {
-                        interactions.wSendAuthor(message.author, enteredCommand.split(" ")[0] + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
+                        interactions.wSendAuthor(message.author, enteredCommand + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                     }
 
                 }
@@ -898,17 +906,66 @@ async function removePlayer(players, playerId, origin) {
  * @param {Discord.GuildMember} origin
  */
 async function updatePlayer(players, player, succ, origin) {
-    let oldPlayerString;
-    let oldPlayer = players.get(player.id);
-    if (oldPlayer) {
-        oldPlayerString = players.displayFullPlayer(oldPlayer);
-    }
-    players.findAndUpdate(player, succ);
-    let newPlayer = players.get(player.id);
     let content = "";
-    content += player.getNameOrMention() + "** gear update**\n> Old: " + (oldPlayerString ? oldPlayerString : "N/A") + "\n> New: " + players.displayFullPlayer(newPlayer);
-    content += "\n(Command origin: " + origin + ")";
+    let foundPlayer = players.get(player.id);
+    let oldPlayer = { ...foundPlayer };
+    players.findAndUpdate(player, succ);
+    if(foundPlayer) {
+        content += "> Updated " + player.getNameOrMention() + "'s gear :\n";
+        content += changeLogFormatter("Class : ", oldPlayer.classname, player.classname, players.getClassEmoji(oldPlayer), players.getClassEmoji(player));
+        let statsContent = "";
+        statsContent += changeLogFormatter("AP  : ", oldPlayer.ap, player.ap);
+        statsContent += changeLogFormatter("AAP : ", oldPlayer.aap, player.aap);
+        statsContent += changeLogFormatter("DP  : ", oldPlayer.dp, player.dp);
+        if(statsContent != "") {
+            content += "```ml\n" + statsContent + "```";
+        }
+    } else {
+        content += "> New player\n";
+        content += players.displayFullPlayer(player) + "\n";
+    }
+    content += "(Command origin: " + origin + ")";
     await interactions.wSendChannel(myChangelog, content);
+}
+
+/**
+ * @param {string} prefix 
+ * @param {any} value1 
+ * @param {any} dspvalue1 how value1 is displayed
+ * @param {any} value2 
+ * @param {any} dspvalue2 how value2 is displayed
+ * @returns examples : 250 -> 255 (+5), 200 -> 200, name -> name
+ */
+function changeLogFormatter(prefix, value1, value2, dspvalue1 = value1, dspvalue2 = value2) {
+    if (value1 != value2) {
+        let display = prefix + dspvalue1 + " -> " + dspvalue2;
+        let diff = "";
+        if (parseInt(value1) && parseInt(value2)) {
+            let diffNumber = (parseInt(value2) - parseInt(value1));
+            console.log(diffNumber);
+            diff = diffNumber != 0 ? (" (" + (diffNumber > 0 ? ("+" + diffNumber) : diffNumber) + ")") : "";
+        }
+        display += diff;
+        display += "\n";
+        return display;
+    }
+    return "";
+}
+
+/**
+ * updates a player's axe level and logs it in changelog
+ * @param {Discord.User} author 
+ * @param {string} args 
+ */
+async function updatePlayerAxe(author, args) {
+    let playerToFind = players.get(author.id);
+    if(playerToFind) {
+        let oldAxe = playerToFind.getAxe();
+        playerToFind.setAxe(args);
+        await interactions.wSendChannel(myChangelog, "> Updated " + playerToFind.getNameOrMention() + "'s axe :\n" + oldAxe + " -> " + playerToFind.getAxe());
+    } else {
+        await interactions.wSendAuthor(author, "You need to be registered to do that.");
+    }
 }
 
 async function savePlayers() {
@@ -1031,11 +1088,14 @@ async function checkAdvPermission(message) {
  * @param {string} ap
  * @param {string} aap
  * @param {string} dp
+ * @param {number} axe
  * @returns a player object with the given data
  */
-async function revivePlayer(id, classname, ap, aap, dp, real) {
+async function revivePlayer(id, classname, ap, aap, dp, axe = 0, real) {
     let playerId = real ? await myServer.fetchMember(await bot.fetchUser(id)) : id;
-    return new Player(playerId, classname, ap, aap, dp, real);
+    let newPlayer = new Player(playerId, classname, ap, aap, dp, real);
+    newPlayer.setAxe(axe);
+    return newPlayer;
 }
 
 /**
@@ -1148,7 +1208,7 @@ if (configjson && itemsjson) {
         var playersjson = files.openJsonFile("./download/players.json", "utf8");
         if (playersjson) {
             playersjson.forEach(async currentPlayer => {
-                players.add(await revivePlayer(currentPlayer["id"], currentPlayer["classname"], currentPlayer["ap"], currentPlayer["aap"], currentPlayer["dp"], currentPlayer["real"]));
+                players.add(await revivePlayer(currentPlayer["id"], currentPlayer["classname"], currentPlayer["ap"], currentPlayer["aap"], currentPlayer["dp"], currentPlayer["axe"], currentPlayer["real"]));
             });
         }
 
