@@ -368,7 +368,7 @@ async function onMessageHandler(message, botMsg, annCache) {
                         }
                     } else if (enteredCommand == commands["axe"]) {
                         if (split.length == 1) {
-                            await updatePlayerAxe(message.author.id, args);
+                            await updatePlayerAxe(message.author, args);
                         } else {
                             // too many arguments !
                             interactions.wSendAuthor(message.author, "Invalid axe command.");
@@ -907,17 +907,23 @@ async function removePlayer(players, playerId, origin) {
  * @param {Discord.GuildMember} origin
  */
 async function updatePlayer(players, player, succ, origin) {
-    let oldPlayer = { ...players.get(player.id) };
-    players.findAndUpdate(player, succ);
     let content = "";
-    content += "Updated " + player.getNameOrMention() + "'s gear :\n";
-    content += changeLogFormatter("Class : ", oldPlayer.classname, player.classname, players.getClassEmoji(oldPlayer), players.getClassEmoji(player));
-    let statsContent = "";
-    statsContent += changeLogFormatter("AP  : ", oldPlayer.ap, player.ap);
-    statsContent += changeLogFormatter("AAP : ", oldPlayer.aap, player.aap);
-    statsContent += changeLogFormatter("DP  : ", oldPlayer.dp, player.dp);
-    if(statsContent != "") {
-        content += "```ml\n" + statsContent + "```";
+    let foundPlayer = players.get(player.id);
+    let oldPlayer = { ...foundPlayer };
+    players.findAndUpdate(player, succ);
+    if(foundPlayer) {
+        content += "> Updated " + player.getNameOrMention() + "'s gear :\n";
+        content += changeLogFormatter("Class : ", oldPlayer.classname, player.classname, players.getClassEmoji(oldPlayer), players.getClassEmoji(player));
+        let statsContent = "";
+        statsContent += changeLogFormatter("AP  : ", oldPlayer.ap, player.ap);
+        statsContent += changeLogFormatter("AAP : ", oldPlayer.aap, player.aap);
+        statsContent += changeLogFormatter("DP  : ", oldPlayer.dp, player.dp);
+        if(statsContent != "") {
+            content += "```ml\n" + statsContent + "```";
+        }
+    } else {
+        content += "> New player\n";
+        content += players.displayFullPlayer(player) + "\n";
     }
     content += "(Command origin: " + origin + ")";
     await interactions.wSendChannel(myChangelog, content);
@@ -949,14 +955,18 @@ function changeLogFormatter(prefix, value1, value2, dspvalue1 = value1, dspvalue
 
 /**
  * updates a player's axe level and logs it in changelog
- * @param {string} id 
+ * @param {Discord.User} author 
  * @param {string} args 
  */
-async function updatePlayerAxe(id, args) {
-    let playerToFind = players.get(id);
-    let oldAxe = playerToFind.getAxe();
-    playerToFind.setAxe(args);
-    await interactions.wSendChannel(myChangelog, "Updated " + playerToFind.getNameOrMention() + "'s axe : **" + oldAxe + "** -> **" + playerToFind.getAxe() + "**");
+async function updatePlayerAxe(author, args) {
+    let playerToFind = players.get(author.id);
+    if(playerToFind) {
+        let oldAxe = playerToFind.getAxe();
+        playerToFind.setAxe(args);
+        await interactions.wSendChannel(myChangelog, "> Updated " + playerToFind.getNameOrMention() + "'s axe :\n" + oldAxe + " -> " + playerToFind.getAxe());
+    } else {
+        await interactions.wSendAuthor(author, "You need to be registered to do that.");
+    }
 }
 
 async function savePlayers() {
