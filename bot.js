@@ -8,7 +8,6 @@ const logger = require("./modules/logger");
 const util = require("./modules/util");
 var Player = require('./classes/Player');
 var PlayerArray = require('./classes/PlayerArray');
-const { deepStrictEqual } = require('assert');
 
 async function initLookout() {
     logger.log("INFO: Initializing lookout ...");
