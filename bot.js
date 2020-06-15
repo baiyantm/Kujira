@@ -342,8 +342,9 @@ async function onMessageHandler(message, botMsg, annCache) {
                         interactions.wSendAuthor(message.author, "Invalid command. Not registered to update stats.");
                     }
                 } else {
-                    let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase(); // remove classname
+                    let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase(); // all but first word
                     let split = args.split(" ");
+                    enteredCommand = enteredCommand.split(" ")[0]; // only first word
                     commands = itemsjson["commands"]["gear"]["guest"];
                     if (enteredCommand == commands["help"]) {
                         let helpMessage = await interactions.wSendChannel(message.channel, itemsjson["gearhelp"]);
@@ -363,6 +364,13 @@ async function onMessageHandler(message, botMsg, annCache) {
                             await updatePlayer(players, playerToFind, false, message.author);
                         } else {
                             interactions.wSendAuthor(message.author, "Invalid command. Not registered to update to awakening.");
+                        }
+                    } else if (enteredCommand == commands["axe"]) {
+                        if(split.length == 1) {
+                            await updatePlayerAxe(message.author.id, args);
+                        } else {
+                            // too many arguments !
+                            interactions.wSendAuthor(message.author, "Invalid axe command.");
                         }
                     } else if (classToFind) {
                         let succ = null;
@@ -389,7 +397,7 @@ async function onMessageHandler(message, botMsg, annCache) {
                             interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `<classname> [succession|awakening] <ap> <aap> <dp>`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                         }
                     } else {
-                        interactions.wSendAuthor(message.author, enteredCommand.split(" ")[0] + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
+                        interactions.wSendAuthor(message.author, enteredCommand + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
                     }
 
                 }
@@ -911,6 +919,18 @@ async function updatePlayer(players, player, succ, origin) {
     await interactions.wSendChannel(myChangelog, content);
 }
 
+/**
+ * updates a player's axe level and logs it in changelog
+ * @param {string} id 
+ * @param {string} args 
+ */
+async function updatePlayerAxe(id, args) {
+    let playerToFind = players.get(id);
+    let oldAxe = playerToFind.getAxe();
+    playerToFind.updateAxe(args);
+    await interactions.wSendChannel(myChangelog, "Updated " + playerToFind.getNameOrMention() + "'s axe : " + oldAxe + " -> " + playerToFind.getAxe());
+}
+
 async function savePlayers() {
     let playerspath = "./download/players.json";
     await files.writeObjectToFile(playerspath, players);
@@ -1031,11 +1051,14 @@ async function checkAdvPermission(message) {
  * @param {string} ap
  * @param {string} aap
  * @param {string} dp
+ * @param {number} axe
  * @returns a player object with the given data
  */
-async function revivePlayer(id, classname, ap, aap, dp, real) {
+async function revivePlayer(id, classname, ap, aap, dp, axe = 0, real) {
     let playerId = real ? await myServer.fetchMember(await bot.fetchUser(id)) : id;
-    return new Player(playerId, classname, ap, aap, dp, real);
+    let newPlayer = new Player(playerId, classname, ap, aap, dp, real);
+    newPlayer.updateAxe(axe);
+    return newPlayer;
 }
 
 /**
@@ -1148,7 +1171,7 @@ if (configjson && itemsjson) {
         var playersjson = files.openJsonFile("./download/players.json", "utf8");
         if (playersjson) {
             playersjson.forEach(async currentPlayer => {
-                players.add(await revivePlayer(currentPlayer["id"], currentPlayer["classname"], currentPlayer["ap"], currentPlayer["aap"], currentPlayer["dp"], currentPlayer["real"]));
+                players.add(await revivePlayer(currentPlayer["id"], currentPlayer["classname"], currentPlayer["ap"], currentPlayer["aap"], currentPlayer["dp"], currentPlayer["axe"], currentPlayer["real"]));
             });
         }
 
