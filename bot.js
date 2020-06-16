@@ -911,12 +911,12 @@ async function updatePlayer(players, player, succ, origin) {
     let oldPlayer = { ...foundPlayer };
     players.findAndUpdate(player, succ);
     if(foundPlayer) {
-        content += "> Updated " + player.getNameOrMention() + "'s gear :\n";
-        content += changeLogFormatter("Class : ", oldPlayer.classname, player.classname, players.getClassEmoji(oldPlayer), players.getClassEmoji(player));
+        content += "> Updated " + foundPlayer.getNameOrMention() + "'s gear :\n";
+        content += changeLogFormatter("Class : ", oldPlayer.classname, foundPlayer.classname, players.getClassEmoji(oldPlayer), players.getClassEmoji(foundPlayer));
         let statsContent = "";
-        statsContent += changeLogFormatter("AP  : ", oldPlayer.ap, player.ap);
-        statsContent += changeLogFormatter("AAP : ", oldPlayer.aap, player.aap);
-        statsContent += changeLogFormatter("DP  : ", oldPlayer.dp, player.dp);
+        statsContent += changeLogFormatter("AP  : ", oldPlayer.ap, foundPlayer.ap);
+        statsContent += changeLogFormatter("AAP : ", oldPlayer.aap, foundPlayer.aap);
+        statsContent += changeLogFormatter("DP  : ", oldPlayer.dp, foundPlayer.dp);
         if(statsContent != "") {
             content += "```ml\n" + statsContent + "```";
         }
