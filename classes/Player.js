@@ -204,7 +204,7 @@ module.exports = class Player {
             }
         }
 
-        this.getAxe = function () {
+        this.getAxe = function (display0 = false) {
             switch (this.axe) {
                 case 1:
                     return "I"
@@ -217,7 +217,7 @@ module.exports = class Player {
                 case 5:
                     return "V"
                 default:
-                    return "";
+                    return display0 ? "none" : "";
             }
         }
     }
