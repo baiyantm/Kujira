@@ -1245,5 +1245,5 @@ if (configjson && itemsjson) {
 
     });
 } else {
-    logger.log("INFO: Couldn't find config.json and items.json files, aborting.")
+    logger.log("INFO: Couldn't find config.json and items.json files, aborting.");
 }

@@ -139,90 +139,10 @@ module.exports = class PlayerArray extends Array {
         embed.setTitle(embedTitle);
 
         if (players.length > 1) {
-            let minAP = util.compare(players, (min, player) => {
-                return player.isDpBuild() || player.name == "Uchaguzi" ? false : min.ap > player.ap;
-            });
-            let minAPplayers = players.filter(element => element.isDpBuild() || element.name == "Uchaguzi" ? false : element.ap == minAP.ap);
-            let minAPstring = "";
-            minAPplayers.forEach(player => {
-                minAPstring += this.displayFullPlayer(player) + "\n";
-            });
 
-            let minAAP = util.compare(players, (min, player) => {
-                return player.isDpBuild() || player.isSuccession() || player.name == "Uchaguzi" ? false : min.aap > player.aap;
-            });
-            let minAAPplayers = players.filter(element => element.isDpBuild() || element.isSuccession() || element.name == "Uchaguzi" ? false : element.aap == minAAP.aap);
-            let minAAPstring = "";
-            minAAPplayers.forEach(player => {
-                minAAPstring += this.displayFullPlayer(player) + "\n";
-            });
+            let stats = this.getMinMax(players);
+            let avg = this.getAverages(players);
 
-            let minDP = util.compare(players, (min, player) => {
-                return min.dp > player.dp;
-            });
-            let minDPplayers = players.filter(element => element.dp == minDP.dp);
-            let minDPstring = "";
-            minDPplayers.forEach(player => {
-                minDPstring += this.displayFullPlayer(player) + "\n";
-            });
-
-            let minGS = util.compare(players, (min, player) => {
-                return min.getGS() > player.getGS();
-            });
-            let minGSplayers = players.filter(element => element.getGS() == minGS.getGS());
-            let minGSstring = "";
-            minGSplayers.forEach(player => {
-                minGSstring += this.displayFullPlayer(player) + "\n";
-            });
-
-            let maxAP = util.compare(players, (max, player) => {
-                return max.ap < player.ap;
-            });
-            let maxAPplayers = players.filter(element => element.ap == maxAP.ap);
-            let maxAPstring = "";
-            maxAPplayers.forEach(player => {
-                maxAPstring += this.displayFullPlayer(player) + "\n";
-            });
-
-            let maxAAP = util.compare(players, (max, player) => {
-                return max.aap < player.aap;
-            });
-            let maxAAPplayers = players.filter(element => element.aap == maxAAP.aap);
-            let maxAAPstring = "";
-            maxAAPplayers.forEach(player => {
-                maxAAPstring += this.displayFullPlayer(player) + "\n";
-            });
-
-            let maxDP = util.compare(players, (max, player) => {
-                return max.dp < player.dp;
-            });
-            let maxDPplayers = players.filter(element => element.dp == maxDP.dp);
-            let maxDPstring = "";
-            maxDPplayers.forEach(player => {
-                maxDPstring += this.displayFullPlayer(player) + "\n";
-            });
-
-            let maxGS = util.compare(players, (max, player) => {
-                return max.getGS() < player.getGS();
-            });
-            let maxGSplayers = players.filter(element => element.getGS() == maxGS.getGS());
-            let maxGSstring = "";
-            maxGSplayers.forEach(player => {
-                maxGSstring += this.displayFullPlayer(player) + "\n";
-            });
-
-            let avgAP = util.avg(players, player => {
-                return player.isDpBuild() ? 0 : player.ap;
-            });
-            let avgAAP = util.avg(players, player => {
-                return player.isDpBuild() || player.isSuccession() ? 0 : player.aap;
-            });
-            let avgDP = util.avg(players, player => {
-                return player.isDpBuild() ? 0 : player.dp;
-            });
-            let avgGS = util.avg(players, player => {
-                return player.isDpBuild() ? 0 : player.getGS();
-            });
             if (!classname) {
                 let countedClasses = [];
                 this.classList.forEach(className => {
@@ -263,15 +183,17 @@ module.exports = class PlayerArray extends Array {
                     true);
                 embed.addBlankField(true);
             }
-            embed.addField("Average gear : " + avgGS, util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
-            embed.addField("Highest GS : " + maxGS.getGS(), maxGSstring, true);
-            embed.addField("Highest AP : " + maxAP.ap, maxAPstring, true);
-            embed.addField("Highest AAP : " + maxAAP.aap, maxAAPstring, true);
-            embed.addField("Highest DP : " + maxDP.dp, maxDPstring, true);
-            embed.addField("Lowest GS : " + minGS.getGS(), minGSstring, true);
-            embed.addField("Lowest AP : " + minAP.ap, minAPstring, true);
-            embed.addField("Lowest AAP : " + minAAP.aap, minAAPstring, true);
-            embed.addField("Lowest DP : " + minDP.dp, minDPstring, true);
+            embed.addField("Average gear : " + avg.gs, util.valueFormat(util.valueFormat(avg.ap + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avg.aap + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avg.dp + "", 10), 100), true);
+            embed.addField("Highest GS : " + stats.max.gs.value.getGS(), stats.max.gs.string, true);
+            embed.addField("Highest AP : " + stats.max.ap.value.ap, stats.max.ap.string, true);
+            embed.addField("Highest AAP : " + stats.max.aap.value.aap, stats.max.aap.string, true);
+            embed.addField("Highest DP : " + stats.max.dp.value.dp, stats.max.dp.string, true);
+            embed.addField("Lowest GS : " + stats.min.gs.value.getGS(), stats.min.gs.string, true);
+            embed.addField("Lowest AP : " + stats.min.ap.value.ap, stats.min.ap.string, true);
+            embed.addField("Lowest AAP : " + stats.min.aap.value.aap, stats.min.aap.string, true);
+            embed.addField("Lowest DP : " + stats.min.dp.value.dp, stats.min.dp.string, true);
+            embed.addField("Best Axe : " + stats.max.axe.value.getAxe(true), stats.max.axe.string, true);
+            embed.addField("Worst Axe : " + stats.min.axe.value.getAxe(true), stats.min.axe.string, true);
         } else if (players.length > 0) {
             embed.setDescription(this.displayFullPlayer(players[0]));
         } else {
@@ -293,18 +215,7 @@ module.exports = class PlayerArray extends Array {
 
         if (players.length > 0) {
             embed.setDescription("Total players : " + players.length + " " + (players.length == players.length ? "" : (" (" + players.length + ")")));
-            let avgAP = util.avg(players, player => {
-                return player.isDpBuild() ? 0 : player.ap;
-            });
-            let avgAAP = util.avg(players, player => {
-                return player.isDpBuild() || player.isSuccession() ? 0 : player.aap;
-            });
-            let avgDP = util.avg(players, player => {
-                return player.isDpBuild() ? 0 : player.dp;
-            });
-            let avgGS = util.avg(players, player => {
-                return player.isDpBuild() ? 0 : player.getGS();
-            });
+            let avg = this.getAverages(players);
             let classes = [];
             this.classList.forEach(currentClass => {
                 classes.push({ "className": currentClass, "count": players.countClassNames(currentClass) });
@@ -317,7 +228,7 @@ module.exports = class PlayerArray extends Array {
                 classText += currentClass["count"] + "x " + this.classEmojis.find(emoji => emoji.name == currentClass["className"]) + " " + currentClass["className"].charAt(0).toUpperCase() + currentClass["className"].slice(1) + "\n";
             });
             embed.addField("Class list", classText, true);
-            embed.addField("Average gear (" + avgGS + ")", util.valueFormat(util.valueFormat(avgAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgAAP + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avgDP + "", 10), 100), true);
+            embed.addField("Average gear (" + avg.gs + ")", util.valueFormat(util.valueFormat(avg.ap + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avg.aap + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avg.dp + "", 10), 100), true);
         } else {
             embed.setDescription("Empty player list.");
         }
@@ -381,7 +292,198 @@ module.exports = class PlayerArray extends Array {
         return this.getClassEmoji(player) + "\xa0" + player;
     }
 
+    /**
+     * @param {Player} player 
+     * @returns a string containing the server class emoji and the player display
+     */
+    displayPartPlayer(player) {
+        return this.getClassEmoji(player) + "\xa0" + player.name;
+    }
+
     getClassEmoji(player) {
         return this.classEmojis.find(emoji => emoji.name == player.getEmojiClassName());
+    }
+
+    /**
+     * return an object {ap, aap, dp, gs}
+     * @param {PlayerArray} players
+     * @returns {any}
+     */
+    getAverages(players) {
+        let avg = {
+            "ap": util.avg(players, player => {
+                return player.isDpBuild() ? 0 : player.ap;
+            }),
+            "aap": util.avg(players, player => {
+                return player.isDpBuild() || player.isSuccession() ? 0 : player.aap;
+            }),
+            "dp": util.avg(players, player => {
+                return player.isDpBuild() ? 0 : player.dp;
+            }),
+            "gs": util.avg(players, player => {
+                return player.isDpBuild() ? 0 : player.getGS();
+            })
+        };
+        return avg;
+    }
+
+    /**
+     * return an object 
+     * {
+     *  min {
+     *      ap{value, string}, 
+     *      aap{value, string}, 
+     *      dp{value, string}, 
+     *      gs{value, string}
+     *  }, max {
+     *      ap{value, string}, 
+     *      aap{value, string}, 
+     *      dp{value, string}, 
+     *      gs{value, string}
+     *      }
+     * }
+     * @param {PlayerArray} players
+     * @returns {any}
+     */
+    getMinMax(players) {
+        let minAP = util.compare(players, (min, player) => {
+            return player.isDpBuild() || player.name == "Uchaguzi" ? false : min.ap > player.ap;
+        });
+        let minAPplayers = players.filter(element => element.isDpBuild() || element.name == "Uchaguzi" ? false : element.ap == minAP.ap);
+        let minAPstring = "";
+        minAPplayers.forEach(player => {
+            minAPstring += this.displayFullPlayer(player) + "\n";
+        });
+
+        let minAAP = util.compare(players, (min, player) => {
+            return player.isDpBuild() || player.isSuccession() || player.name == "Uchaguzi" ? false : min.aap > player.aap;
+        });
+        let minAAPplayers = players.filter(element => element.isDpBuild() || element.isSuccession() || element.name == "Uchaguzi" ? false : element.aap == minAAP.aap);
+        let minAAPstring = "";
+        minAAPplayers.forEach(player => {
+            minAAPstring += this.displayFullPlayer(player) + "\n";
+        });
+
+        let minDP = util.compare(players, (min, player) => {
+            return min.dp > player.dp;
+        });
+        let minDPplayers = players.filter(element => element.dp == minDP.dp);
+        let minDPstring = "";
+        minDPplayers.forEach(player => {
+            minDPstring += this.displayFullPlayer(player) + "\n";
+        });
+
+        let minGS = util.compare(players, (min, player) => {
+            return min.getGS() > player.getGS();
+        });
+        let minGSplayers = players.filter(element => element.getGS() == minGS.getGS());
+        let minGSstring = "";
+        minGSplayers.forEach(player => {
+            minGSstring += this.displayFullPlayer(player) + "\n";
+        });
+
+        let minAxe = util.compare(players, (min, player) => {
+            return min.axe > player.axe;
+        });
+        let minAxePlayers = players.filter(element => element.axe == minAxe.axe);
+        let minAxestring = "";
+        minAxePlayers.forEach(player => {
+            minAxestring += this.displayPartPlayer(player) + "\n";
+        });
+
+        let maxAP = util.compare(players, (max, player) => {
+            return max.ap < player.ap;
+        });
+        let maxAPplayers = players.filter(element => element.ap == maxAP.ap);
+        let maxAPstring = "";
+        maxAPplayers.forEach(player => {
+            maxAPstring += this.displayFullPlayer(player) + "\n";
+        });
+
+        let maxAAP = util.compare(players, (max, player) => {
+            return max.aap < player.aap;
+        });
+        let maxAAPplayers = players.filter(element => element.aap == maxAAP.aap);
+        let maxAAPstring = "";
+        maxAAPplayers.forEach(player => {
+            maxAAPstring += this.displayFullPlayer(player) + "\n";
+        });
+
+        let maxDP = util.compare(players, (max, player) => {
+            return max.dp < player.dp;
+        });
+        let maxDPplayers = players.filter(element => element.dp == maxDP.dp);
+        let maxDPstring = "";
+        maxDPplayers.forEach(player => {
+            maxDPstring += this.displayFullPlayer(player) + "\n";
+        });
+
+        let maxGS = util.compare(players, (max, player) => {
+            return max.getGS() < player.getGS();
+        });
+        let maxGSplayers = players.filter(element => element.getGS() == maxGS.getGS());
+        let maxGSstring = "";
+        maxGSplayers.forEach(player => {
+            maxGSstring += this.displayFullPlayer(player) + "\n";
+        });
+
+        let maxAxe = util.compare(players, (max, player) => {
+            return max.axe < player.axe;
+        });
+        let maxAxePlayers = players.filter(element => element.axe == maxAxe.axe);
+        let maxAxestring = "";
+        maxAxePlayers.forEach(player => {
+            maxAxestring += this.displayPartPlayer(player) + "\n";
+        });
+
+        let minmax = {
+            "min": {
+                "ap": {
+                    "value": minAP,
+                    "string": minAPstring
+                }
+                ,
+                "aap": {
+                    "value": minAAP,
+                    "string": minAAPstring
+                },
+                "dp": {
+                    "value": minDP,
+                    "string": minDPstring
+                },
+                "gs": {
+                    "value": minGS,
+                    "string": minGSstring
+                },
+                "axe": {
+                    "value": minAxe,
+                    "string": minAxestring
+                }
+            },
+            "max": {
+                "ap": {
+                    "value": maxAP,
+                    "string": maxAPstring
+                }
+                ,
+                "aap": {
+                    "value": maxAAP,
+                    "string": maxAAPstring
+                },
+                "dp": {
+                    "value": maxDP,
+                    "string": maxDPstring
+                },
+                "gs": {
+                    "value": maxGS,
+                    "string": maxGSstring
+                },
+                "axe": {
+                    "value": maxAxe,
+                    "string": maxAxestring
+                }
+            },
+        };
+        return minmax;
     }
 }
