@@ -6,8 +6,8 @@ const files = require("./modules/files");
 const interactions = require("./modules/interactions");
 const logger = require("./modules/logger");
 const util = require("./modules/util");
-var Player = require('./classes/Player');
-var PlayerArray = require('./classes/PlayerArray');
+const Player = require('./classes/Player');
+const PlayerArray = require('./classes/PlayerArray');
 
 async function initLookout() {
     logger.log("INFO: Initializing lookout ...");
@@ -207,305 +207,441 @@ async function onMessageHandler(message, botMsg, annCache) {
         } else if (message.channel.id == myGate.id) {
             // === GATE ===
             commands = itemsjson["commands"]["gate"]["guest"];
-            if (enteredCommand == commands["ok"]) {
-                let publicRole = message.guild.roles.find(x => x.name == "Public");
-                if (!message.member.roles.has(publicRole.id)) {
-                    await message.member.addRole(publicRole);
-                    logger.log("ROLE: " + publicRole + " role added to " + message.author.tag);
-                    await interactions.wSendAuthor(message.author, itemsjson["urlguildpage"]);
-                    await interactions.wSendAuthor(message.author, itemsjson["gateguide"] + "\n\nReminder that you agreed to the following rules :\n" + itemsjson["gaterules"]);
-                    await interactions.wSendChannel(myWelcome, message.author + " agreed to the rules and got the public role.");
-                }
-            }
-            deleteCommand(message);
+            await gateChannelHandler(commands, enteredCommand, message);
         } else if (message.channel.id == mySignUp.id) {
             // === SIGNUP ===
-            if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
-                commands = itemsjson["commands"]["signup"]["adv"];
-                enteredCommand = enteredCommand.substr(1);
-                let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
-                enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
-                if (enteredCommand == commands["clear"]) {
-                    await clearChannel(message.channel);
-                } else if (enteredCommand == commands["reset"]) {
-                    await clearChannel(message.channel);
-                    if (args == "bulk") {
-                        await bulkSignUpMessages(configjson["defaultDay"]);
-                    } else {
-                        await generateSignUpMessages(configjson["defaultCount"]);
-                    }
-                } else if (enteredCommand == commands["dump"]) {
-                    //manually dumps data into data channel
-                    deleteCommand(message);
-                    let day;
-                    if (args) {
-                        day = util.findCorrespondingDayNumber(args);
-                    } else {
-                        let today = new Date();
-                        day = today.getDay();
-                    }
-                    await saveSignUp(day);
-                } else if (enteredCommand == commands["bulk"]) {
-                    deleteCommand(message);
-                    await bulkSignUpMessages(args ? args : configjson["defaultDay"]);
-                } else if (enteredCommand == commands["generate"]) {
-                    deleteCommand(message);
-                    if (Number(args) <= 7) {
-                        await generateSignUpMessages(args ? args : configjson["defaultCount"]);
-                    } else {
-                        interactions.wSendAuthor(message.author, "I cannot generate that many messages");
-                    }
-                } else if (enteredCommand == commands["react"]) {
-                    await message.channel.fetchMessages({ limit: 2 }).then(async messages => {
-                        let toReact = messages.last();
-                        await toReact.react(configjson["yesreaction"]);
-                        await toReact.react(configjson["noreaction"]);
-                    });
-                    await deleteCommand(message);
-                }
-            }
+            await signupChannelHandler(enteredCommand, message, commands);
         } else if (message.channel.id == myGear.id) {
             // === GEAR ===
-            if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
-                commands = itemsjson["commands"]["gear"]["adv"];
-                enteredCommand = enteredCommand.substr(1); // remove ?
-                let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
-                enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
-                if (enteredCommand == commands["clear"]) {
-                    await clearChannel(message.channel);
-                } else if (enteredCommand == commands["removeall"]) {
-                    players.length = 0;
-                } else if (enteredCommand == commands["remove"]) {
-                    let playerId = "";
-                    if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
-                        playerId = message.mentions.members.first().id;
-                    } else {
-                        playerId = args;
-                    }
-                    await removePlayer(players, playerId, message.author);
-                } else if (enteredCommand == commands["add"]) {
-                    let split = args.split(" ");
-                    if (split.length >= 5) {
-                        let member = null;
-                        if (message.mentions.members.size == 1) {
-                            member = message.mentions.members.first();
-                        }
-                        let name = split[0];
-                        split.splice(0, 1); // remove name
-                        let classToFind = itemsjson["classlist"].find(currentclassname => currentclassname == split[0]);
-                        if (classToFind) {
-                            split.splice(0, 1); // remove classname
-                            split[0].startsWith(split[0]);
-                            let succ = null;
-                            if (split.length == 4) {
-                                if (split[0].startsWith(commands["succession"]) &&
-                                    itemsjson["classlistSucc"].find(currentclassname => currentclassname == classToFind)) {
-                                    succ = true;
-                                } else if (split[0].startsWith(commands["awakening"])) {
-                                    succ = false;
-                                }
-                                split.splice(0, 1); // remove succ
-                            }
-                            let ap = parseInt(split[0]);
-                            let aap = parseInt(split[1]);
-                            let dp = parseInt(split[2]);
-                            if (Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
-                                let player;
-                                if (!member) {
-                                    player = new Player(name, classToFind, ap, aap, dp, false);
-                                } else {
-                                    player = new Player(member, classToFind, ap, aap, dp, true);
-                                }
-                                await updatePlayer(players, player, succ, message.author);
-                            } else {
-                                interactions.wSendAuthor(message.author, "Some stats are too high or not numbers.");
-                            }
-                        } else {
-                            interactions.wSendAuthor(message.author, split[0] + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
-                        }
-                    } else {
-                        interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `<name> <classname> [succession|awakening] <ap> <aap> <dp>`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
-                    }
-                }
-            } else if (!enteredCommand.startsWith("! ") && !enteredCommand.startsWith("?")) {
-                let classToFind = itemsjson["classlist"].find(currentclassname => currentclassname == enteredCommand.split(" ")[0]);
-                let firstSplit = enteredCommand.split(" ");
-                if (firstSplit.length == 3) {
-                    let playerToFind = players.get(message.author.id);
-                    let ap = parseInt(firstSplit[0]);
-                    let aap = parseInt(firstSplit[1]);
-                    let dp = parseInt(firstSplit[2]);
-                    if (playerToFind && Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
-                        let player = new Player(message.member, playerToFind.classname, ap, aap, dp, true);
-                        await updatePlayer(players, player, null, message.author);
-                    } else {
-                        interactions.wSendAuthor(message.author, "Invalid command. Not registered to update stats.");
-                    }
-                } else {
-                    let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase(); // all but first word
-                    let split = args.split(" ");
-                    enteredCommand = enteredCommand.split(" ")[0]; // only first word
-                    commands = itemsjson["commands"]["gear"]["guest"];
-                    if (enteredCommand == commands["help"]) {
-                        let helpMessage = await interactions.wSendChannel(message.channel, itemsjson["gearhelp"]);
-                        bot.setTimeout(() => {
-                            interactions.wDelete(helpMessage);
-                        }, 60000);
-                    } else if (enteredCommand == commands["succession"]) {
-                        let playerToFind = players.get(message.author.id);
-                        if (playerToFind && itemsjson["classlistSucc"].find(currentclassname => currentclassname == playerToFind.classname)) {
-                            await updatePlayer(players, playerToFind, true, message.author);
-                        } else {
-                            interactions.wSendAuthor(message.author, "Invalid command. Not registered to update to succession or not a succession class.");
-                        }
-                    } else if (enteredCommand == commands["awakening"]) {
-                        let playerToFind = players.get(message.author.id);
-                        if (playerToFind) {
-                            await updatePlayer(players, playerToFind, false, message.author);
-                        } else {
-                            interactions.wSendAuthor(message.author, "Invalid command. Not registered to update to awakening.");
-                        }
-                    } else if (enteredCommand == commands["axe"]) {
-                        if (split.length == 1) {
-                            await updatePlayerAxe(message.author, args);
-                        } else {
-                            // too many arguments !
-                            interactions.wSendAuthor(message.author, "Invalid axe command.");
-                        }
-                    } else if (classToFind) {
-                        let succ = null;
-                        if (split.length == 4) {
-                            if (split[0].startsWith(commands["succession"]) &&
-                                itemsjson["classlistSucc"].find(currentclassname => currentclassname == classToFind)) {
-                                succ = true;
-                            } else if (split[0].startsWith(commands["awakening"])) {
-                                succ = false;
-                            }
-                            split.splice(0, 1); // remove succ
-                        }
-                        if (split.length == 3) {
-                            let ap = parseInt(split[0]);
-                            let aap = parseInt(split[1]);
-                            let dp = parseInt(split[2]);
-                            if (Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
-                                let player = new Player(message.member, classToFind, ap, aap, dp, true);
-                                await updatePlayer(players, player, succ, message.author);
-                            } else {
-                                interactions.wSendAuthor(message.author, "Some stats are too high or not numbers.");
-                            }
-                        } else {
-                            interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `<classname> [succession|awakening] <ap> <aap> <dp>`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
-                        }
-                    } else {
-                        interactions.wSendAuthor(message.author, enteredCommand + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
-                    }
-
-                }
-            }
-            deleteCommand(message);
-
-            //refresh bot message
-            bot.setTimeout(async () => {
-                await refreshBotMsg(myGear, botMsg, players);
-            }, configjson["refreshDelay"]);
+            await gearChannelHandler(enteredCommand, message, commands, botMsg);
         } else {
             // === ALL CHANNELS ===
             if (enteredCommand.startsWith("?")) {
-                commands = itemsjson["commands"]["any"]["guest"];
-                enteredCommand = enteredCommand.substr(1);
-                let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
-                enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
-                if (enteredCommand == commands["gear"] && checkIntPermission(message)) {
-                    message.react("✅");
-                    let idToFind;
-                    if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
-                        idToFind = message.mentions.members.first().id;
-                    } else {
-                        idToFind = args;
-                    }
-                    let playerFound = players.get(idToFind);
-                    if (playerFound) {
-                        interactions.wSendChannel(message.channel, players.displayFullPlayer(playerFound));
-                    } else {
-                        interactions.wSendChannel(message.channel, "Couldn't find this player.");
-                    }
-                } else if (enteredCommand == commands["stats"] && checkIntPermission(message)) {
-                    if (!args) {
-                        message.react("✅");
-                        interactions.wSendChannel(message.channel, players.getStatsEmbed(null));
-                    } else {
-                        let split = args.split(" ");
-                        if (split.length == 1) {
-                            if (itemsjson["classlist"].includes(split[0])) {
-                                message.react("✅");
-                                interactions.wSendChannel(message.channel, players.getStatsEmbed(split[0]));
-                            } else {
-                                let day;
-                                if (split[0]) {
-                                    if (split[0] == "today") {
-                                        let today = new Date();
-                                        day = today.getDay();
-                                    } else if (util.findCorrespondingDayNumber(split[0]) != null) {
-                                        day = util.findCorrespondingDayNumber(split[0]);
-                                    }
-                                    if (day != undefined) {
-                                        message.react("✅");
-                                        let signedUpPlayers = await getPlayersWithStatus(day, players, "yes");
-                                        if (signedUpPlayers) {
-                                            interactions.wSendChannel(message.channel, players.getSignedUpStatsEmbed(signedUpPlayers, day));
-                                        } else {
-                                            interactions.wSendChannel(message.channel, "No message found for " + util.findCorrespondingDayName(day));
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } else if (enteredCommand == commands["sub"]) {
-                    let rolename = args;
-                    //add roles here
-                    if (false) {
-                        let role = message.guild.roles.find(x => x.name == rolename.charAt(0).toUpperCase() + rolename.slice(1));
-                        if (message.member.roles.has(role.id)) {
-                            try {
-                                await message.member.removeRole(role);
-                                interactions.wSendAuthor(message.author, role.name + ' role removed.');
-                                logger.log('ROLE: ' + role.name + ' role removed from ' + message.author.tag);
-                                interactions.wDelete(message);
-                            } catch (e) {
-                                interactions.wSendAuthor(message.author, args + ' role not found or not self-assignable.');
-                            }
-                        } else {
-                            try {
-                                await message.member.addRole(role);
-                                interactions.wSendAuthor(message.author, role.name + ' role added.');
-                                logger.log('ROLE: ' + role.name + ' role added to ' + message.author.tag);
-                                interactions.wDelete(message);
-                            } catch (e) {
-                                interactions.wSendAuthor(message.author, args + ' role not found or not self-assignable.');
-                            }
-                        }
-                    }
-                } else if (enteredCommand == commands["reminder"] && await checkAdvPermission(message)) {
-                    let today = new Date();
-                    let day = today.getDay();
-                    let naPlayers = await getPlayersWithStatus(day, players, "N/A");
-                    let reminderMessage = "";
-                    if (naPlayers.length > 0) {
-                        naPlayers.forEach(player => {
-                            reminderMessage += "<@" + player.id + ">\n";
-                        });
-                        reminderMessage += "Please vote for today :)";
-                    } else {
-                        reminderMessage += "Everyone voted for today 👍";
-                    }
-                    interactions.wSendChannel(message.channel, reminderMessage);
-                }
+                await allChannelsHandler(enteredCommand, commands, message);
             }
         }
     } catch (e) {
         logger.logError("On message listener error. Something really bad went wrong", e);
     }
+}
+
+async function gateChannelHandler(commands, enteredCommand, message) {
+    if (enteredCommand == commands["ok"]) {
+        await okCommand(message);
+    }
+    deleteCommand(message);
+}
+
+async function okCommand(message) {
+    let publicRole = message.guild.roles.find(x => x.name == "Public");
+    if (!message.member.roles.has(publicRole.id)) {
+        await message.member.addRole(publicRole);
+        logger.log("ROLE: " + publicRole + " role added to " + message.author.tag);
+        await interactions.wSendAuthor(message.author, itemsjson["urlguildpage"]);
+        await interactions.wSendAuthor(message.author, itemsjson["gateguide"] + "\n\nReminder that you agreed to the following rules :\n" + itemsjson["gaterules"]);
+        await interactions.wSendChannel(myWelcome, message.author + " agreed to the rules and got the public role.");
+    }
+}
+
+async function signupChannelHandler(enteredCommand, message, commands) {
+    if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
+        commands = itemsjson["commands"]["signup"]["adv"];
+        enteredCommand = enteredCommand.substr(1);
+        let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
+        enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
+        if (enteredCommand == commands["clear"]) {
+            await clearCommand(message);
+        }
+        else if (enteredCommand == commands["reset"]) {
+            await resetCommand(message, args);
+        }
+        else if (enteredCommand == commands["dump"]) {
+            //manually dumps data into data channel
+            await dumpCommand(message, args);
+        }
+        else if (enteredCommand == commands["bulk"]) {
+            await bulkCommand(message, args);
+        }
+        else if (enteredCommand == commands["generate"]) {
+            await generateCommand(message, args);
+        }
+        else if (enteredCommand == commands["react"]) {
+            await reactCommand(message);
+        }
+    }
+}
+
+async function resetCommand(message, args) {
+    await clearChannel(message.channel);
+    if (args == "bulk") {
+        await bulkSignUpMessages(configjson["defaultDay"]);
+    }
+    else {
+        await generateSignUpMessages(configjson["defaultCount"]);
+    }
+}
+
+async function dumpCommand(message, args) {
+    deleteCommand(message);
+    let day;
+    if (args) {
+        day = util.findCorrespondingDayNumber(args);
+    }
+    else {
+        let today = new Date();
+        day = today.getDay();
+    }
+    await saveSignUp(day);
+}
+
+async function bulkCommand(message, args) {
+    deleteCommand(message);
+    await bulkSignUpMessages(args ? args : configjson["defaultDay"]);
+}
+
+async function generateCommand(message, args) {
+    deleteCommand(message);
+    if (Number(args) <= 7) {
+        await generateSignUpMessages(args ? args : configjson["defaultCount"]);
+    }
+    else {
+        interactions.wSendAuthor(message.author, "I cannot generate that many messages");
+    }
+}
+
+async function reactCommand(message) {
+    await message.channel.fetchMessages({ limit: 2 }).then(async (messages) => {
+        let toReact = messages.last();
+        await toReact.react(configjson["yesreaction"]);
+        await toReact.react(configjson["noreaction"]);
+    });
+    await deleteCommand(message);
+}
+
+async function gearChannelHandler(enteredCommand, message, commands, botMsg) {
+    if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
+        commands = itemsjson["commands"]["gear"]["adv"];
+        enteredCommand = enteredCommand.substr(1); // remove ?
+        let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
+        enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
+        if (enteredCommand == commands["clear"]) {
+            await clearCommand(message);
+        }
+        else if (enteredCommand == commands["removeall"]) {
+            removeAllCommand();
+        }
+        else if (enteredCommand == commands["remove"]) {
+            await removePlayerCommand(message, args);
+        }
+        else if (enteredCommand == commands["add"]) {
+            await manualAddCommand(args, message, commands);
+        }
+    }
+    else if (!enteredCommand.startsWith("! ") && !enteredCommand.startsWith("?")) {
+        let classToFind = itemsjson["classlist"].find(currentclassname => currentclassname == enteredCommand.split(" ")[0]);
+        let firstSplit = enteredCommand.split(" ");
+        if (firstSplit.length == 3) {
+            await shortGearCommand(message, firstSplit);
+        }
+        else {
+            let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase(); // all but first word
+            let split = args.split(" ");
+            enteredCommand = enteredCommand.split(" ")[0]; // only first word
+            commands = itemsjson["commands"]["gear"]["guest"];
+            if (enteredCommand == commands["help"]) {
+                await helpCommand(message);
+            }
+            else if (enteredCommand == commands["succession"]) {
+                await succCommand(message);
+            }
+            else if (enteredCommand == commands["awakening"]) {
+                await awakCommand(message);
+            }
+            else if (enteredCommand == commands["axe"]) {
+                await axeCommand(split, message, args);
+            }
+            else if (classToFind) {
+                await updateGearCommand(split, commands, classToFind, message);
+            }
+            else {
+                interactions.wSendAuthor(message.author, enteredCommand + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
+            }
+
+        }
+    }
+    deleteCommand(message);
+
+    //refresh bot message
+    bot.setTimeout(async () => {
+        await refreshBotMsg(myGear, botMsg, players);
+    }, configjson["refreshDelay"]);
+}
+
+async function clearCommand(message) {
+    await clearChannel(message.channel);
+}
+
+function removeAllCommand() {
+    players.length = 0;
+}
+
+async function removePlayerCommand(message, args) {
+    let playerId = "";
+    if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
+        playerId = message.mentions.members.first().id;
+    }
+    else {
+        playerId = args;
+    }
+    await removePlayer(players, playerId, message.author);
+}
+
+async function helpCommand(message) {
+    let helpMessage = await interactions.wSendChannel(message.channel, itemsjson["gearhelp"]);
+    bot.setTimeout(() => {
+        interactions.wDelete(helpMessage);
+    }, 60000);
+}
+
+async function manualAddCommand(args, message, commands) {
+    let split = args.split(" ");
+    if (split.length >= 5) {
+        let member = null;
+        if (message.mentions.members.size == 1) {
+            member = message.mentions.members.first();
+        }
+        let name = split[0];
+        split.splice(0, 1); // remove name
+        let classToFind = itemsjson["classlist"].find(currentclassname => currentclassname == split[0]);
+        if (classToFind) {
+            split.splice(0, 1); // remove classname
+            split[0].startsWith(split[0]);
+            let succ = null;
+            if (split.length == 4) {
+                if (split[0].startsWith(commands["succession"]) &&
+                    itemsjson["classlistSucc"].find(currentclassname => currentclassname == classToFind)) {
+                    succ = true;
+                }
+                else if (split[0].startsWith(commands["awakening"])) {
+                    succ = false;
+                }
+                split.splice(0, 1); // remove succ
+            }
+            let ap = parseInt(split[0]);
+            let aap = parseInt(split[1]);
+            let dp = parseInt(split[2]);
+            if (Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
+                let player;
+                if (!member) {
+                    player = new Player(name, classToFind, ap, aap, dp, false);
+                }
+                else {
+                    player = new Player(member, classToFind, ap, aap, dp, true);
+                }
+                await updatePlayer(players, player, succ, message.author);
+            }
+            else {
+                interactions.wSendAuthor(message.author, "Some stats are too high or not numbers.");
+            }
+        }
+        else {
+            interactions.wSendAuthor(message.author, split[0] + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
+        }
+    }
+    else {
+        interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `<name> <classname> [succession|awakening] <ap> <aap> <dp>`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
+    }
+}
+
+async function shortGearCommand(message, firstSplit) {
+    let playerToFind = players.get(message.author.id);
+    let ap = parseInt(firstSplit[0]);
+    let aap = parseInt(firstSplit[1]);
+    let dp = parseInt(firstSplit[2]);
+    if (playerToFind && Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
+        let player = new Player(message.member, playerToFind.classname, ap, aap, dp, true);
+        await updatePlayer(players, player, null, message.author);
+    }
+    else {
+        interactions.wSendAuthor(message.author, "Invalid command. Not registered to update stats.");
+    }
+}
+
+async function updateGearCommand(split, commands, classToFind, message) {
+    let succ = null;
+    if (split.length == 4) {
+        if (split[0].startsWith(commands["succession"]) &&
+            itemsjson["classlistSucc"].find(currentclassname => currentclassname == classToFind)) {
+            succ = true;
+        }
+        else if (split[0].startsWith(commands["awakening"])) {
+            succ = false;
+        }
+        split.splice(0, 1); // remove succ
+    }
+    if (split.length == 3) {
+        let ap = parseInt(split[0]);
+        let aap = parseInt(split[1]);
+        let dp = parseInt(split[2]);
+        if (Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
+            let player = new Player(message.member, classToFind, ap, aap, dp, true);
+            await updatePlayer(players, player, succ, message.author);
+        }
+        else {
+            interactions.wSendAuthor(message.author, "Some stats are too high or not numbers.");
+        }
+    }
+    else {
+        interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `<classname> [succession|awakening] <ap> <aap> <dp>`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
+    }
+}
+
+async function succCommand(message) {
+    let playerToFind = players.get(message.author.id);
+    if (playerToFind && itemsjson["classlistSucc"].find(currentclassname => currentclassname == playerToFind.classname)) {
+        await updatePlayer(players, playerToFind, true, message.author);
+    }
+    else {
+        interactions.wSendAuthor(message.author, "Invalid command. Not registered to update to succession or not a succession class.");
+    }
+}
+
+async function awakCommand(message) {
+    let playerToFind = players.get(message.author.id);
+    if (playerToFind) {
+        await updatePlayer(players, playerToFind, false, message.author);
+    }
+    else {
+        interactions.wSendAuthor(message.author, "Invalid command. Not registered to update to awakening.");
+    }
+}
+
+async function axeCommand(split, message, args) {
+    if (split.length == 1) {
+        await updatePlayerAxe(message.author, args);
+    }
+    else {
+        // too many arguments !
+        interactions.wSendAuthor(message.author, "Invalid axe command.");
+    }
+}
+
+async function allChannelsHandler(enteredCommand, commands, message) {
+    commands = itemsjson["commands"]["any"]["guest"];
+    enteredCommand = enteredCommand.substr(1);
+    let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
+    enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
+    if (enteredCommand == commands["gear"] && checkIntPermission(message)) {
+        gearCommand(message, args);
+    }
+    else if (enteredCommand == commands["stats"] && checkIntPermission(message)) {
+        await statsCommand(args, message);
+    }
+    else if (enteredCommand == commands["sub"]) {
+        let rolename = args;
+        //add roles here
+        if (false) {
+            let role = message.guild.roles.find(x => x.name == rolename.charAt(0).toUpperCase() + rolename.slice(1));
+            if (message.member.roles.has(role.id)) {
+                try {
+                    await message.member.removeRole(role);
+                    interactions.wSendAuthor(message.author, role.name + ' role removed.');
+                    logger.log('ROLE: ' + role.name + ' role removed from ' + message.author.tag);
+                    interactions.wDelete(message);
+                }
+                catch (e) {
+                    interactions.wSendAuthor(message.author, args + ' role not found or not self-assignable.');
+                }
+            }
+            else {
+                try {
+                    await message.member.addRole(role);
+                    interactions.wSendAuthor(message.author, role.name + ' role added.');
+                    logger.log('ROLE: ' + role.name + ' role added to ' + message.author.tag);
+                    interactions.wDelete(message);
+                }
+                catch (e) {
+                    interactions.wSendAuthor(message.author, args + ' role not found or not self-assignable.');
+                }
+            }
+        }
+    }
+    else if (enteredCommand == commands["reminder"] && await checkAdvPermission(message)) {
+        await reminderCommand(message);
+    }
+}
+
+function gearCommand(message, args) {
+    message.react("✅");
+    let idToFind;
+    if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
+        idToFind = message.mentions.members.first().id;
+    }
+    else {
+        idToFind = args;
+    }
+    let playerFound = players.get(idToFind);
+    if (playerFound) {
+        interactions.wSendChannel(message.channel, players.displayFullPlayer(playerFound));
+    }
+    else {
+        interactions.wSendChannel(message.channel, "Couldn't find this player.");
+    }
+}
+
+async function statsCommand(args, message) {
+    if (!args) {
+        message.react("✅");
+        interactions.wSendChannel(message.channel, players.getStatsEmbed(null));
+    }
+    else {
+        let split = args.split(" ");
+        if (split.length == 1) {
+            if (itemsjson["classlist"].includes(split[0])) {
+                message.react("✅");
+                interactions.wSendChannel(message.channel, players.getStatsEmbed(split[0]));
+            }
+            else {
+                let day;
+                if (split[0]) {
+                    if (split[0] == "today") {
+                        let today = new Date();
+                        day = today.getDay();
+                    }
+                    else if (util.findCorrespondingDayNumber(split[0]) != null) {
+                        day = util.findCorrespondingDayNumber(split[0]);
+                    }
+                    if (day != undefined) {
+                        message.react("✅");
+                        let signedUpPlayers = await getPlayersWithStatus(day, players, "yes");
+                        if (signedUpPlayers) {
+                            interactions.wSendChannel(message.channel, players.getSignedUpStatsEmbed(signedUpPlayers, day));
+                        }
+                        else {
+                            interactions.wSendChannel(message.channel, "No message found for " + util.findCorrespondingDayName(day));
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+async function reminderCommand(message) {
+    let today = new Date();
+    let day = today.getDay();
+    let naPlayers = await getPlayersWithStatus(day, players, "N/A");
+    let reminderMessage = "";
+    if (naPlayers.length > 0) {
+        naPlayers.forEach(player => {
+            reminderMessage += "<@" + player.id + ">\n";
+        });
+        reminderMessage += "Please vote for today :)";
+    }
+    else {
+        reminderMessage += "Everyone voted for today 👍";
+    }
+    interactions.wSendChannel(message.channel, reminderMessage);
 }
 
 /*
