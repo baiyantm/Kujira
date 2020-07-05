@@ -144,37 +144,17 @@ module.exports = class PlayerArray extends Array {
             let avg = this.getAverages(players);
 
             if (!classname) {
-                let countedClasses = [];
-                this.classList.forEach(className => {
-                    countedClasses[className] = 0;
-                    players.forEach(player => {
-                        if (player.getClassName() == className) {
-                            countedClasses[className]++;
-                        }
-                    });
-                });
+                let countedClasses = this.getCountedClasses(players);
                 let max = 0;
                 for (let index in countedClasses) {
                     max = Math.max(max, countedClasses[index]);
                 }
-                let maxStr = "";
-                for (let index in countedClasses) {
-                    let value = countedClasses[index];
-                    if (value == max) {
-                        maxStr += this.classEmojis.find(emoji => emoji.name == index) + " " + index.charAt(0).toUpperCase() + index.slice(1) + " **(" + value + ")**\n";
-                    }
-                }
+                let maxStr = this.getExtremePlayerString(max, countedClasses);
                 let min = 999;
                 for (let index in countedClasses) {
                     min = Math.min(min, countedClasses[index]);
                 }
-                let minStr = "";
-                for (let index in countedClasses) {
-                    let value = countedClasses[index];
-                    if (value == min) {
-                        minStr += this.classEmojis.find(emoji => emoji.name == index) + " " + index.charAt(0).toUpperCase() + index.slice(1) + " **(" + value + ")**\n";
-                    }
-                }
+                let minStr = this.getExtremePlayerString(min, countedClasses);
                 embed.addField("Most played",
                     maxStr,
                     true);
@@ -186,11 +166,15 @@ module.exports = class PlayerArray extends Array {
             embed.addField("Average gear : " + avg.gs, util.valueFormat(util.valueFormat(avg.ap + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avg.aap + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avg.dp + "", 10), 100), true);
             embed.addField("Highest GS : " + stats.max.gs.value.getGS(), stats.max.gs.string, true);
             embed.addField("Highest AP : " + stats.max.ap.value.ap, stats.max.ap.string, true);
-            embed.addField("Highest AAP : " + stats.max.aap.value.aap, stats.max.aap.string, true);
+            if(stats.max.aap.string) { //special case for player array full for succ players
+                embed.addField("Highest AAP : " + stats.max.aap.value.aap, stats.max.aap.string, true);
+            }
             embed.addField("Highest DP : " + stats.max.dp.value.dp, stats.max.dp.string, true);
             embed.addField("Lowest GS : " + stats.min.gs.value.getGS(), stats.min.gs.string, true);
             embed.addField("Lowest AP : " + stats.min.ap.value.ap, stats.min.ap.string, true);
-            embed.addField("Lowest AAP : " + stats.min.aap.value.aap, stats.min.aap.string, true);
+            if(stats.min.aap.string) { //special case for player array full for succ players
+                embed.addField("Lowest AAP : " + stats.min.aap.value.aap, stats.min.aap.string, true);
+            }
             embed.addField("Lowest DP : " + stats.min.dp.value.dp, stats.min.dp.string, true);
             embed.addField("Best Axe : " + stats.max.axe.value.getAxe(true), stats.max.axe.string, true);
             embed.addField("Worst Axe : " + stats.min.axe.value.getAxe(true), stats.min.axe.string, true);
@@ -300,8 +284,46 @@ module.exports = class PlayerArray extends Array {
         return this.getClassEmoji(player) + "\xa0" + player.name;
     }
 
+    /**
+     * return the emoji matching the player's class
+     * @param {Player} player 
+     */
     getClassEmoji(player) {
         return this.classEmojis.find(emoji => emoji.name == player.getEmojiClassName());
+    }
+
+    /**
+     * return an array mapping classname to classname count
+     * @param {PlayerArray} players 
+     */
+    getCountedClasses(players) {
+        let countedClasses = [];
+        this.classList.forEach(className => {
+            countedClasses[className] = 0;
+            players.forEach(player => {
+                if (player.getClassName() == className) {
+                    countedClasses[className]++;
+                }
+            });
+        });
+        return countedClasses;
+    }
+
+    /**
+     * return a string containing players that match the extreme value of countedClasses
+     * @see getCountedClasses()
+     * @param {int} extreme 
+     * @param {int[]} countedClasses 
+     */
+    getExtremePlayerString(extreme, countedClasses) {
+        let extString = "";
+        for (let index in countedClasses) {
+            let value = countedClasses[index];
+            if (value == extreme) {
+                extString += this.classEmojis.find(emoji => emoji.name == index) + " " + index.charAt(0).toUpperCase() + index.slice(1) + " **(" + value + ")**\n";
+            }
+        }
+        return extString;
     }
 
     /**
@@ -401,9 +423,9 @@ module.exports = class PlayerArray extends Array {
         });
 
         let maxAAP = util.compare(players, (max, player) => {
-            return max.aap < player.aap;
+            return player.isSuccession() ? false : max.aap < player.aap;
         });
-        let maxAAPplayers = players.filter(element => element.aap == maxAAP.aap);
+        let maxAAPplayers = players.filter(element => element.isSuccession() ? false : element.aap == maxAAP.aap);
         let maxAAPstring = "";
         maxAAPplayers.forEach(player => {
             maxAAPstring += this.displayFullPlayer(player) + "\n";
