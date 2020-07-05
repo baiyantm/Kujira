@@ -24,6 +24,13 @@ module.exports = class Player {
         this.name = this.applyNamePolicy(this.name);
 
         /**
+         * @returns a string with the name including gs
+         */
+        this.displayWithGS = function () {
+            return this.name + " " + (this.hasAxe() ? "(**" + this.getAxe() + "**)" : "") + "\n\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" + this.displayNoName() +  " (" + this.getGS() + ")";
+        };
+
+        /**
          * @returns a string with the name
          */
         this.display = function () {

@@ -341,7 +341,7 @@ async function gearChannelHandler(enteredCommand, message, commands, botMsg) {
         let classToFind = itemsjson["classlist"].find(currentclassname => currentclassname == enteredCommand.split(" ")[0]);
         let firstSplit = enteredCommand.split(" ");
         if (firstSplit.length == 3) {
-            await shortGearCommand(message, firstSplit);
+            await shortUpdateGearCommand(message, firstSplit);
         }
         else {
             let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase(); // all but first word
@@ -453,7 +453,7 @@ async function manualAddCommand(args, message, commands) {
     }
 }
 
-async function shortGearCommand(message, firstSplit) {
+async function shortUpdateGearCommand(message, firstSplit) {
     let playerToFind = players.get(message.author.id);
     let ap = parseInt(firstSplit[0]);
     let aap = parseInt(firstSplit[1]);
@@ -582,7 +582,7 @@ function gearCommand(message, args) {
     }
     let playerFound = players.get(idToFind);
     if (playerFound) {
-        interactions.wSendChannel(message.channel, players.displayFullPlayer(playerFound));
+        interactions.wSendChannel(message.channel, players.displayFullPlayerGS(playerFound));
     }
     else {
         interactions.wSendChannel(message.channel, "Couldn't find this player.");

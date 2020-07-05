@@ -272,6 +272,14 @@ module.exports = class PlayerArray extends Array {
      * @param {Player} player 
      * @returns a string containing the server class emoji and the player display
      */
+    displayFullPlayerGS(player) {
+        return this.getClassEmoji(player) + "\xa0" + player.displayWithGS();
+    }
+
+    /**
+     * @param {Player} player 
+     * @returns a string containing the server class emoji and the player display
+     */
     displayFullPlayer(player) {
         return this.getClassEmoji(player) + "\xa0" + player;
     }
