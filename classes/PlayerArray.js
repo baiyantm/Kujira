@@ -176,8 +176,10 @@ module.exports = class PlayerArray extends Array {
                 embed.addField("Lowest AAP : " + stats.min.aap.value.aap, stats.min.aap.string, true);
             }
             embed.addField("Lowest DP : " + stats.min.dp.value.dp, stats.min.dp.string, true);
-            embed.addField("Best Axe : " + stats.max.axe.value.getAxe(true), stats.max.axe.string, true);
-            embed.addField("Worst Axe : " + stats.min.axe.value.getAxe(true), stats.min.axe.string, true);
+            if(stats.max.axe.value.getAxe(true) != stats.min.axe.value.getAxe(true)) {
+                embed.addField("Best Axe : " + stats.max.axe.value.getAxe(true), stats.max.axe.string, true);
+                embed.addField("Worst Axe : " + stats.min.axe.value.getAxe(true), stats.min.axe.string, true);
+            }
         } else if (players.length > 0) {
             embed.setDescription(this.displayFullPlayer(players[0]));
         } else {
