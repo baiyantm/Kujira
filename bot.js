@@ -930,7 +930,10 @@ async function fetchSignUps(reaction, day, emojiName) {
     await Promise.all(users.map(async (user) => {
         let member = await myServer.fetchMember(await bot.fetchUser(user.id));
         if (member.roles.find(x => x.name == "Members")) {
-            players.get(member.id).setSignUpDay(day, emojiName);
+            let foundPlayer = players.get(member.id);
+            if(foundPlayer) {
+                players.get(member.id).setSignUpDay(day, emojiName);
+            }
         }
     }));
 }
