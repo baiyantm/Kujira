@@ -219,6 +219,9 @@ async function onMessageHandler(message, botMsg, annCache) {
         } else if (message.channel.id == myGear.id) {
             // === GEAR ===
             await gearChannelHandler(enteredCommand, message, commands, botMsg);
+        } else if (message.channel.id == mySignUpData.id) {
+            // === SIGNUP DATA ===
+            await signupDataChannelHandler(enteredCommand, message, commands);
         } else {
             // === ALL CHANNELS ===
             if (enteredCommand.startsWith("?")) {
@@ -227,6 +230,18 @@ async function onMessageHandler(message, botMsg, annCache) {
         }
     } catch (e) {
         logger.logError("On message listener error. Something really bad went wrong", e);
+    }
+}
+
+async function signupDataChannelHandler(enteredCommand, message, commands) {
+    if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
+        commands = itemsjson["commands"]["signup"]["adv"];
+        enteredCommand = enteredCommand.substr(1);
+        let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
+        enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
+        if (enteredCommand == commands["dump"]) {
+            await dumpCommand(message, args);
+        }
     }
 }
 
