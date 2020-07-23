@@ -8,6 +8,7 @@ const logger = require("./modules/logger");
 const util = require("./modules/util");
 const Player = require('./classes/Player');
 const PlayerArray = require('./classes/PlayerArray');
+const SignUpArray = require('./classes/SignUpArray');
 
 async function initLookout() {
     logger.log("INFO: Initializing lookout ...");
@@ -1245,7 +1246,9 @@ async function revivePlayer(id, classname, ap, aap, dp, axe = 0, signUps, real) 
     let playerId = real ? await myServer.fetchMember(await bot.fetchUser(id)) : id;
     let newPlayer = new Player(playerId, classname, ap, aap, dp, real);
     newPlayer.setAxe(axe);
-    newPlayer.setSignUps(signUps);
+    if(signUps) {
+        newPlayer.setSignUps(signUps);
+    }
     return newPlayer;
 }
 
