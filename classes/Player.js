@@ -1,3 +1,6 @@
+const SignUpArray = require("./SignUpArray");
+const SignUp = require("./SignUp");
+
 /**
  * Player class (member: GuildMember | string, classname: string, ap: string, aap: string, dp:string, real:boolean)
  */
@@ -12,6 +15,7 @@ module.exports = class Player {
         this.dp = dp;
         this.real = real;
         this.axe = 0;
+        this.signUps = new SignUpArray();
 
         /**
          * @param {string} name
@@ -27,7 +31,7 @@ module.exports = class Player {
          * @returns a string with the name including gs
          */
         this.displayWithGS = function () {
-            return this.name + " " + (this.hasAxe() ? "(**" + this.getAxe() + "**)" : "") + "\n\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" + this.displayNoName() +  " (" + this.getGS() + ")";
+            return this.name + " " + (this.hasAxe() ? "(**" + this.getAxe() + "**)" : "") + "\n\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" + this.displayNoName() + " (" + this.getGS() + ")";
         };
 
         /**
@@ -225,6 +229,20 @@ module.exports = class Player {
                     return "V"
                 default:
                     return display0 ? "none" : "";
+            }
+        }
+
+        this.setSignUpDay = function (day, status) {
+            this.signUps[day].setStatus(status);
+        }
+
+        this.isReal = function () {
+            return this.real;
+        }
+
+        this.setSignUps = function (signUps) {
+            for (let i = 0; i < 7; i++) {
+                this.signUps[i] = new SignUp(signUps[i].status, signUps[i].date);
             }
         }
     }

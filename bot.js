@@ -113,6 +113,10 @@ async function initLookout() {
 
     if (mySignUp.id && mySignUpData.id) {
         setupSignUpSchedule();
+        await collectSignUps();
+        bot.setInterval(async () => {
+            await collectSignUps();
+        }, configjson["signupDelay"]);
     }
 
     process.on('SIGTERM', async function () {
@@ -283,6 +287,7 @@ async function resetCommand(message, args) {
 
 async function dumpCommand(message, args) {
     deleteCommand(message);
+    await collectSignUps();
     let day;
     if (args) {
         day = util.findCorrespondingDayNumber(args);
@@ -291,7 +296,7 @@ async function dumpCommand(message, args) {
         let today = new Date();
         day = today.getDay();
     }
-    await saveSignUp(day);
+    await dumpSignUps();
 }
 
 async function bulkCommand(message, args) {
@@ -613,7 +618,7 @@ async function statsCommand(args, message) {
                     }
                     if (day != undefined) {
                         message.react("✅");
-                        let signedUpPlayers = await getPlayersWithStatus(day, players, "yes");
+                        let signedUpPlayers = await getPlayersWithStatus(day, players, "yes"); // TODO v2
                         if (signedUpPlayers) {
                             interactions.wSendChannel(message.channel, players.getSignedUpStatsEmbed(signedUpPlayers, day));
                         }
@@ -723,7 +728,7 @@ async function downloadFilesFromMessage(message) {
 async function getReactions(messageReactions) {
     let res = "";
     messageReactions.forEach(reaction => {
-        //TODO
+        //unused
     });
     return res ? res : "No reactions";
 }
@@ -803,8 +808,7 @@ function setupSignUpSchedule() {
     let dd = (today.getDay() + Number(util.isNextDay(configjson["hourSignup"]))) % 7;
     let minUntilSave = util.getMinUntil(dd, configjson["hourSignup"], 0);
     bot.setTimeout(async () => {
-        let today = new Date();
-        await saveSignUp(today.getDay());
+        await dumpSignUps();
         setupSignUpSchedule();
     }, minUntilSave * 60 * 1000);
     logger.log("INFO: Sign ups save schedule set");
@@ -897,88 +901,96 @@ async function getDaySignUpMessage(day, channel) {
     return message;
 }
 
-async function cleanMissingMembersFromSignups(day) {
-    let found = false;
-    let reactionMessage = await getDaySignUpMessage(day, mySignUp);
-    let yesReaction = reactionMessage.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["yesreaction"]).first();
-    let noReaction = reactionMessage.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["noreaction"]).first();
-    let users = await noReaction.fetchUsers();
-    await Promise.all(users.map(async user => {
-        try {
-            await myServer.fetchMember(await bot.fetchUser(user.id));
-        } catch (e) {
-            noReaction.remove(user);
-            yesReaction.remove(user);
-            found = true;
+async function collectSignUps() {
+    for (let day = 0; day < 7; day++) {
+        let date = new Date();
+        let reactionMessage = await getDaySignUpMessage(day, mySignUp);
+        if (reactionMessage) {
+            let yesReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
+            let noReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
+            if (noReaction) {
+                await fetchSignUps(noReaction, day, "no");
+            }
+            if (yesReaction) {
+                await fetchSignUps(yesReaction, day, "yes");
+            }
+            players.forEach(player => {
+                if (player.isReal()
+                    && player.signUps[day].status != "N/A"
+                    && Math.abs(player.signUps[day].date.getTime() - date.getTime()) > 150000) {
+                    player.setSignUpDay(day, "N/A");
+                }
+            });
+        }
+    }
+}
+
+async function fetchSignUps(reaction, day, emojiName) {
+    let users = await reaction.fetchUsers();
+    await Promise.all(users.map(async (user) => {
+        let member = await myServer.fetchMember(await bot.fetchUser(user.id));
+        if (member.roles.find(x => x.name == "Members")) {
+            players.get(member.id).setSignUpDay(day, emojiName);
         }
     }));
-    if (!found) {
-        users = await yesReaction.fetchUsers();
-        await Promise.all(users.map(async user => {
-            try {
-                await myServer.fetchMember(await bot.fetchUser(user.id));
-                found = true;
-            } catch (e) {
-                noReaction.remove(user);
-                yesReaction.remove(user);
-                found = true;
-            }
-        }));
+}
+
+async function dumpSignUps() {
+    let day = new Date();
+    let signUps = getFormattedSignUps();
+    let signuppath = "./download/signups" + day.getTime() + ".csv";
+    const csv = parse(signUps);
+    files.writeToFile(signuppath, csv);
+    mySignUpData.send({
+        embed: await getSignUpsEmbed(),
+        files: [
+            signuppath
+        ]
+    });
+}
+
+function getFormattedSignUps() {
+    let signUps = [];
+    players.forEach(player => {
+        if(player.isReal()) {
+            let playerInfo = player.getInfo();
+            addSignUpInfo(playerInfo, player);
+            signUps.push(playerInfo);
+        }
+    });
+    signUps.sort((a, b) => {
+        var nameA = a.name.toLowerCase(), nameB = b.name.toLowerCase();
+        if (nameA < nameB) //sort string ascending
+            return -1;
+        if (nameA > nameB)
+            return 1;
+        return 0; //default return value (no sorting)
+    });
+    return signUps;
+}
+
+function addSignUpInfo(playerInfo, player) {
+    let date = new Date();
+    playerInfo.status = player.signUps[date.getDay()].status;
+    for (let i = 0; i < 7; i++) {
+        playerInfo[util.findCorrespondingDayName(i)] = player.signUps[i].status;
     }
-    if (!found) {
-        await interactions.wSendChannel(mySignUpData, "There was an error. I tried but I couldn't fix it, sorry :(");
+    for (let i = 0; i < 7; i++) {
+        playerInfo[util.findCorrespondingDayName(i) + " Timestamp"] = player.signUps[i].date ? player.signUps[i].date.toLocaleDateString() + " " + player.signUps[i].date.toLocaleTimeString() : "";
     }
 }
 
-/**
- * @param {number} day 
- */
-async function saveSignUp(day) {
-    let dayStr = util.findCorrespondingDayName(day);
-    try {
-        let signUps = await getDaySignUp(day);
-        if (signUps) {
-            signUps.sort((a, b) => {
-                var nameA = a.name.toLowerCase(), nameB = b.name.toLowerCase();
-                if (nameA < nameB) //sort string ascending
-                    return -1;
-                if (nameA > nameB)
-                    return 1;
-                return 0; //default return value (no sorting)
-            });
-            let signuppath = "./download/signups" + dayStr + ".csv";
-            const csv = parse(signUps);
-            files.writeToFile(signuppath, csv);
-            mySignUpData.send({
-                embed: await getSignUpsEmbed(signUps),
-                files: [
-                    signuppath
-                ]
-            });
-        } else {
-            interactions.wSendChannel(mySignUpData, "No message found for " + util.findCorrespondingDayName(day));
-        }
-    } catch (e) {
-        if (e.message == 'Unknown Member') {
-            await cleanMissingMembersFromSignups(day);
-            await saveSignUp(day);
-        } else {
-            throw e;
-        }
-    }
-}
-
-async function getSignUpsEmbed(signUps) {
-    let dayStr = Object.keys(signUps[0])[2];
+async function getSignUpsEmbed() {
+    let day = new Date();
     const embed = new Discord.RichEmbed();
-    let embedTitle = ":bookmark_tabs: SIGN UPS";
+    let embedTitle = ":bookmark_tabs: SIGN UPS FOR TODAY";
     let embedColor = 3447003;
     embed.setColor(embedColor);
     embed.setTitle(embedTitle);
     let yesToSend = "";
     let yes = 0;
-    signUps.forEach(element => {
-        if (element.status == "yes") {
+    players.forEach(element => {
+        if (element.signUps[day.getDay()].status == "yes") {
             yesToSend += "<@" + element.id + ">" + "\n";
             yes++;
         }
@@ -986,8 +998,8 @@ async function getSignUpsEmbed(signUps) {
 
     let noToSend = "";
     let no = 0;
-    signUps.forEach(element => {
-        if (element.status == "no") {
+    players.forEach(element => {
+        if (element.signUps[day.getDay()].status == "no") {
             noToSend += "<@" + element.id + ">" + "\n";
             no++;
         }
@@ -995,8 +1007,8 @@ async function getSignUpsEmbed(signUps) {
 
     let naToSend = "";
     let na = 0;
-    signUps.forEach(element => {
-        if (element.status == "N/A") {
+    players.forEach(element => {
+        if (element.isReal() && element.signUps[day.getDay()].status == "N/A") {
             naToSend += "<@" + element.id + ">" + "\n";
             na++;
         }
@@ -1046,14 +1058,14 @@ async function updatePlayer(players, player, succ, origin) {
     let foundPlayer = players.get(player.id);
     let oldPlayer = { ...foundPlayer };
     players.findAndUpdate(player, succ);
-    if(foundPlayer) {
+    if (foundPlayer) {
         content += "> Updated " + foundPlayer.getNameOrMention() + "'s gear :\n";
         content += changeLogFormatter("Class : ", oldPlayer.classname, foundPlayer.classname, players.getClassEmoji(oldPlayer), players.getClassEmoji(foundPlayer));
         let statsContent = "";
         statsContent += changeLogFormatter("AP  : ", oldPlayer.ap, foundPlayer.ap);
         statsContent += changeLogFormatter("AAP : ", oldPlayer.aap, foundPlayer.aap);
         statsContent += changeLogFormatter("DP  : ", oldPlayer.dp, foundPlayer.dp);
-        if(statsContent != "") {
+        if (statsContent != "") {
             content += "```ml\n" + statsContent + "```";
         }
     } else {
@@ -1078,7 +1090,6 @@ function changeLogFormatter(prefix, value1, value2, dspvalue1 = value1, dspvalue
         let diff = "";
         if (parseInt(value1) && parseInt(value2)) {
             let diffNumber = (parseInt(value2) - parseInt(value1));
-            console.log(diffNumber);
             diff = diffNumber != 0 ? (" (" + (diffNumber > 0 ? ("+" + diffNumber) : diffNumber) + ")") : "";
         }
         display += diff;
@@ -1095,10 +1106,10 @@ function changeLogFormatter(prefix, value1, value2, dspvalue1 = value1, dspvalue
  */
 async function updatePlayerAxe(author, args) {
     let playerToFind = players.get(author.id);
-    if(playerToFind) {
-        let oldAxe = playerToFind.getAxe();
+    if (playerToFind) {
+        let oldAxe = playerToFind.getAxe(true);
         playerToFind.setAxe(args);
-        await interactions.wSendChannel(myChangelog, "> Updated " + playerToFind.getNameOrMention() + "'s axe :\n" + oldAxe + " -> " + playerToFind.getAxe());
+        await interactions.wSendChannel(myChangelog, "> Updated " + playerToFind.getNameOrMention() + "'s axe :\n" + oldAxe + " -> " + playerToFind.getAxe(true));
     } else {
         await interactions.wSendAuthor(author, "You need to be registered to do that.");
     }
@@ -1227,10 +1238,11 @@ async function checkAdvPermission(message) {
  * @param {number} axe
  * @returns a player object with the given data
  */
-async function revivePlayer(id, classname, ap, aap, dp, axe = 0, real) {
+async function revivePlayer(id, classname, ap, aap, dp, axe = 0, signUps, real) {
     let playerId = real ? await myServer.fetchMember(await bot.fetchUser(id)) : id;
     let newPlayer = new Player(playerId, classname, ap, aap, dp, real);
     newPlayer.setAxe(axe);
+    newPlayer.setSignUps(signUps);
     return newPlayer;
 }
 
@@ -1344,7 +1356,16 @@ if (configjson && itemsjson) {
         var playersjson = files.openJsonFile("./download/players.json", "utf8");
         if (playersjson) {
             playersjson.forEach(async currentPlayer => {
-                players.add(await revivePlayer(currentPlayer["id"], currentPlayer["classname"], currentPlayer["ap"], currentPlayer["aap"], currentPlayer["dp"], currentPlayer["axe"], currentPlayer["real"]));
+                players.add(await revivePlayer(
+                    currentPlayer["id"],
+                    currentPlayer["classname"],
+                    currentPlayer["ap"],
+                    currentPlayer["aap"],
+                    currentPlayer["dp"],
+                    currentPlayer["axe"],
+                    currentPlayer["signUps"],
+                    currentPlayer["real"])
+                );
             });
         }
 
