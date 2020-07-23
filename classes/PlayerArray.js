@@ -242,25 +242,8 @@ module.exports = class PlayerArray extends Array {
             sortedList.forEach(classListElement => {
                 let classcount = this.countClassNames(classListElement.name);
                 if (classcount > 0) {
-                    let fieldContent = "";
                     let fieldTitle = classListElement.name.charAt(0).toUpperCase() + classListElement.name.slice(1) + " (" + classcount + ")\n";
-                    let playersToShow = [];
-                    this.forEach(player => {
-                        if (player.getClassName() == classListElement.name) {
-                            playersToShow.push(player);
-                        }
-                    });
-                    playersToShow.sort((a, b) => {
-                        var nameA = a.name.toLowerCase(), nameB = b.name.toLowerCase();
-                        if (nameA < nameB) //sort string ascending
-                            return -1;
-                        if (nameA > nameB)
-                            return 1;
-                        return 0; //default return value (no sorting)
-                    });
-                    playersToShow.forEach(player => {
-                        fieldContent += this.displayFullPlayer(player) + "\n";
-                    });
+                    let fieldContent = this.getEmbedFieldContent(classListElement);
                     embed.addField(fieldTitle, fieldContent, true);
                 }
             });
@@ -268,6 +251,28 @@ module.exports = class PlayerArray extends Array {
             embed.setDescription("Player list is empty :(");
         }
         return embed;
+    }
+
+    getEmbedFieldContent(classListElement) {
+        let fieldContent = "";
+        let playersToShow = [];
+        this.forEach(player => {
+            if (player.getClassName() == classListElement.name) {
+                playersToShow.push(player);
+            }
+        });
+        playersToShow.sort((a, b) => {
+            var nameA = a.name.toLowerCase(), nameB = b.name.toLowerCase();
+            if (nameA < nameB) //sort string ascending
+                return -1;
+            if (nameA > nameB)
+                return 1;
+            return 0; //default return value (no sorting)
+        });
+        playersToShow.forEach(player => {
+            fieldContent += this.displayFullPlayer(player) + "\n";
+        });
+        return fieldContent;
     }
 
     /**

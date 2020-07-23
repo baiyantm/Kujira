@@ -83,5 +83,14 @@
         "mystic",
         "lahn",
         "guardian"
+    ],
+    "days": [
+        "mon",
+        "tue",
+        "wed",
+        "thu",
+        "fri",
+        "sat",
+        "sun"
     ]
 }
