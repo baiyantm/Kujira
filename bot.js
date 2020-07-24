@@ -304,14 +304,6 @@ async function resetCommand(message, args) {
 async function dumpCommand(message, args) {
     deleteCommand(message);
     await collectSignUps();
-    let day;
-    if (args) {
-        day = util.findCorrespondingDayNumber(args);
-    }
-    else {
-        let today = new Date();
-        day = today.getDay();
-    }
     await dumpSignUps();
 }
 
@@ -931,11 +923,10 @@ async function collectSignUps() {
                 await fetchSignUps(yesReaction, day, "yes");
             }
             players.forEach(player => {
-                if (player.isReal()
-                    && player.signUps[day].status != "N/A"
-                    && Math.abs(player.signUps[day].date.getTime() - date.getTime()) > 150000) {
+                if(!player.voted) {
                     player.setSignUpDay(day, "N/A");
                 }
+                player.voted = false;
             });
         }
     }
@@ -948,7 +939,8 @@ async function fetchSignUps(reaction, day, emojiName) {
         if (member.roles.find(x => x.name == "Members")) {
             let foundPlayer = players.get(member.id);
             if(foundPlayer) {
-                players.get(member.id).setSignUpDay(day, emojiName);
+                foundPlayer.setSignUpDay(day, emojiName);
+                foundPlayer.voted = true;
             }
         }
     }));
