@@ -302,9 +302,10 @@ async function resetCommand(message, args) {
 }
 
 async function dumpCommand(message, args) {
-    deleteCommand(message);
+    message.react("✅");
     await collectSignUps();
     await dumpSignUps();
+    deleteCommand(message);
 }
 
 async function bulkCommand(message, args) {
@@ -911,7 +912,6 @@ async function getDaySignUpMessage(day, channel) {
 
 async function collectSignUps() {
     for (let day = 0; day < 7; day++) {
-        let date = new Date();
         let reactionMessage = await getDaySignUpMessage(day, mySignUp);
         if (reactionMessage) {
             let yesReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
@@ -952,7 +952,7 @@ async function dumpSignUps() {
     let signuppath = "./download/signups" + day.getTime() + ".csv";
     const csv = parse(signUps);
     files.writeToFile(signuppath, csv);
-    mySignUpData.send({
+    mySignUpData.send("!sheet update", {
         embed: await getSignUpsEmbed(),
         files: [
             signuppath
