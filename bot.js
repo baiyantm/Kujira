@@ -279,9 +279,6 @@ async function signupChannelHandler(enteredCommand, message, commands) {
             //manually dumps data into data channel
             await dumpCommand(message, args);
         }
-        else if (enteredCommand == commands["bulk"]) {
-            await bulkCommand(message, args);
-        }
         else if (enteredCommand == commands["generate"]) {
             await generateCommand(message, args);
         }
@@ -293,12 +290,8 @@ async function signupChannelHandler(enteredCommand, message, commands) {
 
 async function resetCommand(message, args) {
     await clearChannel(message.channel);
-    if (args == "bulk") {
-        await bulkSignUpMessages(configjson["defaultDay"]);
-    }
-    else {
-        await generateSignUpMessages(configjson["defaultCount"]);
-    }
+    await generateSignUpMessages(configjson["defaultCount"]);
+    players.resetPlayersSignUps();
 }
 
 async function dumpCommand(message, args) {
@@ -306,11 +299,6 @@ async function dumpCommand(message, args) {
     await collectSignUps();
     await dumpSignUps();
     deleteCommand(message);
-}
-
-async function bulkCommand(message, args) {
-    deleteCommand(message);
-    await bulkSignUpMessages(args ? args : configjson["defaultDay"]);
 }
 
 async function generateCommand(message, args) {
@@ -321,6 +309,7 @@ async function generateCommand(message, args) {
     else {
         interactions.wSendAuthor(message.author, "I cannot generate that many messages");
     }
+    players.resetPlayersSignUps();
 }
 
 async function reactCommand(message) {

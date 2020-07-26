@@ -523,4 +523,10 @@ module.exports = class PlayerArray extends Array {
         };
         return minmax;
     }
+
+    resetPlayersSignUps() {
+        this.forEach(element => {
+            element.resetSignUps();
+        });
+    }
 }
