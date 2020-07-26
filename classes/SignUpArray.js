@@ -10,4 +10,10 @@ module.exports = class SignUpArray extends Array {
             this[i] = new SignUp();
         }
     }
+
+    reset() {
+        for (let i = 0; i < 7; i++) {
+            this[i] = new SignUp();
+        }
+    }
 }

@@ -245,5 +245,9 @@ module.exports = class Player {
                 this.signUps[i] = new SignUp(signUps[i].status, signUps[i].date);
             }
         }
+
+        this.resetSignUps = function () {
+            this.signUps.reset();
+        }
     }
 }
