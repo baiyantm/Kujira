@@ -925,12 +925,14 @@ async function fetchSignUps(reaction, day, emojiName) {
     let users = await reaction.fetchUsers();
     await Promise.all(users.map(async (user) => {
         let member = await myServer.fetchMember(await bot.fetchUser(user.id));
-        if (member.roles.find(x => x.name == "Members")) {
+        if (member && member.roles.find(x => x.name == "Members")) {
             let foundPlayer = players.get(member.id);
             if(foundPlayer) {
                 foundPlayer.setSignUpDay(day, emojiName);
                 foundPlayer.voted = true;
             }
+        } else {
+            logger.log("INFO: " + user.name + " is not a member !");
         }
     }));
 }
@@ -1239,13 +1241,18 @@ async function checkAdvPermission(message) {
  * @returns a player object with the given data
  */
 async function revivePlayer(id, classname, ap, aap, dp, axe = 0, signUps, real) {
-    let playerId = real ? await myServer.fetchMember(await bot.fetchUser(id)) : id;
-    let newPlayer = new Player(playerId, classname, ap, aap, dp, real);
-    newPlayer.setAxe(axe);
-    if(signUps) {
-        newPlayer.setSignUps(signUps);
+    try {
+        let playerId = real ? await myServer.fetchMember(await bot.fetchUser(id)) : id;
+        let newPlayer = new Player(playerId, classname, ap, aap, dp, real);
+        newPlayer.setAxe(axe);
+        if(signUps) {
+            newPlayer.setSignUps(signUps);
+        }
+        return newPlayer;
+    } catch (e) {
+        logger.logError("No member found for " + id + " !", e);
+        return null;
     }
-    return newPlayer;
 }
 
 /**
@@ -1358,7 +1365,7 @@ if (configjson && itemsjson) {
         var playersjson = files.openJsonFile("./download/players.json", "utf8");
         if (playersjson) {
             playersjson.forEach(async currentPlayer => {
-                players.add(await revivePlayer(
+                let revivedPlayer = await revivePlayer(
                     currentPlayer["id"],
                     currentPlayer["classname"],
                     currentPlayer["ap"],
@@ -1366,8 +1373,11 @@ if (configjson && itemsjson) {
                     currentPlayer["dp"],
                     currentPlayer["axe"],
                     currentPlayer["signUps"],
-                    currentPlayer["real"])
+                    currentPlayer["real"]
                 );
+                if(revivedPlayer) {
+                    players.add(revivedPlayer);
+                }
             });
         }
 
