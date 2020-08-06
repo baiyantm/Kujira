@@ -924,15 +924,17 @@ async function collectSignUps() {
 async function fetchSignUps(reaction, day, emojiName) {
     let users = await reaction.fetchUsers();
     await Promise.all(users.map(async (user) => {
-        let member = await myServer.fetchMember(await bot.fetchUser(user.id));
-        if (member && member.roles.find(x => x.name == "Members")) {
-            let foundPlayer = players.get(member.id);
-            if(foundPlayer) {
-                foundPlayer.setSignUpDay(day, emojiName);
-                foundPlayer.voted = true;
+        if(!user.bot) {
+            let member = await myServer.fetchMember(await bot.fetchUser(user.id));
+            if (member && member.roles.find(x => x.name == "Members")) {
+                let foundPlayer = players.get(member.id);
+                if(foundPlayer) {
+                    foundPlayer.setSignUpDay(day, emojiName);
+                    foundPlayer.voted = true;
+                }
+            } else {
+                logger.log("INFO: " + user + " is not a member !");
             }
-        } else {
-            logger.log("INFO: " + user.name + " is not a member !");
         }
     }));
 }
