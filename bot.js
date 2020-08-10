@@ -1047,6 +1047,7 @@ async function removePlayer(players, playerId, origin) {
         content += players.displayFullPlayer(removed[0]) + "\nRemoved from gear list.";
         content += "\n(Command origin: " + origin + ")";
         await interactions.wSendChannel(myChangelog, content);
+        await interactions.wSendChannel(myChangelog2, content);
     }
 }
 
@@ -1078,6 +1079,7 @@ async function updatePlayer(players, player, succ, origin) {
     }
     content += "(Command origin: " + origin + ")";
     await interactions.wSendChannel(myChangelog, content);
+    await interactions.wSendChannel(myChangelog2, content);
 }
 
 /**
@@ -1114,6 +1116,7 @@ async function updatePlayerAxe(author, args) {
         let oldAxe = playerToFind.getAxe(true);
         playerToFind.setAxe(args);
         await interactions.wSendChannel(myChangelog, "> Updated " + playerToFind.getNameOrMention() + "'s axe :\n" + oldAxe + " -> " + playerToFind.getAxe(true));
+        await interactions.wSendChannel(myChangelog2, "> Updated " + playerToFind.getNameOrMention() + "'s axe :\n" + oldAxe + " -> " + playerToFind.getAxe(true));
     } else {
         await interactions.wSendAuthor(author, "You need to be registered to do that.");
     }
@@ -1337,6 +1340,7 @@ if (configjson && itemsjson) {
     var myAnnouncementData;
     var myWelcome;
     var myChangelog;
+    var myChangelog2;
     var players = new PlayerArray(itemsjson["classlist"]);
     var classEmojis = [];
     var loading = 1000;
@@ -1396,6 +1400,7 @@ if (configjson && itemsjson) {
             myAnnouncementData = bot.channels.get(configjson["announcementDataID"]);
             myWelcome = bot.channels.get(configjson["welcomeID"]);
             myChangelog = bot.channels.get(configjson["changelogID"]);
+            myChangelog2 = bot.channels.get(configjson["changelogID2"]);
 
             logger.log("INFO: Booting up attempt...");
             if (myServer && myDevServer && myGate && myGear && myGearData && classEmojis && mySignUp
