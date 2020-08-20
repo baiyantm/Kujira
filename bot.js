@@ -352,7 +352,7 @@ async function gearChannelHandler(enteredCommand, message, commands, botMsg) {
             enteredCommand = enteredCommand.split(" ")[0]; // only first word
             commands = itemsjson["commands"]["gear"]["guest"];
             if (enteredCommand == commands["help"]) {
-                await helpCommand(message);
+                await helpCommand(message, true);
             }
             else if (enteredCommand == commands["succession"]) {
                 await succCommand(message);
@@ -399,11 +399,14 @@ async function removePlayerCommand(message, args) {
     await removePlayer(players, playerId, message.author);
 }
 
-async function helpCommand(message) {
+async function helpCommand(message, deletion) {
+    message.react("✅");
     let helpMessage = await interactions.wSendChannel(message.channel, itemsjson["gearhelp"]);
-    bot.setTimeout(() => {
-        interactions.wDelete(helpMessage);
-    }, 60000);
+    if(deletion) {
+        bot.setTimeout(() => {
+            interactions.wDelete(helpMessage);
+        }, 60000);
+    }
 }
 
 async function manualAddCommand(args, message, commands) {
@@ -544,33 +547,51 @@ async function allChannelsHandler(enteredCommand, commands, message) {
         let rolename = args;
         //add roles here
         if (false) {
-            let role = message.guild.roles.find(x => x.name == rolename.charAt(0).toUpperCase() + rolename.slice(1));
-            if (message.member.roles.has(role.id)) {
-                try {
-                    await message.member.removeRole(role);
-                    interactions.wSendAuthor(message.author, role.name + ' role removed.');
-                    logger.log('ROLE: ' + role.name + ' role removed from ' + message.author.tag);
-                    interactions.wDelete(message);
-                }
-                catch (e) {
-                    interactions.wSendAuthor(message.author, args + ' role not found or not self-assignable.');
-                }
-            }
-            else {
-                try {
-                    await message.member.addRole(role);
-                    interactions.wSendAuthor(message.author, role.name + ' role added.');
-                    logger.log('ROLE: ' + role.name + ' role added to ' + message.author.tag);
-                    interactions.wDelete(message);
-                }
-                catch (e) {
-                    interactions.wSendAuthor(message.author, args + ' role not found or not self-assignable.');
-                }
-            }
+            await changeRole(message, rolename, args);
         }
     }
     else if (enteredCommand == commands["reminder"] && await checkAdvPermission(message)) {
         await reminderCommand(message);
+    }
+    else if (enteredCommand == commands["attendance"] && await checkIntPermission(message)) {
+        await attendanceCommand(message);
+    }
+    else if (enteredCommand == commands["help"] && await checkIntPermission(message)) {
+        await helpCommand(message, false);
+    }
+}
+
+async function changeRole(message, rolename, args) {
+    let role = message.guild.roles.find(x => x.name == rolename.charAt(0).toUpperCase() + rolename.slice(1));
+    if (message.member.roles.has(role.id)) {
+        await removeRole(message, role, args);
+    }
+    else {
+        await addRole(message, role, args);
+    }
+}
+
+async function addRole(message, role, args) {
+    try {
+        await message.member.addRole(role);
+        interactions.wSendAuthor(message.author, role.name + ' role added.');
+        logger.log('ROLE: ' + role.name + ' role added to ' + message.author.tag);
+        interactions.wDelete(message);
+    }
+    catch (e) {
+        interactions.wSendAuthor(message.author, args + ' role not found or not self-assignable.');
+    }
+}
+
+async function removeRole(message, role, args) {
+    try {
+        await message.member.removeRole(role);
+        interactions.wSendAuthor(message.author, role.name + ' role removed.');
+        logger.log('ROLE: ' + role.name + ' role removed from ' + message.author.tag);
+        interactions.wDelete(message);
+    }
+    catch (e) {
+        interactions.wSendAuthor(message.author, args + ' role not found or not self-assignable.');
     }
 }
 
@@ -639,12 +660,44 @@ async function reminderCommand(message) {
         naPlayers.forEach(player => {
             reminderMessage += "<@" + player.id + ">\n";
         });
-        reminderMessage += "Please vote for today :)";
+        reminderMessage += "Please vote for today 🔔";
     }
     else {
         reminderMessage += "Everyone voted for today 👍";
     }
     interactions.wSendChannel(message.channel, reminderMessage);
+}
+
+async function attendanceCommand(message) {
+    message.react("✅");
+    await collectSignUps();
+    interactions.wSendChannel(message.channel, getFormattedAttendanceForWeek());
+}
+
+/**
+ * get the % of yes in the week
+ * @return an array daynumber => percent of yes
+ */
+function getPercentAttendanceForWeek() {
+    let attendance = [];
+    for (let i = 0; i < 7; i++) {
+        attendance[i] = getPercentAttendanceForADay(i);
+    }
+    return attendance;
+}
+
+/**
+ * @param {number} day 
+ * @return % of yes for day
+ */
+function getPercentAttendanceForADay(day) {
+    let attend = 0;
+    players.forEach(player => {
+        if (player.signUps[day].status == "yes") {
+            attend++;
+        }
+    });
+    return Math.round(attend / players.length * 100);
 }
 
 /*
@@ -912,7 +965,7 @@ async function collectSignUps() {
                 await fetchSignUps(yesReaction, day, "yes");
             }
             players.forEach(player => {
-                if(!player.voted) {
+                if (!player.voted) {
                     player.setSignUpDay(day, "N/A");
                 }
                 player.voted = false;
@@ -924,11 +977,11 @@ async function collectSignUps() {
 async function fetchSignUps(reaction, day, emojiName) {
     let users = await reaction.fetchUsers();
     await Promise.all(users.map(async (user) => {
-        if(!user.bot) {
+        if (!user.bot) {
             let member = await myServer.fetchMember(await bot.fetchUser(user.id));
             if (member && member.roles.find(x => x.name == "Members")) {
                 let foundPlayer = players.get(member.id);
-                if(foundPlayer) {
+                if (foundPlayer) {
                     foundPlayer.setSignUpDay(day, emojiName);
                     foundPlayer.voted = true;
                 }
@@ -956,7 +1009,7 @@ async function dumpSignUps() {
 function getFormattedSignUps() {
     let signUps = [];
     players.forEach(player => {
-        if(player.isReal()) {
+        if (player.isReal()) {
             let playerInfo = player.getInfo();
             addSignUpInfo(playerInfo, player);
             signUps.push(playerInfo);
@@ -987,7 +1040,7 @@ function addSignUpInfo(playerInfo, player) {
 async function getSignUpsEmbed() {
     let day = new Date();
     const embed = new Discord.RichEmbed();
-    let embedTitle = ":bookmark_tabs: SIGN UPS FOR TODAY";
+    let embedTitle = ":bookmark_tabs: SIGN UPS";
     let embedColor = 3447003;
     embed.setColor(embedColor);
     embed.setTitle(embedTitle);
@@ -1017,17 +1070,43 @@ async function getSignUpsEmbed() {
             na++;
         }
     });
+    embed.addField("Attendance in the week", getFormattedAttendanceForWeek(), false);
     if (yesToSend) {
-        embed.addField(configjson["yesreaction"] + " YES (" + yes + ")", yesToSend, true);
+        embed.addField(configjson["yesreaction"] + " YES for today (" + yes + ")", yesToSend, true);
     }
     if (noToSend) {
-        embed.addField(configjson["noreaction"] + " NO (" + no + ")", noToSend, true);
+        embed.addField(configjson["noreaction"] + " NO for today (" + no + ")", noToSend, true);
     }
     if (naToSend) {
-        embed.addField(":question:" + " N/A (" + na + ")", naToSend, true);
+        embed.addField(":question:" + " N/A for today (" + na + ")", naToSend, true);
     }
     embed.setTimestamp()
     return embed;
+}
+
+function getFormattedAttendanceForWeek() {
+    let attendance = getPercentAttendanceForWeek();
+    let attendanceTable = "```ts\n+-----+-----+-----+-----+-----+-----+-----+\n";
+    for (let i = 0; i < 7; i++) {
+        attendanceTable += "| " + util.findCorrespondingDayNameShort(i) + " ";
+    }
+    attendanceTable += "|";
+
+    attendanceTable += "\n+-----+-----+-----+-----+-----+-----+-----+\n";
+
+    for (let i = 0; i < 7; i++) {
+        let value;
+        if (attendance[i] == 100) {
+            value = attendance[i];
+        } else {
+            value = util.valueFormat(attendance[i] + "", 10) + "%";
+        }
+        attendanceTable += "| " + value + " ";
+    }
+    attendanceTable += "|";
+
+    attendanceTable += "\n+-----+-----+-----+-----+-----+-----+-----+\n```";
+    return attendanceTable;
 }
 
 /*
@@ -1250,7 +1329,7 @@ async function revivePlayer(id, classname, ap, aap, dp, axe = 0, signUps, real) 
         let playerId = real ? await myServer.fetchMember(await bot.fetchUser(id)) : id;
         let newPlayer = new Player(playerId, classname, ap, aap, dp, real);
         newPlayer.setAxe(axe);
-        if(signUps) {
+        if (signUps) {
             newPlayer.setSignUps(signUps);
         }
         return newPlayer;
@@ -1381,7 +1460,7 @@ if (configjson && itemsjson) {
                     currentPlayer["signUps"],
                     currentPlayer["real"]
                 );
-                if(revivedPlayer) {
+                if (revivedPlayer) {
                     players.add(revivedPlayer);
                 }
             });
