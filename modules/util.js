@@ -16,6 +16,22 @@ function findCorrespondingDayName(number) {
     return null;
 }
 
+/**
+ * @param {number} number  
+*  @returns string corresponding to the day of a given number (0 => Sun, 1 => Mon...), null if not found
+ */
+function findCorrespondingDayNameShort(number) {
+    switch (number) {
+        case 0: return 'sun';
+        case 1: return 'mon';
+        case 2: return 'tue';
+        case 3: return 'wed';
+        case 4: return 'thu';
+        case 5: return 'fri';
+        case 6: return 'sat';
+    }
+    return null;
+}
 
 /**
  * @param {string} string  
@@ -199,6 +215,7 @@ function avg(list, aggregate) {
     return Math.round(res / size);
 }
 
+module.exports.findCorrespondingDayNameShort = findCorrespondingDayNameShort;
 module.exports.findCorrespondingDayName = findCorrespondingDayName;
 module.exports.findCorrespondingDayNumber = findCorrespondingDayNumber;
 module.exports.fillUpSpace = fillUpSpace;
