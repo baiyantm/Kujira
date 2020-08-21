@@ -1070,7 +1070,7 @@ async function getSignUpsEmbed() {
             na++;
         }
     });
-    embed.addField("Attendance in the week", getFormattedAttendanceForWeek(), false);
+    embed.addField("Attendance per week *(by votes)*", getFormattedAttendanceForWeek(), false);
     if (yesToSend) {
         embed.addField(configjson["yesreaction"] + " YES for today (" + yes + ")", yesToSend, true);
     }
