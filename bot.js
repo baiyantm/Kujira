@@ -19,6 +19,10 @@ async function initLookout() {
         setupPresence();
     }
 
+    if (myGuildChat) {
+        setupAlarms();
+    }
+
     var annCache = { reference: null }; //because JavaScript
     await cacheAnnouncements(annCache);
     annCache.reference.forEach(async message => {
@@ -402,7 +406,7 @@ async function removePlayerCommand(message, args) {
 async function helpCommand(message, deletion) {
     message.react("✅");
     let helpMessage = await interactions.wSendChannel(message.channel, itemsjson["gearhelp"]);
-    if(deletion) {
+    if (deletion) {
         bot.setTimeout(() => {
             interactions.wDelete(helpMessage);
         }, 60000);
@@ -1252,6 +1256,32 @@ async function clearChannel(channel) {
 --------------------------------------- GENERAL section ---------------------------------------
 */
 
+function setupAlarms() {
+    let channel = myGuildChat;
+    for (const key in alarmsjson) {
+        let dayName = key;
+        for (const hour in alarmsjson[dayName]) {
+            let minUntilAlarm = mod(util.getMinUntil(util.findCorrespondingDayNumber(dayName.toLowerCase()), hour, 0), 10080);
+            let msUntilAlarm = minUntilAlarm * 60 * 1000;
+            alarmsjson[dayName][hour].forEach(alarm => {
+                bot.setTimeout(async () => {
+                    interactions.wSendChannel(channel, "Hey don't forget to grab your " + alarm + " 💰");
+                }, msUntilAlarm);
+            });
+        }
+    }
+    logger.log("INFO: Alarms set");
+}
+
+/**
+ * The fundamental problem is in JS % is not the modulo operator. It's the remainder operator. There is no modulo operator in JavaScript.
+ * @param {number} n 
+ * @param {number} m 
+ */
+function mod(n, m) {
+    return ((n % m) + m) % m;
+}
+
 async function setupPresence() {
     bot.setInterval(async () => {
         await myAnnouncement.fetchMessages({ limit: 1 }).then(messages => {
@@ -1400,9 +1430,10 @@ const bot = new Discord.Client();
 var configjsonfile = files.openJsonFile("./resources/config.json", "utf8");
 var configjson = process.env.TOKEN ? configjsonfile["prod"] : configjsonfile["dev"];
 var itemsjson = files.openJsonFile("./resources/items.json", "utf8");
+var alarmsjson = files.openJsonFile("./resources/alarms.json", "utf8");
 var init = false;
 
-if (configjson && itemsjson) {
+if (configjson && itemsjson && alarmsjson) {
     // Initialize Discord Bot
     var token = process.env.TOKEN ? process.env.TOKEN : configjson["token"];
     bot.login(token);
@@ -1420,6 +1451,7 @@ if (configjson && itemsjson) {
     var myWelcome;
     var myChangelog;
     var myChangelog2;
+    var myGuildChat;
     var players = new PlayerArray(itemsjson["classlist"]);
     var classEmojis = [];
     var loading = 1000;
@@ -1480,10 +1512,11 @@ if (configjson && itemsjson) {
             myWelcome = bot.channels.get(configjson["welcomeID"]);
             myChangelog = bot.channels.get(configjson["changelogID"]);
             myChangelog2 = bot.channels.get(configjson["changelogID2"]);
+            myGuildChat = bot.channels.get(configjson["guildchatID"]);
 
             logger.log("INFO: Booting up attempt...");
             if (myServer && myDevServer && myGate && myGear && myGearData && classEmojis && mySignUp
-                && mySignUpData && myAnnouncement && myAnnouncementData && myWelcome && myChangelog) {
+                && mySignUpData && myAnnouncement && myAnnouncementData && myWelcome && myChangelog && myGuildChat) {
                 clearInterval(interval);
                 logger.log("INFO: ... success !");
 
