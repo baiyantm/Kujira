@@ -166,6 +166,11 @@ async function onDeleteHandler(deletedMessage, annCache) {
     if (deletedMessage.channel.id == myAnnouncement.id) {
         await interactions.wSendChannel(myAnnouncementData, await getHistoryEmbed(deletedMessage));
         await cacheAnnouncements(annCache);
+    } else if (deletedMessage.channel.id == myGuildChat.id) {
+        if(!deletedMessage.member.user.bot) {
+            await interactions.wSendChannel(myGuildChat, "Uh oh looks like someone deleted his message, here's what it says but shhh;");
+            await interactions.wSendChannel(myGuildChat, await getHistoryEmbed(deletedMessage));
+        }
     }
 }
 
