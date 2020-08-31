@@ -163,14 +163,16 @@ async function onEditHandler(newMessage, annCache) {
  * @param {{reference : any}} annCache 
  */
 async function onDeleteHandler(deletedMessage, annCache) {
-    if (deletedMessage.channel.id == myAnnouncement.id) {
-        await interactions.wSendChannel(myAnnouncementData, await getHistoryEmbed(deletedMessage));
-        await cacheAnnouncements(annCache);
-    } else if (deletedMessage.channel.id == myGuildChat.id) {
-        if(!deletedMessage.member.user.bot) {
-            await interactions.wSendChannel(myGuildChat, "Uh oh looks like someone deleted his message, here's what it says but shhh;");
+    try {
+        if (deletedMessage.channel.id == myAnnouncement.id) {
+            await interactions.wSendChannel(myAnnouncementData, await getHistoryEmbed(deletedMessage));
+            await cacheAnnouncements(annCache);
+        } else if (deletedMessage.channel.id == myGuildChat.id
+            && deletedMessage.member.user.id == "168643713516437505") {
             await interactions.wSendChannel(myGuildChat, await getHistoryEmbed(deletedMessage));
         }
+    } catch (e) {
+        logger.log("ERROR : Delete event caching problem");
     }
 }
 
