@@ -168,7 +168,8 @@ async function onDeleteHandler(deletedMessage, annCache) {
             await interactions.wSendChannel(myAnnouncementData, await getHistoryEmbed(deletedMessage));
             await cacheAnnouncements(annCache);
         } else if (deletedMessage.channel.id == myGuildChat.id
-            && deletedMessage.member.user.id == "168643713516437505") {
+            && (deletedMessage.member.user.id == "168643713516437505"
+            || deletedMessage.member.user.id == "594844858569719809")) {
             await interactions.wSendChannel(myGuildChat, await getHistoryEmbed(deletedMessage));
         }
     } catch (e) {
