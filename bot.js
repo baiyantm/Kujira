@@ -188,7 +188,7 @@ async function onDeleteHandler(deletedMessage, annCache, gcCache) {
             await cacheGC(gcCache);
         }
     } catch (e) {
-        logger.log("ERROR : Delete event caching problem");
+        logger.logError("ERROR : Delete event caching problem", e);
     }
 }
 
@@ -770,11 +770,20 @@ async function cacheGC(gcCache) {
  * @returns an embed containing info about the message
  */
 async function getHistoryEmbed(message) {
+    let authorName = message.author.tag;
+    let authorAvatar = message.author.avatarURL;
+    let content = message.content;
+    if (message.embeds.length > 0) {
+        authorName = message.embeds[0].author.name;
+        authorAvatar = message.embeds[0].author.iconURL;
+        content = message.embeds[0].description;
+    }
+    console.log(content);
     const embed = new Discord.RichEmbed();
     let embedColor = 3447003;
     embed.setColor(embedColor);
-    embed.setAuthor(message.author.tag, message.author.avatarURL);
-    embed.setDescription(message.content);
+    embed.setAuthor(authorName, authorAvatar);
+    embed.setDescription(content);
     embed.setTimestamp(message.editedTimestamp ? message.editedTimestamp : message.createdTimestamp);
     message.attachments.forEach(attachment => {
         embed.attachFile("./download/" + message.id + "/" + attachment.filename);
