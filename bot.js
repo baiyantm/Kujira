@@ -33,16 +33,6 @@ async function initLookout() {
         }
     });
 
-    var gcCache = { reference: null }; //because JavaScript
-    await cacheGC(gcCache);
-    gcCache.reference.forEach(async message => {
-        try {
-            await downloadFilesFromMessage(message);
-        } catch (e) {
-            //nothing to dl
-        }
-    });
-
     var botMsg = { reference: null }; //because JavaScript
     //lookup for a previous message so we keep using it
     await myGear.fetchMessages({ limit: 100 }).then(messages => {
@@ -66,13 +56,13 @@ async function initLookout() {
 
     bot.on("guildMemberRemove", member => onLeaveHandler(member));
 
-    bot.on("message", async message => onMessageHandler(message, botMsg, annCache, gcCache));
+    bot.on("message", async message => onMessageHandler(message, botMsg, annCache));
 
     bot.on("messageReactionAdd", async messageReaction => onReactionHandler(messageReaction));
 
-    bot.on("messageUpdate", async (oldMessage, newMessage) => onEditHandler(newMessage, annCache, gcCache));
+    bot.on("messageUpdate", async (oldMessage, newMessage) => onEditHandler(newMessage, annCache));
 
-    bot.on("messageDelete", async deletedMessage => onDeleteHandler(deletedMessage, annCache, gcCache));
+    bot.on("messageDelete", async deletedMessage => onDeleteHandler(deletedMessage, annCache));
 
     bot.on('raw', packet => {
         // We don't want this to run on unrelated packets
@@ -160,13 +150,10 @@ async function onLeaveHandler(member) {
  * listener for message edit
  * @param {Discord.Message} newMessage 
  * @param {{reference : any}} annCache 
- * @param {{reference : any}} gcCache 
  */
-async function onEditHandler(newMessage, annCache, gcCache) {
+async function onEditHandler(newMessage, annCache) {
     if (newMessage.channel.id == myAnnouncement.id) {
         await cacheAnnouncements(annCache);
-    } else if (newMessage.channel.id == myGuildChat.id) {
-        await cacheGC(gcCache);
     }
 }
 
@@ -174,18 +161,12 @@ async function onEditHandler(newMessage, annCache, gcCache) {
  * listener for message delete
  * @param {Discord.Message} deletedMessage 
  * @param {{reference : any}} annCache 
- * @param {{reference : any}} gcCache 
  */
-async function onDeleteHandler(deletedMessage, annCache, gcCache) {
+async function onDeleteHandler(deletedMessage, annCache) {
     try {
         if (deletedMessage.channel.id == myAnnouncement.id) {
             await interactions.wSendChannel(myAnnouncementData, await getHistoryEmbed(deletedMessage));
             await cacheAnnouncements(annCache);
-        } else if (deletedMessage.channel.id == myGuildChat.id
-            && (deletedMessage.member.user.id == "168643713516437505"
-                || deletedMessage.member.user.id == "594844858569719809")) {
-            await interactions.wSendChannel(myGuildChat, await getHistoryEmbed(deletedMessage));
-            await cacheGC(gcCache);
         }
     } catch (e) {
         logger.logError("ERROR : Delete event caching problem", e);
@@ -225,20 +206,14 @@ async function onReactionHandler(messageReaction) {
  * @param {Discord.Message} message the message sent
  * @param {Object} botMsg reference to the bot message
  * @param {{reference : any}} annCache 
- * @param {{reference : any}} gcCache 
  */
-async function onMessageHandler(message, botMsg, annCache, gcCache) {
+async function onMessageHandler(message, botMsg, annCache) {
     //if (message.author.bot) return; //bot ignores bots
     var commands;
     let enteredCommand = message.content.toLowerCase();
     try {
         if (message.channel.id == myAnnouncement.id) {
             await cacheAnnouncements(annCache);
-            if (message.attachments.size > 0) {
-                await downloadFilesFromMessage(message);
-            }
-        } else if (message.channel.id == myGuildChat.id) {
-            await cacheGC(gcCache);
             if (message.attachments.size > 0) {
                 await downloadFilesFromMessage(message);
             }
@@ -748,20 +723,6 @@ async function cacheAnnouncements(annCache) {
             });
         });
         annCache.reference = messages;
-    });
-}
-
-/**
- * @param {{reference : any}} gcCache 
- */
-async function cacheGC(gcCache) {
-    await myGuildChat.fetchMessages({ limit: 100 }).then(messages => {
-        messages.forEach(async message => {
-            await message.reactions.forEach(async reaction => {
-                await reaction.fetchUsers();
-            });
-        });
-        gcCache.reference = messages;
     });
 }
 
