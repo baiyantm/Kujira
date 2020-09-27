@@ -311,7 +311,7 @@ async function dumpCommand(message, args) {
 
 async function generateCommand(message, args) {
     deleteCommand(message);
-    if (Number(args) <= 7) {
+    if (Number(args) <= 14) {
         await generateSignUpMessages(args ? args : configjson["defaultCount"]);
     }
     else {
