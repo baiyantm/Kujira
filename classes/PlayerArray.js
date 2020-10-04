@@ -140,9 +140,14 @@ module.exports = class PlayerArray extends Array {
 
         if (players.length > 1) {
             let sortedPlayers = players.sort((a, b) => b.getGS() - a.getGS());
-            let sortedPlayersString = "";
+            let sortedPlayersString = [];
+            let playersPerField = 20;
+            let index = 0;
             let rank = 1;
             sortedPlayers.forEach(player => {
+                if (sortedPlayersString[index] == undefined) {
+                    sortedPlayersString[index] = "";
+                }
                 let rankString = "";
                 switch (rank) {
                     case 1:
@@ -158,10 +163,16 @@ module.exports = class PlayerArray extends Array {
                         rankString = "**" + util.zeroString(rank) + "** : ";
                         break;
                 }
-                sortedPlayersString += rankString + " (" + player.getGS() + ") " + player.name + "\n";
+                sortedPlayersString[index] += rankString + " (" + player.getGS() + ") " + player.name + "\n";
                 rank++;
+                if (rank % (playersPerField + 1) == 0) {
+                    index++;
+                }
             });
-            embed.addField("From highest to lowest", sortedPlayersString);
+            for (let i = 0; i < sortedPlayersString.length; i++) {
+                const element = sortedPlayersString[i];
+                embed.addField((i * playersPerField + 1) + " - " + (i + 1) * playersPerField, element, true);
+            }
         } else if (players.length > 0) {
             embed.setDescription(this.displayFullPlayer(players[0]));
         } else {
