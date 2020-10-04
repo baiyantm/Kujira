@@ -633,7 +633,7 @@ async function rankingsCommand(args, message) {
         let split = args.split(" ");
         if (itemsjson["classlist"].includes(split[0])) {
             message.react("✅");
-            interactions.wSendChannel(message.channel, players.getStatsEmbed(split[0]));
+            interactions.wSendChannel(message.channel, players.getRankingsEmbed(split[0]));
         }
     }
 }
