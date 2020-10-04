@@ -551,6 +551,9 @@ async function allChannelsHandler(enteredCommand, commands, message) {
     else if (enteredCommand == commands["stats"] && checkIntPermission(message)) {
         await statsCommand(args, message);
     }
+    else if (enteredCommand == commands["rankings"] && checkIntPermission(message)) {
+        await rankingsCommand(args, message);
+    }
     else if (enteredCommand == commands["sub"]) {
         let rolename = args;
         //add roles here
@@ -618,6 +621,20 @@ function gearCommand(message, args) {
     }
     else {
         interactions.wSendChannel(message.channel, "Couldn't find this player.");
+    }
+}
+
+async function rankingsCommand(args, message) {
+    if (!args) {
+        message.react("✅");
+        interactions.wSendChannel(message.channel, players.getRankingsEmbed(null));
+    }
+    else {
+        let split = args.split(" ");
+        if (itemsjson["classlist"].includes(split[0])) {
+            message.react("✅");
+            interactions.wSendChannel(message.channel, players.getStatsEmbed(split[0]));
+        }
     }
 }
 

@@ -124,6 +124,53 @@ module.exports = class PlayerArray extends Array {
     // ----- DISPLAY -----
 
     /**
+         * @param {string} classname 
+         * @returns discord embed
+         */
+    getRankingsEmbed(classname) {
+        let players = this;
+        if (classname) {
+            players = players.getPlayersWithClass(classname);
+        }
+        const embed = new Discord.RichEmbed();
+        let embedTitle = ":pencil: RANKINGS" + (classname ? " for " + classname.charAt(0).toUpperCase() + classname.slice(1) : "");
+        let embedColor = 3447003;
+        embed.setColor(embedColor);
+        embed.setTitle(embedTitle);
+
+        if (players.length > 1) {
+            let sortedPlayers = players.sort((a, b) => b.getGS() - a.getGS());
+            let sortedPlayersString = "";
+            let rank = 1;
+            sortedPlayers.forEach(player => {
+                let rankString = "";
+                switch (rank) {
+                    case 1:
+                        rankString = "🥇";
+                        break;
+                    case 2:
+                        rankString = "🥈";
+                        break;
+                    case 3:
+                        rankString = "🥉";
+                        break;
+                    default:
+                        rankString = "**" + util.zeroString(rank) + "** : ";
+                        break;
+                }
+                sortedPlayersString += rankString + " (" + player.getGS() + ") " + player.name + "\n";
+                rank++;
+            });
+            embed.addField("From highest to lowest", sortedPlayersString);
+        } else if (players.length > 0) {
+            embed.setDescription(this.displayFullPlayer(players[0]));
+        } else {
+            embed.setDescription("Empty player list.");
+        }
+        return embed;
+    }
+
+    /**
      * @param {string} classname 
      * @returns discord embed
      */
@@ -166,17 +213,17 @@ module.exports = class PlayerArray extends Array {
             embed.addField("Average gear : " + avg.gs, util.valueFormat(util.valueFormat(avg.ap + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avg.aap + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avg.dp + "", 10), 100), true);
             embed.addField("Highest GS : " + stats.max.gs.value.getGS(), stats.max.gs.string, true);
             embed.addField("Highest AP : " + stats.max.ap.value.ap, stats.max.ap.string, true);
-            if(stats.max.aap.string) { //special case for player array full for succ players
+            if (stats.max.aap.string) { //special case for player array full for succ players
                 embed.addField("Highest AAP : " + stats.max.aap.value.aap, stats.max.aap.string, true);
             }
             embed.addField("Highest DP : " + stats.max.dp.value.dp, stats.max.dp.string, true);
             embed.addField("Lowest GS : " + stats.min.gs.value.getGS(), stats.min.gs.string, true);
             embed.addField("Lowest AP : " + stats.min.ap.value.ap, stats.min.ap.string, true);
-            if(stats.min.aap.string) { //special case for player array full for succ players
+            if (stats.min.aap.string) { //special case for player array full for succ players
                 embed.addField("Lowest AAP : " + stats.min.aap.value.aap, stats.min.aap.string, true);
             }
             embed.addField("Lowest DP : " + stats.min.dp.value.dp, stats.min.dp.string, true);
-            if(stats.max.axe.value.getAxe(true) != stats.min.axe.value.getAxe(true)) {
+            if (stats.max.axe.value.getAxe(true) != stats.min.axe.value.getAxe(true)) {
                 embed.addField("Best Axe : " + stats.max.axe.value.getAxe(true), stats.max.axe.string, true);
                 embed.addField("Worst Axe : " + stats.min.axe.value.getAxe(true), stats.min.axe.string, true);
             }
