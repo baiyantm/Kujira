@@ -143,35 +143,37 @@ module.exports = class PlayerArray extends Array {
             let sortedPlayersString = [];
             let playersPerField = 20;
             let index = 0;
-            let rank = 1;
+            let rank = 0;
             sortedPlayers.forEach(player => {
                 if (sortedPlayersString[index] == undefined) {
                     sortedPlayersString[index] = "";
                 }
                 let rankString = "";
                 switch (rank) {
-                    case 1:
+                    case 0:
                         rankString = "🥇";
                         break;
-                    case 2:
+                    case 1:
                         rankString = "🥈";
                         break;
-                    case 3:
+                    case 2:
                         rankString = "🥉";
                         break;
                     default:
-                        rankString = "**" + util.zeroString(rank) + "** : ";
+                        rankString = "**" + util.zeroString(rank + 1) + "** : ";
                         break;
                 }
                 sortedPlayersString[index] += rankString + " (" + player.getGS() + ") " + player.name + "\n";
                 rank++;
-                if (rank % (playersPerField + 1) == 0) {
+                if (rank % playersPerField == 0) {
                     index++;
                 }
             });
             for (let i = 0; i < sortedPlayersString.length; i++) {
                 const element = sortedPlayersString[i];
-                embed.addField((i * playersPerField + 1) + " - " + (i + 1) * playersPerField, element, true);
+                embed.addField((i * playersPerField + 1) + " - " + (i + 1) * playersPerField,
+                    element,
+                    true);
             }
         } else if (players.length > 0) {
             embed.setDescription(this.displayFullPlayer(players[0]));
