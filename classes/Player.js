@@ -185,7 +185,7 @@ module.exports = class Player {
         }
 
         this.isDpBuild = function () {
-            return this.dp >= 400;
+            return this.dp >= 425;
         }
 
         this.hasAxe = function () {
