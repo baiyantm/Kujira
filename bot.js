@@ -201,7 +201,7 @@ async function onDeleteHandler(deletedMessage, annCache) {
  */
 async function onReactionRemoveHandler(messageReaction, user) {
     if (messageReaction.message.channel.id == myTrial.id) {
-        //await trialReactionRemoveHandler(messageReaction, user);
+        await trialReactionRemoveHandler(messageReaction, user);
     }
 }
 
@@ -225,12 +225,14 @@ async function onReactionAddHandler(messageReaction, user) {
  */
 async function trialReactionAddHandler(messageReaction, user) {
     if ("⚔️" == messageReaction.emoji.name) {
-        const guildMember = messageReaction.message.guild.members.get(user.id);
-        const role = getNextTrialRole(messageReaction.message.guild);
+        const guild = messageReaction.message.guild;
+        const guildMember = guild.members.get(user.id);
+        const role = await getNextTrialRole(guild);
         try {
-            guildMember.addRole(role);
+            await guildMember.addRole(role);
+            await guildMember.addRole(guild.roles.find(x => x.name == "Trialee"));
         } catch (e) {
-            logger.log("ERROR: Counldn't add " + role + " to " + guildMember);
+            logger.log("ERROR: Counldn't add " + role.name + " to " + guildMember.nickname);
         }
     }
 }
@@ -239,21 +241,50 @@ async function trialReactionAddHandler(messageReaction, user) {
  * gets the next trial role, if not available, creates it
  * @param {Discord.Guild} guild 
  */
-function getNextTrialRole(guild) {
+async function getNextTrialRole(guild) {
     let available = false;
     let roleCount = 1;
     let trialRole;
-    while(!available) {
+    while (!available) {
         let roleName = "Trial " + roleCount;
         trialRole = guild.roles.find(x => x.name == roleName);
-        if(trialRole != undefined) {
+        if (trialRole != undefined) {
             available = isTrialRoleAvailable(guild, trialRole);
             roleCount++;
         } else {
-            console.log("has to create " + roleName);
+            trialRole = await createNewTrialChannelAndRole(guild, roleCount, trialRole, roleName);
+
             available = true;
         }
     }
+    return trialRole;
+}
+
+async function createNewTrialChannelAndRole(guild, roleCount, trialRole, roleName) {
+    let lastTrialChannel = guild.channels.find(channel => channel.name.startsWith("trial-" + (roleCount - 1)));
+    let newTrialChannel = await lastTrialChannel.clone({
+        name: "trial-" + roleCount,
+        permissionOverwrites: lastTrialChannel.permissionOverwrites
+    });
+    newTrialChannel.edit({
+        position: lastTrialChannel.position + 1
+    });
+    let lastTrialRole = guild.roles.find(x => x.name == "Trial " + (roleCount - 1));
+    trialRole = await guild.createRole({
+        name: roleName,
+        position: lastTrialRole.position - 1,
+        permissions: lastTrialRole.permissions
+    });
+    newTrialChannel.overwritePermissions(trialRole, {
+        VIEW_CHANNEL: true,
+        SEND_MESSAGES: true,
+        EMBED_LINKS: true,
+        ATTACH_FILES: true,
+        READ_MESSAGE_HISTORY: true,
+        USE_EXTERNAL_EMOJIS: true,
+        ADD_REACTIONS: true
+    });
+    newTrialChannel.permissionsFor(lastTrialRole).remove();
     return trialRole;
 }
 
@@ -263,8 +294,8 @@ function getNextTrialRole(guild) {
  */
 function isTrialRoleAvailable(guild, role) {
     let available = true;
-    guild.members.forEach(element => {
-        if(element.roles.has(role.id)) {
+    guild.members.forEach(member => {
+        if (member.roles.has(role.id)) {
             available = false;
         }
     });
@@ -277,17 +308,17 @@ function isTrialRoleAvailable(guild, role) {
  * @param {Discord.User} user 
  */
 async function trialReactionRemoveHandler(messageReaction, user) {
-    let reactions = { "1️⃣": "Trial 1", "2️⃣": "Trial 2", "3️⃣": "Trial 3", "4️⃣": "Trial 4" };
-    for (const key in reactions) {
-        if (key == messageReaction.emoji.name) {
-            const guildMember = messageReaction.message.guild.members.get(user.id);
-            const role = messageReaction.message.guild.roles.find(x => x.name == reactions[key]);
-            try {
-                guildMember.removeRole(role);
-            } catch (e) {
-                logger.log("INFO: Trial role \"" + reactions[key] + "\" not supported");
+    if ("⚔️" == messageReaction.emoji.name) {
+        const guildMember = messageReaction.message.guild.members.get(user.id);
+        guildMember.roles.forEach(role => {
+            if (role.name.startsWith("Trial")) {
+                try {
+                    guildMember.removeRole(role);
+                } catch (e) {
+                    logger.log("ERROR: Failed to remove role \"" + role + "\"");
+                }
             }
-        }
+        });
     }
 }
 

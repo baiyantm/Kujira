@@ -10,9 +10,9 @@
     "license": "ISC",
     "dependencies": {
         "discord.io": "^2.5.3",
-        "discord.js": "^11.4.2",
+        "discord.js": "^11.6.4",
         "json2csv": "^4.5.4",
-        "request": "^2.88.0"
+        "request": "^2.88.2"
     },
     "engines": {
         "node": "10.x"
