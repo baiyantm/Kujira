@@ -58,7 +58,9 @@ async function initLookout() {
 
     bot.on("message", async message => onMessageHandler(message, botMsg, annCache));
 
-    bot.on("messageReactionAdd", async messageReaction => onReactionHandler(messageReaction));
+    bot.on("messageReactionAdd", async (messageReaction, user) => onReactionAddHandler(messageReaction, user));
+
+    bot.on("messageReactionRemove", async (messageReaction, user) => onReactionRemoveHandler(messageReaction, user));
 
     bot.on("messageUpdate", async (oldMessage, newMessage) => onEditHandler(newMessage, annCache));
 
@@ -87,6 +89,24 @@ async function initLookout() {
                     if (reaction) reaction.users.set(packet.d.user_id, bot.users.get(packet.d.user_id));
                     // Check which type of event it is before emitting
                     bot.emit('messageReactionAdd', reaction, bot.users.get(packet.d.user_id));
+                });
+            } else if (['MESSAGE_REACTION_REMOVE'].includes(packet.t)) {
+                // Grab the channel to check the message from
+                const channel = bot.channels.get(packet.d.channel_id);
+                // There's no need to emit if the message is cached, because the event will fire anyway for that
+                // @ts-ignore
+                if (channel.messages.has(packet.d.message_id)) return;
+                // Since we have confirmed the message is not cached, let's fetch it
+                // @ts-ignore
+                channel.fetchMessage(packet.d.message_id).then(message => {
+                    // Emojis can have identifiers of name:id format, so we have to account for that case as well
+                    const emoji = packet.d.emoji.id ? `${packet.d.emoji.name}:${packet.d.emoji.id}` : packet.d.emoji.name;
+                    // This gives us the reaction we need to emit the event properly, in top of the message object
+                    const reaction = message.reactions.get(emoji);
+                    // Adds the currently reacting user to the reaction's users collection.
+                    if (reaction) reaction.users.set(packet.d.user_id, bot.users.get(packet.d.user_id));
+                    // Check which type of event it is before emitting
+                    bot.emit('messageReactionRemove', reaction, bot.users.get(packet.d.user_id));
                 });
             } else if (['MESSAGE_UPDATE'].includes(packet.t)) {
                 const channel = bot.channels.get(packet.d.channel_id);
@@ -176,25 +196,77 @@ async function onDeleteHandler(deletedMessage, annCache) {
 /**
  * listener for emoji add event
  * @param {Discord.MessageReaction} messageReaction 
+ * @param {Discord.User} user 
  */
-async function onReactionHandler(messageReaction) {
-    if (messageReaction.message.channel.id == mySignUp.id) {
-        await signUpReactionHandler(messageReaction);
-    } else if (messageReaction.message.channel.id == myTrial.id) {
-        await trialReactionHandler(messageReaction);
+async function onReactionRemoveHandler(messageReaction, user) {
+    if (messageReaction.message.channel.id == myTrial.id) {
+        await trialReactionRemoveHandler(messageReaction, user);
     }
 }
 
-async function trialReactionHandler(messageReaction) {
-    return true;
+/**
+ * listener for emoji add event
+ * @param {Discord.MessageReaction} messageReaction 
+ * @param {Discord.User} user 
+ */
+async function onReactionAddHandler(messageReaction, user) {
+    if (messageReaction.message.channel.id == mySignUp.id) {
+        await signUpReactionAddHandler(messageReaction, user);
+    } else if (messageReaction.message.channel.id == myTrial.id) {
+        await trialReactionAddHandler(messageReaction, user);
+    }
 }
 
-async function signUpReactionHandler(messageReaction) {
+/**
+ * listener for emoji add event on trial channel
+ * @param {Discord.MessageReaction} messageReaction 
+ * @param {Discord.User} user 
+ */
+async function trialReactionAddHandler(messageReaction, user) {
+    let reactions = { "1️⃣": "Trial 1", "2️⃣": "Trial 2", "3️⃣": "Trial 3", "4️⃣": "Trial 4" };
+    for (const key in reactions) {
+        if (key == messageReaction.emoji.name) {
+            const guildMember = messageReaction.message.guild.members.get(user.id);
+            const role = messageReaction.message.guild.roles.find(x => x.name == reactions[key]);
+            try {
+                guildMember.addRole(role);
+            } catch (e) {
+                logger.log("INFO: Trial role \"" + reactions[key] + "\" not supported");
+            }
+        }
+    }
+}
+
+/**
+ * listener for emoji add event on trial channel
+ * @param {Discord.MessageReaction} messageReaction 
+ * @param {Discord.User} user 
+ */
+async function trialReactionRemoveHandler(messageReaction, user) {
+    let reactions = { "1️⃣": "Trial 1", "2️⃣": "Trial 2", "3️⃣": "Trial 3", "4️⃣": "Trial 4" };
+    for (const key in reactions) {
+        if (key == messageReaction.emoji.name) {
+            const guildMember = messageReaction.message.guild.members.get(user.id);
+            const role = messageReaction.message.guild.roles.find(x => x.name == reactions[key]);
+            try {
+                guildMember.removeRole(role);
+            } catch (e) {
+                logger.log("INFO: Trial role \"" + reactions[key] + "\" not supported");
+            }
+        }
+    }
+}
+
+/**
+ * listener for emoji add event on signup channel
+ * @param {Discord.MessageReaction} messageReaction 
+ * @param {Discord.User} user 
+ */
+async function signUpReactionAddHandler(messageReaction, user) {
     let message = messageReaction.message;
     let yesReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["yesreaction"]).first();
     let noReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["noreaction"]).first();
     if (messageReaction.emoji.name == configjson["noreaction"]) {
-        let user = noReaction.users.last();
         if (user.id != bot.user.id && (await noReaction.fetchUsers()).get(user.id)) {
             if (yesReaction) {
                 yesReaction.remove(user);
@@ -202,7 +274,6 @@ async function signUpReactionHandler(messageReaction) {
         }
     }
     if (messageReaction.emoji.name == configjson["yesreaction"]) {
-        let user = yesReaction.users.last();
         if (user.id != bot.user.id && (await yesReaction.fetchUsers()).get(user.id)) {
             if (noReaction) {
                 noReaction.remove(user);
@@ -1303,7 +1374,7 @@ function setupAlarms() {
         for (const hour in alarmsjson[dayName]) {
             let minUntilAlarm = mod(util.getMinUntil(util.findCorrespondingDayNumber(dayName.toLowerCase()), hour, 0), 10080);
             let msUntilAlarm = minUntilAlarm * 60 * 1000;
-            let alarmText = myServer.roles.find(x => x.name === "Members") + "";
+            let alarmText = myServer.roles.find(x => x.name === "Members") + "\n";
             alarmsjson[dayName][hour].forEach(alarm => {
                 alarmText += "Hey don't forget to grab your " + alarm + " 💰\n";
             });
