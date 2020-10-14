@@ -9,6 +9,7 @@ const util = require("./modules/util");
 const Player = require('./classes/Player');
 const PlayerArray = require('./classes/PlayerArray');
 const SignUpArray = require('./classes/SignUpArray');
+const { ifError } = require('assert');
 
 async function initLookout() {
     logger.log("INFO: Initializing lookout ...");
@@ -200,7 +201,7 @@ async function onDeleteHandler(deletedMessage, annCache) {
  */
 async function onReactionRemoveHandler(messageReaction, user) {
     if (messageReaction.message.channel.id == myTrial.id) {
-        await trialReactionRemoveHandler(messageReaction, user);
+        //await trialReactionRemoveHandler(messageReaction, user);
     }
 }
 
@@ -223,18 +224,51 @@ async function onReactionAddHandler(messageReaction, user) {
  * @param {Discord.User} user 
  */
 async function trialReactionAddHandler(messageReaction, user) {
-    let reactions = { "1️⃣": "Trial 1", "2️⃣": "Trial 2", "3️⃣": "Trial 3", "4️⃣": "Trial 4" };
-    for (const key in reactions) {
-        if (key == messageReaction.emoji.name) {
-            const guildMember = messageReaction.message.guild.members.get(user.id);
-            const role = messageReaction.message.guild.roles.find(x => x.name == reactions[key]);
-            try {
-                guildMember.addRole(role);
-            } catch (e) {
-                logger.log("INFO: Trial role \"" + reactions[key] + "\" not supported");
-            }
+    if ("⚔️" == messageReaction.emoji.name) {
+        const guildMember = messageReaction.message.guild.members.get(user.id);
+        const role = getNextTrialRole(messageReaction.message.guild);
+        try {
+            guildMember.addRole(role);
+        } catch (e) {
+            logger.log("ERROR: Counldn't add " + role + " to " + guildMember);
         }
     }
+}
+
+/**
+ * gets the next trial role, if not available, creates it
+ * @param {Discord.Guild} guild 
+ */
+function getNextTrialRole(guild) {
+    let available = false;
+    let roleCount = 1;
+    let trialRole;
+    while(!available) {
+        let roleName = "Trial " + roleCount;
+        trialRole = guild.roles.find(x => x.name == roleName);
+        if(trialRole != undefined) {
+            available = isTrialRoleAvailable(guild, trialRole);
+            roleCount++;
+        } else {
+            console.log("has to create " + roleName);
+            available = true;
+        }
+    }
+    return trialRole;
+}
+
+/**
+ * gets the next trial role, if not available, creates it
+ * @param {Discord.Guild} guild 
+ */
+function isTrialRoleAvailable(guild, role) {
+    let available = true;
+    guild.members.forEach(element => {
+        if(element.roles.has(role.id)) {
+            available = false;
+        }
+    });
+    return available;
 }
 
 /**
@@ -837,7 +871,6 @@ async function getHistoryEmbed(message) {
         authorAvatar = message.embeds[0].author.iconURL;
         content = message.embeds[0].description;
     }
-    console.log(content);
     const embed = new Discord.RichEmbed();
     let embedColor = 3447003;
     embed.setColor(embedColor);
