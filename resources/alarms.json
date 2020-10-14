@@ -1,22 +1,42 @@
 {"Sun" : {
-  "18":["Boss Scrolls <@168643713516437505>"]
+  "12":["Black Spirit's Halloween Preparations I",
+       "Black Spirit's Halloween Preparations II",
+       "Black Spirit's Halloween Gift I"],
+  "14":["Black Spirit's Halloween Gift II"],
+  "18":["Boss Scrolls <@168643713516437505>"],
+  "20":["Black Spirit's Halloween Gift III"]
 },
 "Mon" : {
-  "18":["Boss Scrolls <@168643713516437505>"]
+  "18":["Boss Scrolls <@168643713516437505>",
+       "Black Spirit's Halloween Preparations I",
+       "Black Spirit's Halloween Preparations II"]
 },
 "Tue" : {
-  "18":["Boss Scrolls <@168643713516437505>"]
+  "18":["Boss Scrolls <@168643713516437505>",
+       "Black Spirit's Halloween Preparations I",
+       "Black Spirit's Halloween Preparations II"]
 },
 "Wed" : {
-  "18":["Boss Scrolls <@168643713516437505>"]
+  "18":["Boss Scrolls <@168643713516437505>",
+       "Black Spirit's Halloween Preparations I",
+       "Black Spirit's Halloween Preparations II"]
 },
 "Thu" : {
-  "18":["Boss Scrolls <@168643713516437505>"]
+  "18":["Boss Scrolls <@168643713516437505>",
+       "Black Spirit's Halloween Preparations I",
+       "Black Spirit's Halloween Preparations II"]
 },
 "Fri" : {
-  "18":["Boss Scrolls <@168643713516437505>"]
+  "18":["Boss Scrolls <@168643713516437505>",
+       "Black Spirit's Halloween Preparations I",
+       "Black Spirit's Halloween Preparations II"]
 },
 "Sat" : {
-  "18":["Boss Scrolls <@168643713516437505>"]
+  "12":["Black Spirit's Halloween Preparations I",
+       "Black Spirit's Halloween Preparations II",
+       "Black Spirit's Halloween Gift I"],
+  "14":["Black Spirit's Halloween Gift II"],
+  "18":["Boss Scrolls <@168643713516437505>"],
+  "20":["Black Spirit's Halloween Gift III"]
 }
 }
