@@ -227,12 +227,14 @@ async function trialReactionAddHandler(messageReaction, user) {
     if ("⚔️" == messageReaction.emoji.name) {
         const guild = messageReaction.message.guild;
         const guildMember = guild.members.get(user.id);
-        const role = await getNextTrialRole(guild);
-        try {
-            await guildMember.addRole(role);
-            await guildMember.addRole(guild.roles.find(x => x.name == "Trialee"));
-        } catch (e) {
-            logger.log("ERROR: Counldn't add " + role.name + " to " + guildMember.nickname);
+        if (!guildMember.roles.find(x => x.name == "Officer")) {
+            const role = await getNextTrialRole(guild);
+            try {
+                await guildMember.addRole(role);
+                await guildMember.addRole(guild.roles.find(x => x.name == "Trialee"));
+            } catch (e) {
+                logger.log("ERROR: Counldn't add " + role.name + " to " + guildMember.nickname);
+            }
         }
     }
 }
@@ -310,15 +312,17 @@ function isTrialRoleAvailable(guild, role) {
 async function trialReactionRemoveHandler(messageReaction, user) {
     if ("⚔️" == messageReaction.emoji.name) {
         const guildMember = messageReaction.message.guild.members.get(user.id);
-        guildMember.roles.forEach(role => {
-            if (role.name.startsWith("Trial")) {
-                try {
-                    guildMember.removeRole(role);
-                } catch (e) {
-                    logger.log("ERROR: Failed to remove role \"" + role + "\"");
+        if (!guildMember.roles.find(x => x.name == "Officer")) {
+            guildMember.roles.forEach(role => {
+                if (role.name.startsWith("Trial")) {
+                    try {
+                        guildMember.removeRole(role);
+                    } catch (e) {
+                        logger.log("ERROR: Failed to remove role \"" + role + "\"");
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 }
 
