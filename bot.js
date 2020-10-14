@@ -284,7 +284,7 @@ async function createNewTrialChannelAndRole(guild, roleCount, trialRole, roleNam
         USE_EXTERNAL_EMOJIS: true,
         ADD_REACTIONS: true
     });
-    newTrialChannel.permissionsFor(lastTrialRole).remove();
+    newTrialChannel.permissionOverwrites.get(lastTrialRole.id).delete();
     return trialRole;
 }
 
