@@ -1307,7 +1307,6 @@ function setupAlarms() {
             alarmsjson[dayName][hour].forEach(alarm => {
                 alarmText += "Hey don't forget to grab your " + alarm + " 💰\n";
             });
-            interactions.wSendChannel(channel, alarmText);
             bot.setTimeout(async () => {
                 interactions.wSendChannel(channel, alarmText);
             }, msUntilAlarm);
