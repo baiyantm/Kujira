@@ -179,23 +179,33 @@ async function onDeleteHandler(deletedMessage, annCache) {
  */
 async function onReactionHandler(messageReaction) {
     if (messageReaction.message.channel.id == mySignUp.id) {
-        let message = messageReaction.message;
-        let yesReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["yesreaction"]).first();
-        let noReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["noreaction"]).first();
-        if (messageReaction.emoji.name == configjson["noreaction"]) {
-            let user = noReaction.users.last();
-            if (user.id != bot.user.id && (await noReaction.fetchUsers()).get(user.id)) {
-                if (yesReaction) {
-                    yesReaction.remove(user);
-                }
+        await signUpReactionHandler(messageReaction);
+    } else if (messageReaction.message.channel.id == myTrial.id) {
+        await trialReactionHandler(messageReaction);
+    }
+}
+
+async function trialReactionHandler(messageReaction) {
+    return true;
+}
+
+async function signUpReactionHandler(messageReaction) {
+    let message = messageReaction.message;
+    let yesReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["yesreaction"]).first();
+    let noReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["noreaction"]).first();
+    if (messageReaction.emoji.name == configjson["noreaction"]) {
+        let user = noReaction.users.last();
+        if (user.id != bot.user.id && (await noReaction.fetchUsers()).get(user.id)) {
+            if (yesReaction) {
+                yesReaction.remove(user);
             }
         }
-        if (messageReaction.emoji.name == configjson["yesreaction"]) {
-            let user = yesReaction.users.last();
-            if (user.id != bot.user.id && (await yesReaction.fetchUsers()).get(user.id)) {
-                if (noReaction) {
-                    noReaction.remove(user);
-                }
+    }
+    if (messageReaction.emoji.name == configjson["yesreaction"]) {
+        let user = yesReaction.users.last();
+        if (user.id != bot.user.id && (await yesReaction.fetchUsers()).get(user.id)) {
+            if (noReaction) {
+                noReaction.remove(user);
             }
         }
     }
@@ -1293,11 +1303,14 @@ function setupAlarms() {
         for (const hour in alarmsjson[dayName]) {
             let minUntilAlarm = mod(util.getMinUntil(util.findCorrespondingDayNumber(dayName.toLowerCase()), hour, 0), 10080);
             let msUntilAlarm = minUntilAlarm * 60 * 1000;
+            let alarmText = myServer.roles.find(x => x.name === "Members") + "";
             alarmsjson[dayName][hour].forEach(alarm => {
-                bot.setTimeout(async () => {
-                    interactions.wSendChannel(channel, "Hey don't forget to grab your " + alarm + " 💰");
-                }, msUntilAlarm);
+                alarmText += "Hey don't forget to grab your " + alarm + " 💰\n";
             });
+            interactions.wSendChannel(channel, alarmText);
+            bot.setTimeout(async () => {
+                interactions.wSendChannel(channel, alarmText);
+            }, msUntilAlarm);
         }
     }
     logger.log("INFO: Alarms set");
@@ -1476,6 +1489,7 @@ if (configjson && itemsjson && alarmsjson) {
     var myGearData;
     var mySignUp;
     var mySignUpData;
+    var myTrial;
     var myAnnouncement;
     var myAnnouncementData;
     var myWelcome;
@@ -1537,6 +1551,7 @@ if (configjson && itemsjson && alarmsjson) {
             myGearData = bot.channels.get(configjson["gearDataID"]);
             mySignUp = bot.channels.get(configjson["signUpID"]);
             mySignUpData = bot.channels.get(configjson["signUpDataID"]);
+            myTrial = bot.channels.get(configjson["trialID"]);
             myAnnouncement = bot.channels.get(configjson["announcementID"]);
             myAnnouncementData = bot.channels.get(configjson["announcementDataID"]);
             myWelcome = bot.channels.get(configjson["welcomeID"]);
