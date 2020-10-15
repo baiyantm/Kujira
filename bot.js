@@ -228,10 +228,13 @@ async function trialReactionAddHandler(messageReaction, user) {
         const guild = messageReaction.message.guild;
         const guildMember = guild.members.get(user.id);
         if (!guildMember.roles.find(x => x.name == "Officer")) {
-            const role = await getNextTrialRole(guild);
+            const roleIndex = await getNextTrialRoleIndex(guild);
+            const role = guild.roles.find(x => x.name == "Trial " + roleIndex);
+            const channel = guild.channels.find(x => x.name == "trial-" + roleIndex);
             try {
                 await guildMember.addRole(role);
                 await guildMember.addRole(guild.roles.find(x => x.name == "Trialee"));
+                await interactions.wSendChannel(channel, user + " Hi, post your gear screenshot here")
             } catch (e) {
                 logger.log("ERROR: Counldn't add " + role.name + " to " + guildMember.nickname);
             }
@@ -243,7 +246,7 @@ async function trialReactionAddHandler(messageReaction, user) {
  * gets the next trial role, if not available, creates it
  * @param {Discord.Guild} guild 
  */
-async function getNextTrialRole(guild) {
+async function getNextTrialRoleIndex(guild) {
     let available = false;
     let roleCount = 1;
     let trialRole;
@@ -252,14 +255,15 @@ async function getNextTrialRole(guild) {
         trialRole = guild.roles.find(x => x.name == roleName);
         if (trialRole != undefined) {
             available = isTrialRoleAvailable(guild, trialRole);
-            roleCount++;
+            if(!available) {
+                roleCount++;
+            }
         } else {
-            trialRole = await createNewTrialChannelAndRole(guild, roleCount, trialRole, roleName);
-
+            await createNewTrialChannelAndRole(guild, roleCount, trialRole, roleName);
             available = true;
         }
     }
-    return trialRole;
+    return roleCount;
 }
 
 async function createNewTrialChannelAndRole(guild, roleCount, trialRole, roleName) {
@@ -719,6 +723,8 @@ async function allChannelsHandler(enteredCommand, commands, message) {
     }
     else if (enteredCommand == commands["help"] && await checkIntPermission(message)) {
         await helpCommand(message, false);
+    } else if (enteredCommand == commands["clear"] && await checkAdvPermission(message)) {
+        await clearCommand(message);
     }
 }
 
@@ -1518,7 +1524,7 @@ function checkIntPermission(message) {
  */
 async function checkAdvPermission(message) {
     let allowed = false;
-    if (message.member.roles.find(x => x.name == "Officers")) {
+    if (message.member.roles.find(x => x.name == "Officers") || message.member.roles.find(x => x.name == "Officer")) {
         allowed = true;
     } else {
         await interactions.wSendAuthor(message.author, 'Insufficient permissions.');
