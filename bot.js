@@ -255,7 +255,7 @@ async function getNextTrialRoleIndex(guild) {
         trialRole = guild.roles.find(x => x.name == roleName);
         if (trialRole != undefined) {
             available = isTrialRoleAvailable(guild, trialRole);
-            if(!available) {
+            if (!available) {
                 roleCount++;
             }
         } else {
@@ -723,7 +723,8 @@ async function allChannelsHandler(enteredCommand, commands, message) {
     }
     else if (enteredCommand == commands["help"] && await checkIntPermission(message)) {
         await helpCommand(message, false);
-    } else if (enteredCommand == commands["clear"] && await checkAdvPermission(message)) {
+    }
+    else if (enteredCommand == commands["clear"] && await checkAdvPermission(message)) {
         await clearCommand(message);
     }
 }
