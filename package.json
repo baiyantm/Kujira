@@ -11,7 +11,9 @@
     "dependencies": {
         "discord.io": "^2.5.3",
         "discord.js": "^11.6.4",
+        "image-to-base64": "^2.1.1",
         "json2csv": "^4.5.4",
+        "pdfmake": "^0.1.68",
         "request": "^2.88.2"
     },
     "engines": {

@@ -8,8 +8,12 @@ const logger = require("./modules/logger");
 const util = require("./modules/util");
 const Player = require('./classes/Player');
 const PlayerArray = require('./classes/PlayerArray');
+// @ts-ignore
 const SignUpArray = require('./classes/SignUpArray');
+// @ts-ignore
 const { ifError } = require('assert');
+// @ts-ignore
+const { time } = require('console');
 
 async function initLookout() {
     logger.log("INFO: Initializing lookout ...");
@@ -63,6 +67,7 @@ async function initLookout() {
 
     bot.on("messageReactionRemove", async (messageReaction, user) => onReactionRemoveHandler(messageReaction, user));
 
+    // @ts-ignore
     bot.on("messageUpdate", async (oldMessage, newMessage) => onEditHandler(newMessage, annCache));
 
     bot.on("messageDelete", async deletedMessage => onDeleteHandler(deletedMessage, annCache));
@@ -232,12 +237,15 @@ async function trialReactionAddHandler(messageReaction, user) {
             const role = guild.roles.find(x => x.name == "Trial " + roleIndex);
             const channel = guild.channels.find(x => x.name == "trial-" + roleIndex);
             try {
-                await clearChannel(channel);
+                // @ts-ignore
+                await historizeChannel(channel, myTrialHistory);
+
                 await guildMember.addRole(role);
                 await guildMember.addRole(guild.roles.find(x => x.name == "Trialee"));
-                await interactions.wSendChannel(channel, user + " Hi, post your gear screenshot here")
+                await interactions.wSendChannel(channel, user + " Hi, please post your gear screenshot here in this format: https://imgur.com/a/eYiNNgd")
             } catch (e) {
-                logger.log("ERROR: Counldn't add " + role.name + " to " + guildMember.nickname);
+                console.error(e);
+                logger.log("ERROR: Couldn't add " + role.name + " to " + guildMember.user.tag);
             }
         }
     }
@@ -451,12 +459,14 @@ async function signupChannelHandler(enteredCommand, message, commands) {
     }
 }
 
+// @ts-ignore
 async function resetCommand(message, args) {
     await clearChannel(message.channel);
     await generateSignUpMessages(configjson["defaultCount"]);
     players.resetPlayersSignUps();
 }
 
+// @ts-ignore
 async function dumpCommand(message, args) {
     message.react("✅");
     await collectSignUps();
@@ -713,6 +723,7 @@ async function allChannelsHandler(enteredCommand, commands, message) {
         let rolename = args;
         //add roles here
         if (false) {
+            // @ts-ignore
             await changeRole(message, rolename, args);
         }
     }
@@ -967,8 +978,10 @@ async function downloadFilesFromMessage(message) {
  * 
  * @param {Discord.Collection<string,Discord.MessageReaction>} messageReactions
  */
+// @ts-ignore
 async function getReactions(messageReactions) {
     let res = "";
+    // @ts-ignore
     messageReactions.forEach(reaction => {
         //unused
     });
@@ -1029,6 +1042,7 @@ async function generateSignUpMessages(num) {
  * @param {string} day
  * generate singup messages until day (inc today)
  */
+// @ts-ignore
 async function bulkSignUpMessages(day) {
     let today = new Date();
     let loops = day == "loop" ? 7 : util.diffDays(today.getDay(), util.findCorrespondingDayNumber(day));
@@ -1426,6 +1440,99 @@ async function newBotMessage(channel, content) {
 }
 
 /**
+ * @param {Discord.TextChannel} channelSource
+ * @param {Discord.TextChannel} channelDestination
+ */
+async function historizeChannel(channelSource, channelDestination) {
+    let messages = await channelSource.fetchMessages();
+    messages = messages.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+    let pdfPath = await createHistoryPDF(messages);
+    files.uploadFileToChannel(pdfPath, channelDestination, "History of " + channelSource.name);
+    clearChannel(channelSource);
+}
+
+/**
+ * @param {Discord.Collection <String, Discord.Message>} messages
+ */
+async function createHistoryPDF(messages) {
+    let fonts = getFonts();
+
+    let PdfPrinter = require('pdfmake');
+    let printer = new PdfPrinter(fonts);
+    let fs = require('fs');
+
+    let content = [];
+    for (const imessage of messages) {
+        let message = imessage[1];
+        let strDate = getFormattedDate(message.createdAt);
+        content.push(message.author.username + " (" + strDate + ") : " + message);
+        if (message.attachments.size > 0) {
+            await addMessageAttachmentToPDFContent(message, content);
+        }
+    }
+    let docDefinition = {
+        content: content,
+        defaultStyle: {
+            font: 'Courier'
+        }
+    };
+
+    let pdfName = 'download/document' + new Date().getTime() + '.pdf';
+    let pdfDoc = printer.createPdfKitDocument(docDefinition);
+    pdfDoc.pipe(fs.createWriteStream(pdfName));
+    pdfDoc.end();
+
+    return pdfName;
+}
+
+/**
+ * @param {Discord.Message} message 
+ * @param {any[]} content 
+ */
+async function addMessageAttachmentToPDFContent(message, content) {
+    await downloadFilesFromMessage(message);
+    for (const iattachment of message.attachments) {
+        let attachment = iattachment[1];
+        if (attachment.filename.toUpperCase().endsWith('PNG') ||
+            attachment.filename.toUpperCase().endsWith('JPEG') ||
+            attachment.filename.toUpperCase().endsWith('JPG')) {
+            let filePath = 'download/' + message.id + '/' + attachment.filename;
+            const imageToBase64 = require('image-to-base64');
+            let image64 = await imageToBase64(filePath);
+            content.push({
+                image: 'data:image/png;base64,' + image64,
+                fit: [250, 250]
+            });
+        }
+    }
+}
+
+function getFormattedDate(date) {
+    return 'd/m/Y at h:mm'
+        // @ts-ignore
+        .replace('Y', date.getFullYear())
+        // @ts-ignore
+        .replace('m', date.getMonth() + 1)
+        // @ts-ignore
+        .replace('d', util.zeroString(date.getDate()))
+        // @ts-ignore
+        .replace('h', util.zeroString(date.getHours()))
+        // @ts-ignore
+        .replace('mm', util.zeroString(date.getMinutes()));
+}
+
+function getFonts() {
+    return {
+        Courier: {
+            normal: 'Courier',
+            bold: 'Courier-Bold',
+            italics: 'Courier-Oblique',
+            bolditalics: 'Courier-BoldOblique'
+        }
+    };
+}
+
+/**
  * deletes all messages in the channel
  * @param {Discord.TextChannel|Discord.DMChannel|Discord.GroupDMChannel|any} channel the channel to clean
  */
@@ -1637,6 +1744,7 @@ if (configjson && itemsjson && alarmsjson) {
     var mySignUp;
     var mySignUpData;
     var myTrial;
+    var myTrialHistory;
     var myAnnouncement;
     var myAnnouncementData;
     var myWelcome;
@@ -1699,6 +1807,7 @@ if (configjson && itemsjson && alarmsjson) {
             mySignUp = bot.channels.get(configjson["signUpID"]);
             mySignUpData = bot.channels.get(configjson["signUpDataID"]);
             myTrial = bot.channels.get(configjson["trialID"]);
+            myTrialHistory = bot.channels.get(configjson["trialhistoryID"]);
             myAnnouncement = bot.channels.get(configjson["announcementID"]);
             myAnnouncementData = bot.channels.get(configjson["announcementDataID"]);
             myWelcome = bot.channels.get(configjson["welcomeID"]);
