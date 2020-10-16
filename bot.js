@@ -232,6 +232,7 @@ async function trialReactionAddHandler(messageReaction, user) {
             const role = guild.roles.find(x => x.name == "Trial " + roleIndex);
             const channel = guild.channels.find(x => x.name == "trial-" + roleIndex);
             try {
+                await clearChannel(channel);
                 await guildMember.addRole(role);
                 await guildMember.addRole(guild.roles.find(x => x.name == "Trialee"));
                 await interactions.wSendChannel(channel, user + " Hi, post your gear screenshot here")
@@ -1426,7 +1427,7 @@ async function newBotMessage(channel, content) {
 
 /**
  * deletes all messages in the channel
- * @param {Discord.TextChannel|Discord.DMChannel|Discord.GroupDMChannel} channel the channel to clean
+ * @param {Discord.TextChannel|Discord.DMChannel|Discord.GroupDMChannel|any} channel the channel to clean
  */
 async function clearChannel(channel) {
     let deleteCount = 100;
@@ -1434,6 +1435,7 @@ async function clearChannel(channel) {
         channel.bulkDelete(deleteCount, true);
         logger.log("INFO: Deleted " + deleteCount + " messages in " + channel);
     } catch (e) {
+        // TODO: PLAN B YOU KNOW IT, ONE BY ONE
         logger.logError("bulkDelete error", e);
     }
 }
