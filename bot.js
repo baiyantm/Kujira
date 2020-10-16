@@ -14,6 +14,7 @@ const SignUpArray = require('./classes/SignUpArray');
 const { ifError } = require('assert');
 // @ts-ignore
 const { time } = require('console');
+const { resolve } = require('path');
 
 async function initLookout() {
     logger.log("INFO: Initializing lookout ...");
@@ -1455,34 +1456,42 @@ async function historizeChannel(channelSource, channelDestination) {
  * @param {Discord.Collection <String, Discord.Message>} messages
  */
 async function createHistoryPDF(messages) {
-    let fonts = getFonts();
+    return new Promise(async (resolve, reject) => {
+        try {
+            let fonts = getFonts();
 
-    let PdfPrinter = require('pdfmake');
-    let printer = new PdfPrinter(fonts);
-    let fs = require('fs');
+            let PdfPrinter = require('pdfmake');
+            let printer = new PdfPrinter(fonts);
+            let fs = require('fs');
 
-    let content = [];
-    for (const imessage of messages) {
-        let message = imessage[1];
-        let strDate = getFormattedDate(message.createdAt);
-        content.push(message.author.username + " (" + strDate + ") : " + message);
-        if (message.attachments.size > 0) {
-            await addMessageAttachmentToPDFContent(message, content);
+            let content = [];
+            for (const imessage of messages) {
+                let message = imessage[1];
+                let strDate = getFormattedDate(message.createdAt);
+                content.push(message.author.username + " (" + strDate + ") : " + message);
+                if (message.attachments.size > 0) {
+                    await addMessageAttachmentToPDFContent(message, content);
+                }
+            }
+            let docDefinition = {
+                content: content,
+                defaultStyle: {
+                    font: 'Courier'
+                }
+            };
+
+            let pdfName = 'download/document' + new Date().getTime() + '.pdf';
+            let pdfDoc = printer.createPdfKitDocument(docDefinition);
+            let stream = pdfDoc.pipe(fs.createWriteStream(pdfName));
+            pdfDoc.end();
+            stream.on('finish', function () {
+                resolve(pdfName);
+            });
+        } catch (err) {
+            console.error(err);
+            reject(err);
         }
-    }
-    let docDefinition = {
-        content: content,
-        defaultStyle: {
-            font: 'Courier'
-        }
-    };
-
-    let pdfName = 'download/document' + new Date().getTime() + '.pdf';
-    let pdfDoc = printer.createPdfKitDocument(docDefinition);
-    pdfDoc.pipe(fs.createWriteStream(pdfName));
-    pdfDoc.end();
-
-    return pdfName;
+    });
 }
 
 /**
@@ -1501,7 +1510,7 @@ async function addMessageAttachmentToPDFContent(message, content) {
             let image64 = await imageToBase64(filePath);
             content.push({
                 image: 'data:image/png;base64,' + image64,
-                fit: [250, 250]
+                fit: [300, 167]
             });
         }
     }
@@ -1534,7 +1543,7 @@ function getFonts() {
 
 /**
  * deletes all messages in the channel
- * @param {Discord.TextChannel|Discord.DMChannel|Discord.GroupDMChannel|any} channel the channel to clean
+ * @param {Discord.TextChannel} channel the channel to clean
  */
 async function clearChannel(channel) {
     let deleteCount = 100;
@@ -1542,8 +1551,12 @@ async function clearChannel(channel) {
         channel.bulkDelete(deleteCount, true);
         logger.log("INFO: Deleted " + deleteCount + " messages in " + channel);
     } catch (e) {
-        // TODO: PLAN B YOU KNOW IT, ONE BY ONE
-        logger.logError("bulkDelete error", e);
+        // PLAN B YOU KNOW IT, ONE BY ONE, YES DISCORD DEVS
+        let messages = await channel.fetchMessages();
+        for (const imessage of messages) {
+            let message = imessage[1];
+            message.delete();
+        }
     }
 }
 

@@ -1,6 +1,7 @@
 const http = require('https');
 const fs = require('fs');
 const logger = require('./logger');
+const Discord = require('discord.io');
 
 // ------ file interactions ------
 
@@ -30,7 +31,7 @@ async function download(url, dest, cb) {
 /**
  * uploads a file to a channel
  * @param {string} filepath the path to the file to upload
- * @param {channel} channel the dest channel
+ * @param {Discord.TextChannel} channel the dest channel
  * @param {string} content the dest channel
  */
 function uploadFileToChannel(filepath, channel, content) {
