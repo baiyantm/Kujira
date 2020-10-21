@@ -1572,7 +1572,7 @@ async function clearChannel(channel) {
  * custom DMs
  */
 function setupCustomAlarms() {
-    let azreeId = "87270215334785024";
+    let azreeId = "217391541918892032";
     let today = new Date();
     bot.setTimeout(async () => {
         if(players.get(azreeId).signUps[today.getDay()].status == "yes") {
