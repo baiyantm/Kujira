@@ -29,6 +29,10 @@ async function initLookout() {
         setupAlarms();
     }
 
+    if(myServer) {
+        setupCustomAlarms();
+    }
+
     var annCache = { reference: null }; //because JavaScript
     await cacheAnnouncements(annCache);
     annCache.reference.forEach(async message => {
@@ -1554,7 +1558,7 @@ function getFonts() {
 async function clearChannel(channel) {
     let deleteCount = 100;
     try {
-        channel.bulkDelete(deleteCount, true);
+        await channel.bulkDelete(deleteCount);
         logger.log("INFO: Deleted " + deleteCount + " messages in " + channel);
     } catch (e) {
         // PLAN B YOU KNOW IT, ONE BY ONE, YES DISCORD DEVS
@@ -1569,6 +1573,20 @@ async function clearChannel(channel) {
 /*
 --------------------------------------- GENERAL section ---------------------------------------
 */
+
+/**
+ * custom DMs
+ */
+function setupCustomAlarms() {
+    let azreeId = "217391541918892032";
+    let today = new Date();
+    bot.setTimeout(async () => {
+        if(players.get(azreeId).signUps[today.getDay()].status == "yes") {
+            interactions.wSendChannel(myServer.members.find(x => x.id == azreeId), "Oublie pas les addons PvP");
+        }
+    }, util.getMinUntil(today.getDay(), 19, 30) * 60 * 1000);
+    logger.log("INFO: Custom alarms set");
+}
 
 function setupAlarms() {
     let channel = myGuildChat;
