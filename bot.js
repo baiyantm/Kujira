@@ -723,7 +723,7 @@ async function allChannelsHandler(enteredCommand, commands, message) {
     else if (enteredCommand == commands["sub"]) {
         let rolename = args;
         //add roles here
-        if (false) {
+        if (rolename == "rem" || rolename == "reminder") {
             // @ts-ignore
             await changeRole(message, rolename, args);
         }
@@ -752,6 +752,12 @@ async function changeRole(message, rolename, args) {
     }
 }
 
+/**
+ * 
+ * @param {Discord.Message} message 
+ * @param {Discord.Role} role 
+ * @param {string} args 
+ */
 async function addRole(message, role, args) {
     try {
         await message.member.addRole(role);
@@ -1571,7 +1577,7 @@ function setupAlarms() {
         for (const hour in alarmsjson[dayName]) {
             let minUntilAlarm = mod(util.getMinUntil(util.findCorrespondingDayNumber(dayName.toLowerCase()), hour, 0), 10080);
             let msUntilAlarm = minUntilAlarm * 60 * 1000;
-            let alarmText = myServer.roles.find(x => x.name === "Members") + "\n";
+            let alarmText = myServer.roles.find(x => x.name === "Rem") + "\n";
             alarmsjson[dayName][hour].forEach(alarm => {
                 alarmText += "Hey don't forget to grab your " + alarm + " 💰\n";
             });
