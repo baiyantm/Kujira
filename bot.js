@@ -1579,13 +1579,22 @@ async function clearChannel(channel) {
  */
 function setupCustomAlarms() {
     let azreeId = "217391541918892032";
-    let today = new Date();
-    bot.setTimeout(async () => {
-        if(players.get(azreeId).signUps[today.getDay()].status == "yes") {
-            interactions.wSendChannel(myServer.members.find(x => x.id == azreeId), "Oublie pas les addons PvP");
-        }
-    }, util.getMinUntil(today.getDay(), 19, 30) * 60 * 1000);
+    let minUtilAlarm = util.getMinUntil(new Date().getDay(), 19, 45) * 60 * 1000;
+    dailyTimeout(azreeId, minUtilAlarm);
     logger.log("INFO: Custom alarms set");
+}
+
+/**
+ * @param {string} id 
+ * @param {number} time 
+ */
+function dailyTimeout(id, time) {
+    bot.setTimeout(async () => {
+        if (time > 0 && players.get(id) && players.get(id).signUps[new Date().getDay()].status == "yes") {
+            interactions.wSendChannel(myServer.members.find(x => x.id == id), "Oublie pas les addons PvP");
+        }
+        dailyTimeout(id, 86400000);
+    }, time);
 }
 
 function setupAlarms() {
