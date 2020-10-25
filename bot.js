@@ -174,6 +174,8 @@ async function initLookout() {
 async function onLeaveHandler(member) {
     if (member.guild.id == myServer.id) {
         interactions.wSendChannel(myWelcome, member + "(" + member.user.username + ") has left the server.");
+    } else if (member.guild.id == myTrialServer.id) {
+        interactions.wSendChannel(myTrialWelcome, member + "(" + member.user.username + ") has left the server.");
     }
 }
 
@@ -1783,6 +1785,7 @@ if (configjson && itemsjson && alarmsjson) {
 
     //more globals
     var myServer;
+    var myTrialServer;
     var myDevServer;
     var myGate;
     var myGear;
@@ -1794,6 +1797,7 @@ if (configjson && itemsjson && alarmsjson) {
     var myAnnouncement;
     var myAnnouncementData;
     var myWelcome;
+    var myTrialWelcome;
     var myChangelog;
     var myChangelog2;
     var myGuildChat;
@@ -1806,6 +1810,7 @@ if (configjson && itemsjson && alarmsjson) {
         bot.user.setPresence({ game: { name: "booting up..." } });
 
         myServer = bot.guilds.get(configjson["botServerID"]);
+        myTrialServer = bot.guilds.get(configjson["botTrialServerID"]);
         myDevServer = bot.guilds.get(configjsonfile["dev"]["botServerID"]);
         myGearData = bot.channels.get(configjson["gearDataID"]);
 
@@ -1852,11 +1857,12 @@ if (configjson && itemsjson && alarmsjson) {
             myGearData = bot.channels.get(configjson["gearDataID"]);
             mySignUp = bot.channels.get(configjson["signUpID"]);
             mySignUpData = bot.channels.get(configjson["signUpDataID"]);
-            myTrial = bot.channels.get(configjson["trialID"]);
+            myTrial = bot.channels.get(configjson["trialreactionID"]);
             myTrialHistory = bot.channels.get(configjson["trialhistoryID"]);
             myAnnouncement = bot.channels.get(configjson["announcementID"]);
             myAnnouncementData = bot.channels.get(configjson["announcementDataID"]);
             myWelcome = bot.channels.get(configjson["welcomeID"]);
+            myTrialWelcome = bot.channels.get(configjson["trialwelcomeID"]);
             myChangelog = bot.channels.get(configjson["changelogID"]);
             myChangelog2 = bot.channels.get(configjson["changelogID2"]);
             myGuildChat = bot.channels.get(configjson["guildchatID"]);
