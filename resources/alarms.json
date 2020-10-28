@@ -1,9 +1,23 @@
 {
-  "Sun": {},
-  "Mon": {},
-  "Tue": {},
-  "Wed": {},
-  "Thu": {},
-  "Fri": {},
-  "Sat": {}
+  "Sun": {
+    "18": ["Halloween Silver Daily Pack"]
+  },
+  "Mon": {
+    "18": ["Halloween Silver Daily Pack"]
+  },
+  "Tue": {
+    "18": ["Halloween Silver Daily Pack"]
+  },
+  "Wed": {
+    "18": ["Halloween Silver Daily Pack"]
+  },
+  "Thu": {
+    "18": ["Halloween Silver Daily Pack"]
+  },
+  "Fri": {
+    "18": ["Halloween Silver Daily Pack"]
+  },
+  "Sat": {
+    "18": ["Halloween Silver Daily Pack"]
+  }
 }

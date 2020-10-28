@@ -26,7 +26,7 @@ async function initLookout() {
     }
 
     if (myGuildChat) {
-        //setupAlarms();
+        setupAlarms();
     }
 
     if (myServer) {
