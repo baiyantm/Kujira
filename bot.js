@@ -1831,7 +1831,7 @@ if (configjson && itemsjson && alarmsjson) {
         }
         var playersjson = files.openJsonFile("./download/players.json", "utf8");
         if (playersjson) {
-            playersjson.forEach(async currentPlayer => {
+            for (const currentPlayer of playersjson) {
                 let revivedPlayer = await revivePlayer(
                     currentPlayer["id"],
                     currentPlayer["classname"],
@@ -1845,7 +1845,7 @@ if (configjson && itemsjson && alarmsjson) {
                 if (revivedPlayer) {
                     players.add(revivedPlayer);
                 }
-            });
+            }
         }
 
         logger.log("INFO: Starting in " + loading + "ms");
