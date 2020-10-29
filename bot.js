@@ -475,10 +475,14 @@ async function resetCommand(message, args) {
 
 // @ts-ignore
 async function dumpCommand(message, args) {
-    message.react("✅");
-    await collectSignUps();
-    await dumpSignUps();
-    deleteCommand(message);
+    try {
+        message.react("✅");
+        await collectSignUps();
+        await dumpSignUps();
+        deleteCommand(message);
+    } catch (e) {
+        console.log(e);
+    }
 }
 
 async function generateCommand(message, args) {
