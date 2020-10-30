@@ -1201,6 +1201,12 @@ async function collectSignUps() {
     }
 }
 
+/**
+ * 
+ * @param {Discord.MessageReaction} reaction 
+ * @param {number} day 
+ * @param {string} emojiName 
+ */
 async function fetchSignUps(reaction, day, emojiName) {
     let users = await reaction.fetchUsers();
     await Promise.all(users.map(async (user) => {
@@ -1218,7 +1224,7 @@ async function fetchSignUps(reaction, day, emojiName) {
             catch (e) {
                 if (e.message == 'Unknown Member') {
                     logger.log("INFO: " + user + " is not a member !");
-                    reaction.remove(user);
+                    await reaction.remove(user);
                 } else {
                     throw e;
                 }
