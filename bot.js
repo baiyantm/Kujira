@@ -475,14 +475,11 @@ async function resetCommand(message, args) {
 
 // @ts-ignore
 async function dumpCommand(message, args) {
-    try {
-        message.react("✅");
-        await collectSignUps();
-        await dumpSignUps();
-        deleteCommand(message);
-    } catch (e) {
-        console.log(e);
-    }
+    message.react("🔄");
+    await collectSignUps();
+    await dumpSignUps();
+    deleteCommand(message);
+    message.react("✅");
 }
 
 async function generateCommand(message, args) {
@@ -584,13 +581,14 @@ async function removePlayerCommand(message, args) {
 }
 
 async function helpCommand(message, deletion) {
-    message.react("✅");
+    message.react("🔄");
     let helpMessage = await interactions.wSendChannel(message.channel, itemsjson["gearhelp"]);
     if (deletion) {
         bot.setTimeout(() => {
             interactions.wDelete(helpMessage);
         }, 60000);
     }
+    message.react("✅");
 }
 
 async function manualAddCommand(args, message, commands) {
@@ -793,7 +791,7 @@ async function removeRole(message, role, args) {
 }
 
 function gearCommand(message, args) {
-    message.react("✅");
+    message.react("🔄");
     let idToFind;
     if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
         idToFind = message.mentions.members.first().id;
@@ -808,33 +806,38 @@ function gearCommand(message, args) {
     else {
         interactions.wSendChannel(message.channel, "Couldn't find this player.");
     }
+    message.react("✅");
 }
 
 async function rankingsCommand(args, message) {
     if (!args) {
-        message.react("✅");
+        message.react("🔄");
         interactions.wSendChannel(message.channel, players.getRankingsEmbed(null));
+        message.react("✅");
     }
     else {
         let split = args.split(" ");
         if (itemsjson["classlist"].includes(split[0])) {
-            message.react("✅");
+            message.react("🔄");
             interactions.wSendChannel(message.channel, players.getRankingsEmbed(split[0]));
+            message.react("✅");
         }
     }
 }
 
 async function statsCommand(args, message) {
     if (!args) {
-        message.react("✅");
+        message.react("🔄");
         interactions.wSendChannel(message.channel, players.getStatsEmbed(null));
+        message.react("✅");
     }
     else {
         let split = args.split(" ");
         if (split.length == 1) {
             if (itemsjson["classlist"].includes(split[0])) {
-                message.react("✅");
+                message.react("🔄");
                 interactions.wSendChannel(message.channel, players.getStatsEmbed(split[0]));
+                message.react("✅");
             }
             else {
                 let day;
@@ -847,7 +850,7 @@ async function statsCommand(args, message) {
                         day = util.findCorrespondingDayNumber(split[0]);
                     }
                     if (day != undefined) {
-                        message.react("✅");
+                        message.react("🔄");
                         let signedUpPlayers = await getPlayersWithStatus(day, players, "yes"); // TODO v2
                         if (signedUpPlayers) {
                             interactions.wSendChannel(message.channel, players.getSignedUpStatsEmbed(signedUpPlayers, day));
@@ -855,6 +858,7 @@ async function statsCommand(args, message) {
                         else {
                             interactions.wSendChannel(message.channel, "No message found for " + util.findCorrespondingDayName(day));
                         }
+                        message.react("✅");
                     }
                 }
             }
@@ -880,9 +884,10 @@ async function reminderCommand(message) {
 }
 
 async function attendanceCommand(message) {
-    message.react("✅");
+    message.react("🔄");
     await collectSignUps();
     interactions.wSendChannel(message.channel, getFormattedAttendanceForWeek());
+    message.react("✅");
 }
 
 /**
@@ -1200,15 +1205,23 @@ async function fetchSignUps(reaction, day, emojiName) {
     let users = await reaction.fetchUsers();
     await Promise.all(users.map(async (user) => {
         if (!user.bot) {
-            let member = await myServer.fetchMember(await bot.fetchUser(user.id));
-            if (member && member.roles.find(x => x.name == "Members")) {
-                let foundPlayer = players.get(member.id);
-                if (foundPlayer) {
-                    foundPlayer.setSignUpDay(day, emojiName);
-                    foundPlayer.voted = true;
+            try {
+                let member = await myServer.fetchMember(await bot.fetchUser(user.id));
+                if (member && member.roles.find(x => x.name == "Members")) {
+                    let foundPlayer = players.get(member.id);
+                    if (foundPlayer) {
+                        foundPlayer.setSignUpDay(day, emojiName);
+                        foundPlayer.voted = true;
+                    }
                 }
-            } else {
-                logger.log("INFO: " + user + " is not a member !");
+            }
+            catch (e) {
+                if (e.message == 'Unknown Member') {
+                    logger.log("INFO: " + user + " is not a member !");
+                    reaction.remove(user);
+                } else {
+                    throw e;
+                }
             }
         }
     }));
