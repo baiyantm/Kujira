@@ -473,13 +473,18 @@ async function resetCommand(message, args) {
     players.resetPlayersSignUps();
 }
 
+/**
+ * 
+ * @param {Discord.Message} message 
+ * @param {*} args 
+ */
 // @ts-ignore
 async function dumpCommand(message, args) {
-    message.react("🔄");
+    startLoading(message);
     await collectSignUps();
     await dumpSignUps();
+    endLoading(message, 0);
     deleteCommand(message);
-    message.react("✅");
 }
 
 async function generateCommand(message, args) {
@@ -581,14 +586,14 @@ async function removePlayerCommand(message, args) {
 }
 
 async function helpCommand(message, deletion) {
-    message.react("🔄");
+    startLoading(message);
     let helpMessage = await interactions.wSendChannel(message.channel, itemsjson["gearhelp"]);
     if (deletion) {
         bot.setTimeout(() => {
             interactions.wDelete(helpMessage);
         }, 60000);
     }
-    message.react("✅");
+    endLoading(message, 0);
 }
 
 async function manualAddCommand(args, message, commands) {
@@ -791,7 +796,7 @@ async function removeRole(message, role, args) {
 }
 
 function gearCommand(message, args) {
-    message.react("🔄");
+    startLoading(message);
     let idToFind;
     if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
         idToFind = message.mentions.members.first().id;
@@ -806,38 +811,38 @@ function gearCommand(message, args) {
     else {
         interactions.wSendChannel(message.channel, "Couldn't find this player.");
     }
-    message.react("✅");
+    endLoading(message, 0);
 }
 
 async function rankingsCommand(args, message) {
     if (!args) {
-        message.react("🔄");
+        startLoading(message);
         interactions.wSendChannel(message.channel, players.getRankingsEmbed(null));
-        message.react("✅");
+        endLoading(message, 0);
     }
     else {
         let split = args.split(" ");
         if (itemsjson["classlist"].includes(split[0])) {
-            message.react("🔄");
+            startLoading(message);
             interactions.wSendChannel(message.channel, players.getRankingsEmbed(split[0]));
-            message.react("✅");
+            endLoading(message, 0);
         }
     }
 }
 
 async function statsCommand(args, message) {
     if (!args) {
-        message.react("🔄");
+        startLoading(message);
         interactions.wSendChannel(message.channel, players.getStatsEmbed(null));
-        message.react("✅");
+        endLoading(message, 0);
     }
     else {
         let split = args.split(" ");
         if (split.length == 1) {
             if (itemsjson["classlist"].includes(split[0])) {
-                message.react("🔄");
+                startLoading(message);
                 interactions.wSendChannel(message.channel, players.getStatsEmbed(split[0]));
-                message.react("✅");
+                endLoading(message, 0);
             }
             else {
                 let day;
@@ -850,7 +855,7 @@ async function statsCommand(args, message) {
                         day = util.findCorrespondingDayNumber(split[0]);
                     }
                     if (day != undefined) {
-                        message.react("🔄");
+                        startLoading(message);
                         let signedUpPlayers = await getPlayersWithStatus(day, players, "yes"); // TODO v2
                         if (signedUpPlayers) {
                             interactions.wSendChannel(message.channel, players.getSignedUpStatsEmbed(signedUpPlayers, day));
@@ -858,7 +863,7 @@ async function statsCommand(args, message) {
                         else {
                             interactions.wSendChannel(message.channel, "No message found for " + util.findCorrespondingDayName(day));
                         }
-                        message.react("✅");
+                        endLoading(message, 0);
                     }
                 }
             }
@@ -884,10 +889,10 @@ async function reminderCommand(message) {
 }
 
 async function attendanceCommand(message) {
-    message.react("🔄");
+    startLoading(message);
     await collectSignUps();
     interactions.wSendChannel(message.channel, getFormattedAttendanceForWeek());
-    message.react("✅");
+    endLoading(message, 0);
 }
 
 /**
@@ -1598,6 +1603,30 @@ async function clearChannel(channel) {
 /*
 --------------------------------------- GENERAL section ---------------------------------------
 */
+
+/**
+ * @param {Discord.Message} message 
+ */
+function startLoading(message) {
+    message.react("🔄");
+}
+
+/**
+ * @param {Discord.Message} message 
+ */
+async function endLoading(message, retry) {
+    let reaction = message.reactions.find(r => r.emoji.name == "🔄");
+    if (reaction != null) {
+        await reaction.remove(bot.user);
+        message.react("✅");
+    } else {
+        if(retry < 5) {
+            setTimeout(() => {
+                endLoading(message, retry++);
+            }, 1000);
+        }
+    }
+}
 
 /**
  * custom DMs
