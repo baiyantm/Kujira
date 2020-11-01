@@ -430,6 +430,10 @@ async function gateChannelHandler(commands, enteredCommand, message) {
     deleteCommand(message);
 }
 
+/**
+ * 
+ * @param {Discord.Message} message 
+ */
 async function okCommand(message) {
     let publicRole = message.guild.roles.find(x => x.name == "Public");
     if (!message.member.roles.has(publicRole.id)) {

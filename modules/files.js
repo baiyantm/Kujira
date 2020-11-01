@@ -49,7 +49,6 @@ function uploadFileToChannel(filepath, channel, content) {
  */
 function openJsonFile(path, encoding) {
     try {
-        logger.log("FILE: Opening \"" + path + "\"...");
         var json = JSON.parse(fs.readFileSync(path, encoding));
         logger.log("FILE: \"" + path + "\" successfully opened.");
         return json;
@@ -87,9 +86,8 @@ function writeObjectToFile(path, data) {
             return value.id;
         }
     });
-    logger.log("FILE: Writing in\"" + path + "\" ...");
     fs.writeFileSync(path, json);
-    logger.log("FILE: ...success !");
+    logger.log("FILE: Wrote in \"" + path + "\" ...");
 }
 
 
@@ -99,9 +97,8 @@ function writeObjectToFile(path, data) {
  * @param {string} data the data to be written
  */
 function writeToFile(path, data) {
-    logger.log("FILE: Writing in\"" + path + "\" ...");
     fs.writeFileSync(path, data);
-    logger.log("FILE: ...success !");
+    logger.log("FILE: Wrote in \"" + path + "\" ...");
 }
 
 module.exports.download = download;
