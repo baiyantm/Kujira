@@ -1965,45 +1965,50 @@ if (configjson && itemsjson && alarmsjson) {
 
         logger.log("INFO: Starting in " + loading + "ms");
         var interval = setInterval(async () => {
-            myServer = bot.guilds.cache.get(configjson["botServerID"]);
-            myTrialServer = bot.guilds.cache.get(configjson["botTrialServerID"]);
-            myDevServer = bot.guilds.cache.get(configjsonfile["dev"]["botServerID"]);
-            // @ts-ignore
-            myGate = bot.channels.cache.get(configjson["gateID"]);// @ts-ignore
-            myGear = bot.channels.cache.get(configjson["gearID"]);// @ts-ignore
-            myGearData = bot.channels.cache.get(configjson["gearDataID"]);// @ts-ignore
-            mySignUp = bot.channels.cache.get(configjson["signUpID"]);// @ts-ignore
-            mySignUpData = bot.channels.cache.get(configjson["signUpDataID"]);// @ts-ignore
-            myTrial = bot.channels.cache.get(configjson["trialreactionID"]);// @ts-ignore
-            myTrialHistory = bot.channels.cache.get(configjson["trialhistoryID"]);// @ts-ignore
-            myAnnouncement = bot.channels.cache.get(configjson["announcementID"]);// @ts-ignore
-            myAnnouncementData = bot.channels.cache.get(configjson["announcementDataID"]);// @ts-ignore
-            myWelcome = bot.channels.cache.get(configjson["welcomeID"]);// @ts-ignore
-            myTrialWelcome = bot.channels.cache.get(configjson["trialwelcomeID"]);// @ts-ignore
-            myChangelog = bot.channels.cache.get(configjson["changelogID"]);// @ts-ignore
-            myChangelog2 = bot.channels.cache.get(configjson["changelogID2"]);// @ts-ignore
-            myGuildChat = bot.channels.cache.get(configjson["guildchatID"]);
+            try {
+                myServer = bot.guilds.cache.get(configjson["botServerID"]);
+                myTrialServer = bot.guilds.cache.get(configjson["botTrialServerID"]);
+                myDevServer = bot.guilds.cache.get(configjsonfile["dev"]["botServerID"]);
+                // @ts-ignore
+                myGate = bot.channels.cache.get(configjson["gateID"]);// @ts-ignore
+                myGear = bot.channels.cache.get(configjson["gearID"]);// @ts-ignore
+                myGearData = bot.channels.cache.get(configjson["gearDataID"]);// @ts-ignore
+                mySignUp = bot.channels.cache.get(configjson["signUpID"]);// @ts-ignore
+                mySignUpData = bot.channels.cache.get(configjson["signUpDataID"]);// @ts-ignore
+                myTrial = bot.channels.cache.get(configjson["trialreactionID"]);// @ts-ignore
+                myTrialHistory = bot.channels.cache.get(configjson["trialhistoryID"]);// @ts-ignore
+                myAnnouncement = bot.channels.cache.get(configjson["announcementID"]);// @ts-ignore
+                myAnnouncementData = bot.channels.cache.get(configjson["announcementDataID"]);// @ts-ignore
+                myWelcome = bot.channels.cache.get(configjson["welcomeID"]);// @ts-ignore
+                myTrialWelcome = bot.channels.cache.get(configjson["trialwelcomeID"]);// @ts-ignore
+                myChangelog = bot.channels.cache.get(configjson["changelogID"]);// @ts-ignore
+                myChangelog2 = bot.channels.cache.get(configjson["changelogID2"]);// @ts-ignore
+                myGuildChat = bot.channels.cache.get(configjson["guildchatID"]);
 
-            logger.log("INFO: Booting up attempt...");
-            if (myServer && myDevServer && myGate && myGear && myGearData && classEmojis && mySignUp
-                && mySignUpData && myAnnouncement && myAnnouncementData && myWelcome && myChangelog && myGuildChat) {
+                logger.log("INFO: Booting up attempt...");
+                if (myServer && myDevServer && myGate && myGear && myGearData && classEmojis && mySignUp
+                    && mySignUpData && myAnnouncement && myAnnouncementData && myWelcome && myChangelog && myGuildChat) {
 
-                initEmojis();
+                    initEmojis();
 
-                //attempt to load a previously saved state
-                await initPlayers();
+                    //attempt to load a previously saved state
+                    await initPlayers();
 
-                clearInterval(interval);
-                logger.log("INFO: ... success !");
+                    clearInterval(interval);
+                    logger.log("INFO: ... success !");
 
-                if (!init) {
-                    initLookout();
-                    init = true;
+                    if (!init) {
+                        initLookout();
+                        init = true;
+                    } else {
+                        logger.log("INFO: Lookout already started");
+                    }
                 } else {
-                    logger.log("INFO: Lookout already started");
+                    logger.log("...failed, retrying in " + loading + "ms");
+                    loading = loading * 2;
                 }
-            } else {
-                logger.log("...failed, retrying in " + loading + "ms");
+            } catch (e) {
+                logger.log("...exception occured, retrying in " + loading + "ms");
                 loading = loading * 2;
             }
         }, loading);
