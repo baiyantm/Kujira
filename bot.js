@@ -2004,6 +2004,7 @@ if (configjson && itemsjson && alarmsjson) {
                 }
             } else {
                 logger.log("...failed, retrying in " + loading + "ms");
+                loading = loading * 2;
             }
         }, loading);
 
