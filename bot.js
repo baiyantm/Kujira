@@ -224,9 +224,9 @@ async function onReactionRemoveHandler(messageReaction, user) {
  */
 async function onReactionAddHandler(messageReaction, user) {
     if (messageReaction.message.channel.id == mySignUp.id) {
-        await signUpReactionAddHandler(messageReaction, user);
+        signUpReactionAddHandler(messageReaction, user);
     } else if (messageReaction.message.channel.id == myTrial.id) {
-        await trialReactionAddHandler(messageReaction, user);
+        trialReactionAddHandler(messageReaction, user);
     }
 }
 
