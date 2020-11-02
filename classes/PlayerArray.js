@@ -1,8 +1,8 @@
 /**
  * PlayerArray class (array<Player>)
  */
-const Discord = require("discord.js");
 const util = require("../modules/util");
+const Discord = require('discord.js');
 
 module.exports = class PlayerArray extends Array {
     constructor(classList) {
@@ -132,7 +132,7 @@ module.exports = class PlayerArray extends Array {
         if (classname) {
             players = players.getPlayersWithClass(classname);
         }
-        const embed = new Discord.RichEmbed();
+        const embed = new Discord.MessageEmbed();
         let embedTitle = ":pencil: RANKINGS" + (classname ? " for " + classname.charAt(0).toUpperCase() + classname.slice(1) : "");
         let embedColor = 3447003;
         embed.setColor(embedColor);
@@ -192,7 +192,7 @@ module.exports = class PlayerArray extends Array {
         if (classname) {
             players = players.getPlayersWithClass(classname);
         }
-        const embed = new Discord.RichEmbed();
+        const embed = new Discord.MessageEmbed();
         let embedTitle = ":pencil: STATS" + (classname ? " for " + classname.charAt(0).toUpperCase() + classname.slice(1) : "");
         let embedColor = 3447003;
         embed.setColor(embedColor);
@@ -221,7 +221,7 @@ module.exports = class PlayerArray extends Array {
                 embed.addField("Least played",
                     minStr,
                     true);
-                embed.addBlankField(true);
+                embed.addField('\u200b', '\u200b')
             }
             embed.addField("Average gear : " + avg.gs, util.valueFormat(util.valueFormat(avg.ap + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avg.aap + "", 10), 100) + " / " + util.valueFormat(util.valueFormat(avg.dp + "", 10), 100), true);
             embed.addField("Highest GS : " + stats.max.gs.value.getGS(), stats.max.gs.string, true);
@@ -253,7 +253,7 @@ module.exports = class PlayerArray extends Array {
      * @returns discord embed
      */
     getSignedUpStatsEmbed(players, day) {
-        const embed = new Discord.RichEmbed();
+        const embed = new Discord.MessageEmbed();
         let embedTitle = ":pencil: STATS on " + util.findCorrespondingDayName(day);
         let embedColor = 3447003;
         embed.setColor(embedColor);
@@ -286,7 +286,7 @@ module.exports = class PlayerArray extends Array {
      * @returns discord embed
      */
     getEmbed() {
-        const embed = new Discord.RichEmbed();
+        const embed = new Discord.MessageEmbed();
         let embedTitle = ":star: PLAYERS (" + this.length + ")";
         let embedColor = 3447003;
         embed.setColor(embedColor);
@@ -364,7 +364,7 @@ module.exports = class PlayerArray extends Array {
      * @param {Player} player 
      */
     getClassEmoji(player) {
-        return this.classEmojis.find(emoji => emoji.name == player.getEmojiClassName());
+        return this.classEmojis.find(emoji => emoji.name == player.getEmojiClassName()).toString();
     }
 
     /**
@@ -395,7 +395,7 @@ module.exports = class PlayerArray extends Array {
         for (let index in countedClasses) {
             let value = countedClasses[index];
             if (value == extreme) {
-                extString += this.classEmojis.find(emoji => emoji.name == index) + " " + index.charAt(0).toUpperCase() + index.slice(1) + " **(" + value + ")**\n";
+                extString += this.classEmojis.find(emoji => emoji.name == index).toString() + " " + index.charAt(0).toUpperCase() + index.slice(1) + " **(" + value + ")**\n";
             }
         }
         return extString;
