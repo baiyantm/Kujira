@@ -1840,6 +1840,7 @@ async function downloadGearFileFromChannel(filename, channel) {
     return new Promise((resolve, reject) => {
         channel.messages.fetch({ limit: 1 }).then(async messages => {
             messages.forEach(message => {
+                console.log(message);
                 if (message.content == configjson["gearDataMessage"] && message.attachments) {
                     message.attachments.forEach(async element => {
                         if (element.name == filename) {
@@ -1979,7 +1980,6 @@ if (configjson && itemsjson && alarmsjson) {
 
         //attempt to load a previously saved state
         try {
-            // @ts-ignore
             await downloadGearFileFromChannel("players.json", myGearData);
         } catch (e) {
             logger.log("INFO: Couldn't find or download the players file");
