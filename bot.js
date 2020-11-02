@@ -1963,48 +1963,10 @@ if (configjson && itemsjson && alarmsjson) {
         logger.log("INFO: Logged in as " + bot.user.tag);
         bot.user.setPresence({ activity: { name: "booting up..." } });
 
-        myServer = bot.guilds.cache.get(configjson["botServerID"]);
-        myTrialServer = bot.guilds.cache.get(configjson["botTrialServerID"]);
-        myDevServer = bot.guilds.cache.get(configjsonfile["dev"]["botServerID"]);
-        // @ts-ignore
-        myGearData = bot.channels.cache.get(configjson["gearDataID"]);
-
-        itemsjson["classlist"].forEach(async classname => {
-            classEmojis.push(fetchEmoji(classname));
-        });
-        itemsjson["classlistSucc"].forEach(async classname => {
-            classEmojis.push(fetchEmoji(classname + "Succ"));
-        });
-        players.setClassEmojis(classEmojis);
-
-        //attempt to load a previously saved state
-        try {
-            await downloadGearFileFromChannel("players.json", myGearData);
-        } catch (e) {
-            logger.log("INFO: Couldn't find or download the players file");
-        }
-        var playersjson = files.openJsonFile("./download/players.json", "utf8");
-        if (playersjson) {
-            for (const currentPlayer of playersjson) {
-                let revivedPlayer = await revivePlayer(
-                    currentPlayer["id"],
-                    currentPlayer["classname"],
-                    currentPlayer["ap"],
-                    currentPlayer["aap"],
-                    currentPlayer["dp"],
-                    currentPlayer["axe"],
-                    currentPlayer["signUps"],
-                    currentPlayer["real"]
-                );
-                if (revivedPlayer) {
-                    players.add(revivedPlayer);
-                }
-            }
-        }
-
         logger.log("INFO: Starting in " + loading + "ms");
         var interval = setInterval(async () => {
             myServer = bot.guilds.cache.get(configjson["botServerID"]);
+            myTrialServer = bot.guilds.cache.get(configjson["botTrialServerID"]);
             myDevServer = bot.guilds.cache.get(configjsonfile["dev"]["botServerID"]);
             // @ts-ignore
             myGate = bot.channels.cache.get(configjson["gateID"]);// @ts-ignore
@@ -2025,6 +1987,12 @@ if (configjson && itemsjson && alarmsjson) {
             logger.log("INFO: Booting up attempt...");
             if (myServer && myDevServer && myGate && myGear && myGearData && classEmojis && mySignUp
                 && mySignUpData && myAnnouncement && myAnnouncementData && myWelcome && myChangelog && myGuildChat) {
+
+                initEmojis();
+
+                //attempt to load a previously saved state
+                await initPlayers();
+
                 clearInterval(interval);
                 logger.log("INFO: ... success !");
 
@@ -2043,3 +2011,39 @@ if (configjson && itemsjson && alarmsjson) {
 } else {
     logger.log("INFO: Couldn't find config.json and items.json files, aborting.");
 }
+async function initPlayers() {
+    try {
+        await downloadGearFileFromChannel("players.json", myGearData);
+    } catch (e) {
+        logger.log("INFO: Couldn't find or download the players file");
+    }
+    var playersjson = files.openJsonFile("./download/players.json", "utf8");
+    if (playersjson) {
+        for (const currentPlayer of playersjson) {
+            let revivedPlayer = await revivePlayer(
+                currentPlayer["id"],
+                currentPlayer["classname"],
+                currentPlayer["ap"],
+                currentPlayer["aap"],
+                currentPlayer["dp"],
+                currentPlayer["axe"],
+                currentPlayer["signUps"],
+                currentPlayer["real"]
+            );
+            if (revivedPlayer) {
+                players.add(revivedPlayer);
+            }
+        }
+    }
+}
+
+function initEmojis() {
+    itemsjson["classlist"].forEach(async (classname) => {
+        classEmojis.push(fetchEmoji(classname));
+    });
+    itemsjson["classlistSucc"].forEach(async (classname) => {
+        classEmojis.push(fetchEmoji(classname + "Succ"));
+    });
+    players.setClassEmojis(classEmojis);
+}
+
