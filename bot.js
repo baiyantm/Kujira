@@ -191,6 +191,7 @@ async function onDeleteHandler(deletedMessage, annCache) {
             await cacheAnnouncements(annCache);
         }
     } catch (e) {
+        console.error(e);
         logger.logError("ERROR : Delete event caching problem", e);
     }
 }
@@ -327,6 +328,7 @@ async function trialReactionRemoveHandler(messageReaction, user) {
                     try {
                         guildMember.roles.remove(role);
                     } catch (e) {
+                        console.error(e);
                         logger.log("ERROR: Failed to remove role \"" + role + "\"");
                     }
                 }
@@ -398,7 +400,8 @@ async function onMessageHandler(message, botMsg, annCache) {
             }
         }
     } catch (e) {
-        logger.logError("On message listener error. Something really bad went wrong", e);
+        console.error(e);
+        logger.logError("On message listener error", e);
     }
 }
 
@@ -830,6 +833,7 @@ async function addRole(message, role, args) {
         interactions.wDelete(message);
     }
     catch (e) {
+        console.error(e);
         interactions.wSendAuthor(message.author, args + ' role not found or not self-assignable.');
     }
 }
@@ -846,6 +850,7 @@ async function removeRole(message, role, args) {
         interactions.wDelete(message);
     }
     catch (e) {
+        console.error(e);
         interactions.wSendAuthor(message.author, args + ' role not found or not self-assignable.');
     }
 }
@@ -1049,7 +1054,7 @@ async function getHistoryEmbed(message) {
 async function downloadFilesFromMessage(message) {
     return new Promise(async (resolve, reject) => {
         if (message.attachments.size > 0) {
-            await message.attachments.forEach(async element => {
+            message.attachments.forEach(async element => {
                 try {
                     if (!fs.existsSync("./download/" + message.id + "/")) {
                         fs.mkdirSync("./download/" + message.id + "/");
@@ -1057,6 +1062,7 @@ async function downloadFilesFromMessage(message) {
                     await files.download(element.url, "./download/" + message.id + "/" + element.name, () => { });
                     resolve();
                 } catch (e) {
+                    console.error(e);
                     logger.logError("Could not download " + element.name + " file", e);
                     reject();
                 }
@@ -1756,6 +1762,7 @@ async function setupPresence() {
                 }
             });
         } catch (e) {
+            console.error(e);
             logger.logError("Game status error", e);
         }
     }, 60000);
@@ -1820,6 +1827,7 @@ async function revivePlayer(id, classname, ap, aap, dp, axe = 0, signUps, real) 
         }
         return newPlayer;
     } catch (e) {
+        console.error(e);
         logger.logError("No member found for " + id + " !", e);
         return null;
     }
@@ -1838,19 +1846,16 @@ async function downloadGearFileFromChannel(filename, channel) {
                 for (const iattachment of message.attachments) {
                     let element = iattachment[1];
                     if (element.name == filename) {
-                        try {
-                            await files.download(element.url, "./download/" + filename, () => { });
-                            logger.log("HTTP: " + filename + " downloaded");
-                            resolve();
-                        } catch (e) {
-                            logger.logError("Could not download the file " + filename, e);
-                            reject();
-                        }
+                        await files.download(element.url, "./download/" + filename, () => { });
+                        logger.log("HTTP: " + filename + " downloaded");
+                        resolve();
                     }
                 }
 
             }
         } catch (e) {
+            console.error(e);
+            logger.logError("Could not download the file " + filename, e);
             reject(e);
         }
         setTimeout(() => {
@@ -2005,7 +2010,7 @@ if (configjson && itemsjson && alarmsjson) {
                     logger.log("...failed, retrying in " + loading + "ms");
                 }
             } catch (e) {
-                console.log(e);
+                console.error(e);
             }
         }, loading);
     });
@@ -2032,6 +2037,7 @@ async function initPlayers() {
             }
         }
     } catch (e) {
+        console.error(e);
         logger.log("INFO: Couldn't find or download the players file");
     }
 }
