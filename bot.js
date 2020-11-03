@@ -36,21 +36,20 @@ async function initLookout() {
 
     var botMsg = { reference: null }; //because JavaScript
     //lookup for a previous message so we keep using it
-    await myGear.messages.fetch({ limit: 100 }).then(messages => {
-        var found = 0;
-        messages.forEach(message => {
-            if (message.author.id == bot.user.id) {
-                if (!found) {
-                    botMsg.reference = message;
-                    logger.log("INFO: Found an existing message, keeping it and refreshing it.");
-                    found++;
-                } else if (found == 1) {
-                    botMsg.reference = null;
-                    logger.log("INFO: Found multiple existing messages, aborting and generating a new one instead.");
-                    found++;
-                }
+    let messages = await myGear.messages.fetch({ limit: 100 });
+    var found = 0;
+    messages.forEach(message => {
+        if (message.author.id == bot.user.id) {
+            if (!found) {
+                botMsg.reference = message;
+                logger.log("INFO: Found an existing message, keeping it and refreshing it.");
+                found++;
+            } else if (found == 1) {
+                botMsg.reference = null;
+                logger.log("INFO: Found multiple existing messages, aborting and generating a new one instead.");
+                found++;
             }
-        });
+        }
     });
 
     await refreshBotMsg(myGear, botMsg, players);
@@ -512,11 +511,10 @@ async function generateCommand(message, args) {
  * @param {Discord.Message | Discord.PartialMessage} message 
  */
 async function reactCommand(message) {
-    await message.channel.messages.fetch({ limit: 2 }).then(async (messages) => {
-        let toReact = messages.last();
-        await toReact.react(configjson["yesreaction"]);
-        await toReact.react(configjson["noreaction"]);
-    });
+    let messages = await message.channel.messages.fetch({ limit: 2 });
+    let toReact = messages.last();
+    await toReact.react(configjson["yesreaction"]);
+    await toReact.react(configjson["noreaction"]);
     await deleteCommand(message);
 }
 
@@ -1249,9 +1247,8 @@ function signUpsHasId(signUps, id) {
 async function getDaySignUpMessage(day, channel) {
     let message;
     let dateName = util.findCorrespondingDayName(day).toLowerCase();
-    await channel.messages.fetch({ limit: 100 }).then(async messages => {
-        message = await messages.find(message => message.content.toLowerCase().startsWith(dateName));
-    });
+    let messages = await channel.messages.fetch({ limit: 100 });
+    message = messages.find(message => message.content.toLowerCase().startsWith(dateName));
     return message;
 }
 
@@ -1745,24 +1742,22 @@ function mod(n, m) {
 
 async function setupPresence() {
     bot.setInterval(async () => {
-        await myAnnouncement.messages.fetch({ limit: 1 }).then(messages => {
-            let message = messages.first();
-            let issuedTimestamp = message.editedTimestamp ? message.editedTimestamp : message.createdTimestamp;
-            let startDate = new Date();
-            let seconds = (issuedTimestamp - startDate.getTime()) / 1000;
-            let presence = Math.abs(seconds) > 86400 ? "Remedy" : "Announcement " + util.displayHoursMinBefore(Math.abs(Math.round(seconds / 60))) + " ago";
-            try {
-                bot.user.setPresence({
-                    activity:
-                    {
-                        name: presence,
-                        type: "PLAYING"
-                    }
-                });
-            } catch (e) {
-                logger.logError("Game status error", e);
-            }
-        });
+        let message = await (await myAnnouncement.messages.fetch({ limit: 1 })).first();
+        let issuedTimestamp = message.editedTimestamp ? message.editedTimestamp : message.createdTimestamp;
+        let startDate = new Date();
+        let seconds = (issuedTimestamp - startDate.getTime()) / 1000;
+        let presence = Math.abs(seconds) > 86400 ? "Remedy" : "Announcement " + util.displayHoursMinBefore(Math.abs(Math.round(seconds / 60))) + " ago";
+        try {
+            bot.user.setPresence({
+                activity:
+                {
+                    name: presence,
+                    type: "PLAYING"
+                }
+            });
+        } catch (e) {
+            logger.logError("Game status error", e);
+        }
     }, 60000);
 }
 
