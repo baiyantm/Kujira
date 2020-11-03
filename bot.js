@@ -1837,6 +1837,7 @@ async function revivePlayer(id, classname, ap, aap, dp, axe = 0, signUps, real) 
  * @param {Discord.TextChannel} channel the channel to download from
  */
 async function downloadGearFileFromChannel(filename, channel) {
+    console.log(channel);
     return new Promise(async (resolve, reject) => {
         try {
             let messages = await channel.messages.fetch({ limit: 1 });
