@@ -1948,53 +1948,49 @@ if (configjson && itemsjson && alarmsjson) {
         logger.log("INFO: Logged in as " + bot.user.tag);
         bot.user.setPresence({ activity: { name: "booting up..." } });
 
-        logger.log("INFO: Starting in " + loading + "ms");
-        var interval = setInterval(async () => {
-            try {
-                myServer = bot.guilds.cache.get(configjson["botServerID"]);
-                myTrialServer = bot.guilds.cache.get(configjson["botTrialServerID"]);
-                myDevServer = bot.guilds.cache.get(configjsonfile["dev"]["botServerID"]);
-                // @ts-ignore
-                myGate = await bot.channels.fetch(configjson["gateID"]);// @ts-ignore
-                myGear = await bot.channels.fetch(configjson["gearID"]);// @ts-ignore
-                myGearData = await bot.channels.fetch(configjson["gearDataID"]);// @ts-ignore
-                mySignUp = await bot.channels.fetch(configjson["signUpID"]);// @ts-ignore
-                mySignUpData = await bot.channels.fetch(configjson["signUpDataID"]);// @ts-ignore
-                myTrial = await bot.channels.fetch(configjson["trialreactionID"]);// @ts-ignore
-                myTrialHistory = await bot.channels.fetch(configjson["trialhistoryID"]);// @ts-ignore
-                myAnnouncement = await bot.channels.fetch(configjson["announcementID"]);// @ts-ignore
-                myAnnouncementData = await bot.channels.fetch(configjson["announcementDataID"]);// @ts-ignore
-                myWelcome = await bot.channels.fetch(configjson["welcomeID"]);// @ts-ignore
-                myTrialWelcome = await bot.channels.fetch(configjson["trialwelcomeID"]);// @ts-ignore
-                myChangelog = await bot.channels.fetch(configjson["changelogID"]);// @ts-ignore
-                myChangelog2 = await bot.channels.fetch(configjson["changelogID2"]);// @ts-ignore
-                myGuildChat = await bot.channels.fetch(configjson["guildchatID"]);
+        try {
+            myServer = bot.guilds.cache.get(configjson["botServerID"]);
+            myTrialServer = bot.guilds.cache.get(configjson["botTrialServerID"]);
+            myDevServer = bot.guilds.cache.get(configjsonfile["dev"]["botServerID"]);
+            // @ts-ignore
+            myGate = await bot.channels.fetch(configjson["gateID"]);// @ts-ignore
+            myGear = await bot.channels.fetch(configjson["gearID"]);// @ts-ignore
+            myGearData = await bot.channels.fetch(configjson["gearDataID"]);// @ts-ignore
+            mySignUp = await bot.channels.fetch(configjson["signUpID"]);// @ts-ignore
+            mySignUpData = await bot.channels.fetch(configjson["signUpDataID"]);// @ts-ignore
+            myTrial = await bot.channels.fetch(configjson["trialreactionID"]);// @ts-ignore
+            myTrialHistory = await bot.channels.fetch(configjson["trialhistoryID"]);// @ts-ignore
+            myAnnouncement = await bot.channels.fetch(configjson["announcementID"]);// @ts-ignore
+            myAnnouncementData = await bot.channels.fetch(configjson["announcementDataID"]);// @ts-ignore
+            myWelcome = await bot.channels.fetch(configjson["welcomeID"]);// @ts-ignore
+            myTrialWelcome = await bot.channels.fetch(configjson["trialwelcomeID"]);// @ts-ignore
+            myChangelog = await bot.channels.fetch(configjson["changelogID"]);// @ts-ignore
+            myChangelog2 = await bot.channels.fetch(configjson["changelogID2"]);// @ts-ignore
+            myGuildChat = await bot.channels.fetch(configjson["guildchatID"]);
 
-                logger.log("INFO: Booting up attempt...");
-                if (myServer && myDevServer && myGate && myGear && myGearData && classEmojis && mySignUp
-                    && mySignUpData && myAnnouncement && myAnnouncementData && myWelcome && myChangelog && myGuildChat) {
+            logger.log("INFO: Booting up attempt...");
+            if (myServer && myDevServer && myGate && myGear && myGearData && classEmojis && mySignUp
+                && mySignUpData && myAnnouncement && myAnnouncementData && myWelcome && myChangelog && myGuildChat) {
 
-                    initEmojis();
+                initEmojis();
 
-                    //attempt to load a previously saved state
-                    players = await initPlayers(players);
+                //attempt to load a previously saved state
+                players = await initPlayers(players);
 
-                    clearInterval(interval);
-                    logger.log("INFO: ... success !");
+                logger.log("INFO: ... success !");
 
-                    if (!init) {
-                        initLookout();
-                        init = true;
-                    } else {
-                        logger.log("INFO: Lookout already started");
-                    }
+                if (!init) {
+                    initLookout();
+                    init = true;
                 } else {
-                    logger.log("...failed, retrying in " + loading + "ms");
+                    logger.log("INFO: Lookout already started");
                 }
-            } catch (e) {
-                console.error(e);
+            } else {
+                logger.log("...failed, retrying in " + loading + "ms");
             }
-        }, loading);
+        } catch (e) {
+            console.error(e);
+        }
     });
 } else {
     logger.log("INFO: Couldn't find config.json and items.json files, aborting.");
