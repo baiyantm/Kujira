@@ -1052,28 +1052,19 @@ async function getHistoryEmbed(message) {
  * @param {Discord.Message | Discord.PartialMessage} message
  */
 async function downloadFilesFromMessage(message) {
-    return new Promise(async (resolve, reject) => {
-        if (message.attachments.size > 0) {
-            message.attachments.forEach(async element => {
-                try {
-                    if (!fs.existsSync("./download/" + message.id + "/")) {
-                        fs.mkdirSync("./download/" + message.id + "/");
-                    }
-                    await files.download(element.url, "./download/" + message.id + "/" + element.name, () => { });
-                    resolve();
-                } catch (e) {
-                    console.error(e);
-                    logger.logError("Could not download " + element.name + " file", e);
-                    reject();
+    if (message.attachments.size > 0) {
+        message.attachments.forEach(async element => {
+            try {
+                if (!fs.existsSync("./download/" + message.id + "/")) {
+                    fs.mkdirSync("./download/" + message.id + "/");
                 }
-            });
-            setTimeout(() => {
-                reject();
-            }, 30000);
-        } else {
-            reject();
-        }
-    });
+                await files.download(element.url, "./download/" + message.id + "/" + element.name, () => { });
+            } catch (e) {
+                console.error(e);
+                logger.logError("Could not download " + element.name + " file", e);
+            }
+        });
+    }
 }
 
 /**
@@ -1839,29 +1830,22 @@ async function revivePlayer(id, classname, ap, aap, dp, axe = 0, signUps, real) 
  * @param {Discord.TextChannel} channel the channel to download from
  */
 async function downloadGearFileFromChannel(filename, channel) {
-    return new Promise(async (resolve, reject) => {
-        try {
-            let message = (await (await channel.messages.fetch({ limit: 1 })).first());
-            if (message.content == configjson["gearDataMessage"] && message.attachments) {
-                for (const iattachment of message.attachments) {
-                    let element = iattachment[1];
-                    if (element.name == filename) {
-                        await files.download(element.url, "./download/" + filename, () => { });
-                        logger.log("HTTP: " + filename + " downloaded");
-                        resolve();
-                    }
+    try {
+        let message = (await (await channel.messages.fetch({ limit: 1 })).first());
+        if (message.content == configjson["gearDataMessage"] && message.attachments) {
+            for (const iattachment of message.attachments) {
+                let element = iattachment[1];
+                if (element.name == filename) {
+                    await files.download(element.url, "./download/" + filename, () => { });
+                    logger.log("HTTP: " + filename + " downloaded");
                 }
-
             }
-        } catch (e) {
-            console.error(e);
-            logger.logError("Could not download the file " + filename, e);
-            reject(e);
+
         }
-        setTimeout(() => {
-            reject();
-        }, 30000);
-    });
+    } catch (e) {
+        console.error(e);
+        logger.logError("Could not download the file " + filename, e);
+    }
 }
 
 /**
