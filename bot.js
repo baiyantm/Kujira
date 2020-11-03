@@ -1809,7 +1809,7 @@ async function revivePlayer(id, classname, ap, aap, dp, axe = 0, signUps, real) 
     try {
         let playerId = real ? await myServer.members.fetch(await bot.users.fetch(id)) : id;
         let newPlayer = new Player(playerId, classname, ap, aap, dp, real);
-        
+
         newPlayer.setAxe(axe + "");
         if (signUps) {
             newPlayer.setSignUps(signUps);
@@ -1831,11 +1831,18 @@ async function downloadGearFileFromChannel(filename, channel) {
     try {
         let message = (await (await channel.messages.fetch({ limit: 1 })).first());
         if (message.content == configjson["gearDataMessage"] && message.attachments) {
-            await downloadFilesFromMessage(message);
+            for (const iattachment of message.attachments) {
+                let element = iattachment[1];
+                if (element.name == filename) {
+                    await files.download(element.url, "./download/" + filename, () => { });
+                    logger.log("HTTP: " + filename + " downloaded");
+                }
+            }
+
         }
     } catch (e) {
         console.error(e);
-        logger.logError("Could not download the gear file " + filename, e);
+        logger.logError("Could not download the file " + filename, e);
     }
 }
 
