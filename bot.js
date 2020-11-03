@@ -1175,10 +1175,10 @@ async function getDaySignUp(day) {
     let signUps = [];
     let reactionMessage = await getDaySignUpMessage(day, mySignUp);
     if (reactionMessage) {
-        let yesReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
-        let noReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
+        let yesReaction = reactionMessage.reactions.cache.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
+        let noReaction = reactionMessage.reactions.cache.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
         if (noReaction) {
-            let users = await noReaction.fetchUsers();
+            let users = await noReaction.users.fetch();
             await Promise.all(users.map(async user => {
                 let member = await myServer.members.fetch(await bot.users.fetch(user.id));
                 if (member.roles.cache.find(x => x.name == "Members")) {
@@ -1187,7 +1187,7 @@ async function getDaySignUp(day) {
             }));
         }
         if (yesReaction) {
-            let users = await yesReaction.fetchUsers();
+            let users = await yesReaction.users.fetch();
             await Promise.all(users.map(async user => {
                 let member = await myServer.members.fetch(await bot.users.fetch(user.id));
                 if (member.roles.cache.find(x => x.name == "Members")) {
@@ -1833,7 +1833,7 @@ async function revivePlayer(id, classname, ap, aap, dp, axe = 0, signUps, real) 
 async function downloadGearFileFromChannel(filename, channel) {
     return new Promise(async (resolve, reject) => {
         try {
-            let message = (await (await channel.messages.fetch({ limit: 2 })).first());
+            let message = (await (await channel.messages.fetch({ limit: 1 })).first());
             if (message.content == configjson["gearDataMessage"] && message.attachments) {
                 for (const iattachment of message.attachments) {
                     let element = iattachment[1];
@@ -1881,6 +1881,8 @@ if (configjson && itemsjson && alarmsjson) {
     // Initialize Discord Bot
     var token = process.env.TOKEN ? process.env.TOKEN : configjson["token"];
     bot.login(token);
+
+    var playersjson;
 
     //more globals
     /**
@@ -2011,7 +2013,6 @@ if (configjson && itemsjson && alarmsjson) {
     logger.log("INFO: Couldn't find config.json and items.json files, aborting.");
 }
 async function initPlayers() {
-    var playersjson;
     try {
         await downloadGearFileFromChannel("players.json", myGearData);
         playersjson = files.openJsonFile("./download/players.json", "utf8");
