@@ -1977,7 +1977,7 @@ if (configjson && itemsjson && alarmsjson) {
                     initEmojis();
 
                     //attempt to load a previously saved state
-                    await initPlayers();
+                    players = await initPlayers(players);
 
                     clearInterval(interval);
                     logger.log("INFO: ... success !");
@@ -1999,7 +1999,7 @@ if (configjson && itemsjson && alarmsjson) {
 } else {
     logger.log("INFO: Couldn't find config.json and items.json files, aborting.");
 }
-async function initPlayers() {
+async function initPlayers(players) {
     try {
         await downloadGearFileFromChannel("players.json", myGearData);
         playersjson = files.openJsonFile("./download/players.json", "utf8");
@@ -2020,6 +2020,7 @@ async function initPlayers() {
                 }
             }
         }
+        return players;
     } catch (e) {
         console.error(e);
         logger.log("INFO: Players file not found");
