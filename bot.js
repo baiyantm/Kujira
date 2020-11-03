@@ -1001,14 +1001,13 @@ function getPercentAttendanceForADay(day) {
  * @param {{reference : any}} annCache 
  */
 async function cacheAnnouncements(annCache) {
-    await myAnnouncement.messages.fetch({ limit: 100 }).then(messages => {
-        messages.forEach(async message => {
-            await message.reactions.cache.forEach(async reaction => {
-                await reaction.users.fetch();
-            });
+    let messages = await myAnnouncement.messages.fetch({ limit: 100 });
+    messages.forEach(async message => {
+        message.reactions.cache.forEach(async reaction => {
+            await reaction.users.fetch();
         });
-        annCache.reference = messages;
     });
+    annCache.reference = messages;
 }
 
 /**
