@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * PlayerArray class (array<Player>)
  */

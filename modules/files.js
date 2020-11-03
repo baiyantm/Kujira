@@ -1,7 +1,8 @@
+// @ts-check
 const http = require('https');
 const fs = require('fs');
 const logger = require('./logger');
-const Discord = require('discord.io');
+const Discord = require('discord.js');
 
 // ------ file interactions ------
 
@@ -17,11 +18,11 @@ async function download(url, dest, cb) {
         http.get(url, function (response) {
             response.pipe(file);
             file.on('finish', function () {
-                file.close(cb);  // close() is async, call cb after close completes.
+                file.close();  // close() is async, call cb after close completes.
                 resolve();
             });
         }).on('error', function (err) { // Handle errors
-            fs.unlink(dest); // Delete the file async. (But we don't check the result)
+            fs.unlink(dest, () => { }); // Delete the file async. (But we don't check the result)
             if (cb) cb(err.message);
             reject();
         });
@@ -49,6 +50,7 @@ function uploadFileToChannel(filepath, channel, content) {
  */
 function openJsonFile(path, encoding) {
     try {
+        // @ts-ignore
         var json = JSON.parse(fs.readFileSync(path, encoding));
         logger.log("FILE: \"" + path + "\" successfully opened.");
         return json;

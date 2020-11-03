@@ -25,7 +25,7 @@ async function initLookout() {
     }
 
     var annCache = { reference: null }; //because JavaScript
-    //await cacheAnnouncements(annCache);
+    await cacheAnnouncements(annCache);
     annCache.reference.forEach(async message => {
         try {
             await downloadFilesFromMessage(message);
@@ -1053,7 +1053,8 @@ async function getHistoryEmbed(message) {
  */
 async function downloadFilesFromMessage(message) {
     if (message.attachments.size > 0) {
-        message.attachments.forEach(async element => {
+        for (const iattachment of message.attachments) {
+            let element = iattachment[1];
             try {
                 if (!fs.existsSync("./download/" + message.id + "/")) {
                     fs.mkdirSync("./download/" + message.id + "/");
@@ -1063,7 +1064,7 @@ async function downloadFilesFromMessage(message) {
                 console.error(e);
                 logger.logError("Could not download " + element.name + " file", e);
             }
-        });
+        }
     }
 }
 
@@ -1833,18 +1834,11 @@ async function downloadGearFileFromChannel(filename, channel) {
     try {
         let message = (await (await channel.messages.fetch({ limit: 1 })).first());
         if (message.content == configjson["gearDataMessage"] && message.attachments) {
-            for (const iattachment of message.attachments) {
-                let element = iattachment[1];
-                if (element.name == filename) {
-                    await files.download(element.url, "./download/" + filename, () => { });
-                    logger.log("HTTP: " + filename + " downloaded");
-                }
-            }
-
+            await downloadFilesFromMessage(message);
         }
     } catch (e) {
         console.error(e);
-        logger.logError("Could not download the file " + filename, e);
+        logger.logError("Could not download the gear file " + filename, e);
     }
 }
 
@@ -2005,7 +1999,7 @@ async function initPlayers() {
     try {
         await downloadGearFileFromChannel("players.json", myGearData);
         playersjson = files.openJsonFile("./download/players.json", "utf8");
-        if(playersjson) {
+        if (playersjson) {
             for (const currentPlayer of playersjson) {
                 let revivedPlayer = await revivePlayer(
                     currentPlayer["id"],

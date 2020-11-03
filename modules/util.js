@@ -1,4 +1,5 @@
 
+// @ts-check
 /**
  * @param {number} number  
 *  @returns string corresponding to the day of a given number (0 => Sun, 1 => Mon...), null if not found
@@ -110,13 +111,14 @@ function fillUpSpaceBoth(string, num) {
  */
 function getMinUntil(dd, hh, mm) {
     let today = new Date();
+    // @ts-ignore
     return (hh - today.getHours()) * 60 - today.getMinutes() + 24 * 60 * diffDays(today.getDay(), dd) + mm;
 }
 
 /**
- * @param {string|number} day1 
- * @param {string|number} day2 
- * @returns {string|number} the number of days between 2 dates
+ * @param {number} day1 
+ * @param {number} day2 
+ * @returns {number} the number of days between 2 dates
  */
 function diffDays(day1, day2) {
     let i = 0;
@@ -163,6 +165,7 @@ function displayHoursMinBefore(time) {
         return min + 'm';
     }
     else {
+        // @ts-ignore
         if (min < 10) { min = '0' + min }
         return hour + 'h' + min + 'm';
     }
@@ -170,7 +173,7 @@ function displayHoursMinBefore(time) {
 
 /**
  * @param {string} string
- * @param {number} value
+ * @param {string} value
  * @returns 0 + string if string < value
  */
 function valueFormat(string, value) {
@@ -204,9 +207,10 @@ function compare(list, comparator) {
 function avg(list, aggregate) {
     let size = list.length;
     let res = 0;
+    let agg;
     list.forEach(element => {
         agg = aggregate(element);
-        if(agg > 0) {
+        if (agg > 0) {
             res += aggregate(element);
         } else {
             size--;

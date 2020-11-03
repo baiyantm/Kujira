@@ -1,3 +1,4 @@
+// @ts-check
 const SignUpArray = require("./SignUpArray");
 const SignUp = require("./SignUp");
 

@@ -1,3 +1,4 @@
+// @ts-check
 const SignUp = require("./SignUp");
 
 /**
