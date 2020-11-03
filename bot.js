@@ -1838,25 +1838,29 @@ async function revivePlayer(id, classname, ap, aap, dp, axe = 0, signUps, real) 
  */
 async function downloadGearFileFromChannel(filename, channel) {
     return new Promise(async (resolve, reject) => {
-        let messages = await channel.messages.fetch({ limit: 1 });
-        messages.forEach(async message => {
-            if (message.content == configjson["gearDataMessage"] && message.attachments) {
-                for (const iattachment of message.attachments) {
-                    let element = iattachment[1];
-                    if (element.name == filename) {
-                        try {
-                            await files.download(element.url, "./download/" + filename, () => { });
-                            logger.log("HTTP: " + filename + " downloaded !");
-                            resolve();
-                        } catch (e) {
-                            logger.logError("Could not download the file " + filename, e);
-                            reject();
+        try {
+            let messages = await channel.messages.fetch({ limit: 1 });
+            messages.forEach(async message => {
+                if (message.content == configjson["gearDataMessage"] && message.attachments) {
+                    for (const iattachment of message.attachments) {
+                        let element = iattachment[1];
+                        if (element.name == filename) {
+                            try {
+                                await files.download(element.url, "./download/" + filename, () => { });
+                                logger.log("HTTP: " + filename + " downloaded !");
+                                resolve();
+                            } catch (e) {
+                                logger.logError("Could not download the file " + filename, e);
+                                reject();
+                            }
                         }
                     }
-                }
 
-            }
-        });
+                }
+            });
+        } catch (e) {
+            reject(e);
+        }
         setTimeout(() => {
             reject();
         }, 30000);
@@ -2018,13 +2022,10 @@ if (configjson && itemsjson && alarmsjson) {
     logger.log("INFO: Couldn't find config.json and items.json files, aborting.");
 }
 async function initPlayers() {
+    var playersjson;
     try {
         await downloadGearFileFromChannel("players.json", myGearData);
-    } catch (e) {
-        logger.log("INFO: Couldn't find or download the players file");
-    }
-    var playersjson = files.openJsonFile("./download/players.json", "utf8");
-    if (playersjson) {
+        playersjson = files.openJsonFile("./download/players.json", "utf8");
         for (const currentPlayer of playersjson) {
             let revivedPlayer = await revivePlayer(
                 currentPlayer["id"],
@@ -2040,6 +2041,8 @@ async function initPlayers() {
                 players.add(revivedPlayer);
             }
         }
+    } catch (e) {
+        logger.log("INFO: Couldn't find or download the players file");
     }
 }
 
