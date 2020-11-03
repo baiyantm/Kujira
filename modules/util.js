@@ -173,10 +173,11 @@ function displayHoursMinBefore(time) {
 
 /**
  * @param {string} string
- * @param {string} value
+ * @param {number} value
  * @returns 0 + string if string < value
  */
 function valueFormat(string, value) {
+    // @ts-ignore
     if (string < value) {
         string = "0" + string;
     }

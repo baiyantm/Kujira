@@ -239,6 +239,7 @@ async function trialReactionAddHandler(messageReaction, user) {
 
                 await guildMember.roles.add(role);
                 await guildMember.roles.add(guild.roles.cache.find(x => x.name == "Trialee"));
+                // @ts-ignore
                 await interactions.wSendChannel(channel, user.toString() + " Hi, please post your gear screenshot here in this format: https://imgur.com/a/eYiNNgd")
             } catch (e) {
                 console.error(e);
@@ -475,7 +476,6 @@ async function signupChannelHandler(enteredCommand, message, commands) {
 /**
  * @param {Discord.Message | Discord.PartialMessage} message 
  */
-// @ts-ignore
 async function resetCommand(message, args) {
     await clearChannel(message.channel);
     await generateSignUpMessages(configjson["defaultCount"]);
@@ -487,7 +487,6 @@ async function resetCommand(message, args) {
  * @param {Discord.Message | Discord.PartialMessage} message 
  * @param {*} args 
  */
-// @ts-ignore
 async function dumpCommand(message, args) {
     startLoading(message);
     await collectSignUps();
@@ -784,7 +783,6 @@ async function allChannelsHandler(enteredCommand, commands, message) {
         let rolename = args;
         //add roles here
         if (rolename == "rem" || rolename == "reminder") {
-            // @ts-ignore
             await changeRole(message, rolename, args);
         }
     }
@@ -1624,9 +1622,7 @@ async function addMessageAttachmentToPDFContent(message, content) {
 
 function getFormattedDate(date) {
     return 'd/m/Y at h:mm'
-        // @ts-ignore
         .replace('Y', date.getFullYear())
-        // @ts-ignore
         .replace('m', date.getMonth() + 1)
         // @ts-ignore
         .replace('d', util.zeroString(date.getDate()))
@@ -1704,7 +1700,7 @@ function setupCustomAlarms() {
 function dailyTimeout(id, time) {
     bot.setTimeout(async () => {
         if (time > 0 && players.get(id) && players.get(id).signUps[new Date().getDay()].status == "yes") {
-            interactions.wSendChannel(myServer.members.cache.find(x => x.id == id), "Oublie pas les addons PvP");
+            interactions.wSendAuthor(myServer.members.cache.find(x => x.id == id).user, "Oublie pas les addons PvP");
         }
         dailyTimeout(id, 86400000);
     }, time);
@@ -1813,7 +1809,8 @@ async function revivePlayer(id, classname, ap, aap, dp, axe = 0, signUps, real) 
     try {
         let playerId = real ? await myServer.members.fetch(await bot.users.fetch(id)) : id;
         let newPlayer = new Player(playerId, classname, ap, aap, dp, real);
-        newPlayer.setAxe(axe);
+        
+        newPlayer.setAxe(axe + "");
         if (signUps) {
             newPlayer.setSignUps(signUps);
         }
