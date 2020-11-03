@@ -276,7 +276,7 @@ module.exports = class PlayerArray extends Array {
             });
             let classText = "";
             classes.forEach(currentClass => {
-                classText += currentClass["count"] + "x " + this.classEmojis.find(emoji => emoji.name == currentClass["className"]) + " " + currentClass["className"].charAt(0).toUpperCase() + currentClass["className"].slice(1) + "\n";
+                classText += currentClass["count"] + "x " + this.classEmojis.find(emoji => emoji.name == currentClass["className"]).toString() + " " + currentClass["className"].charAt(0).toUpperCase() + currentClass["className"].slice(1) + "\n";
             });
             embed.addField("Class list", classText, true);
             // @ts-ignore

@@ -1713,7 +1713,7 @@ function setupAlarms() {
         for (const hour in alarmsjson[dayName]) {
             let minUntilAlarm = mod(util.getMinUntil(util.findCorrespondingDayNumber(dayName.toLowerCase()), hour, 0), 10080);
             let msUntilAlarm = minUntilAlarm * 60 * 1000;
-            let alarmText = myServer.roles.cache.find(x => x.name === "Rem") + "\n";
+            let alarmText = myServer.roles.cache.find(x => x.name === "Rem").toString() + "\n";
             alarmsjson[dayName][hour].forEach(alarm => {
                 alarmText += "Hey don't forget to grab your " + alarm + " 💰\n";
             });
