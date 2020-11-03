@@ -1837,28 +1837,25 @@ async function revivePlayer(id, classname, ap, aap, dp, axe = 0, signUps, real) 
  * @param {Discord.TextChannel} channel the channel to download from
  */
 async function downloadGearFileFromChannel(filename, channel) {
-    console.log(channel);
     return new Promise(async (resolve, reject) => {
         try {
-            let messages = await channel.messages.fetch({ limit: 1 });
-            messages.forEach(async message => {
-                if (message.content == configjson["gearDataMessage"] && message.attachments) {
-                    for (const iattachment of message.attachments) {
-                        let element = iattachment[1];
-                        if (element.name == filename) {
-                            try {
-                                await files.download(element.url, "./download/" + filename, () => { });
-                                logger.log("HTTP: " + filename + " downloaded !");
-                                resolve();
-                            } catch (e) {
-                                logger.logError("Could not download the file " + filename, e);
-                                reject();
-                            }
+            let message = (await (await channel.messages.fetch({ limit: 2 })).first());
+            if (message.content == configjson["gearDataMessage"] && message.attachments) {
+                for (const iattachment of message.attachments) {
+                    let element = iattachment[1];
+                    if (element.name == filename) {
+                        try {
+                            await files.download(element.url, "./download/" + filename, () => { });
+                            logger.log("HTTP: " + filename + " downloaded");
+                            resolve();
+                        } catch (e) {
+                            logger.logError("Could not download the file " + filename, e);
+                            reject();
                         }
                     }
-
                 }
-            });
+
+            }
         } catch (e) {
             reject(e);
         }
