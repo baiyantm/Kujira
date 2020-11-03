@@ -17,6 +17,6 @@
         "request": "^2.88.2"
     },
     "engines": {
-        "node": "14.x"
+        "node": "14.9.x"
     }
 }
