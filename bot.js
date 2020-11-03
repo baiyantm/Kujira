@@ -1961,7 +1961,7 @@ if (configjson && itemsjson && alarmsjson) {
     var myGuildChat;
     var players = new PlayerArray(itemsjson["classlist"]);
     var classEmojis = [];
-    var loading = 1000;
+    var loading = 2000;
 
     bot.once("ready", async () => {
         logger.log("INFO: Logged in as " + bot.user.tag);
@@ -1974,20 +1974,20 @@ if (configjson && itemsjson && alarmsjson) {
                 myTrialServer = bot.guilds.cache.get(configjson["botTrialServerID"]);
                 myDevServer = bot.guilds.cache.get(configjsonfile["dev"]["botServerID"]);
                 // @ts-ignore
-                myGate = bot.channels.cache.get(configjson["gateID"]);// @ts-ignore
-                myGear = bot.channels.cache.get(configjson["gearID"]);// @ts-ignore
-                myGearData = bot.channels.cache.get(configjson["gearDataID"]);// @ts-ignore
-                mySignUp = bot.channels.cache.get(configjson["signUpID"]);// @ts-ignore
-                mySignUpData = bot.channels.cache.get(configjson["signUpDataID"]);// @ts-ignore
-                myTrial = bot.channels.cache.get(configjson["trialreactionID"]);// @ts-ignore
-                myTrialHistory = bot.channels.cache.get(configjson["trialhistoryID"]);// @ts-ignore
-                myAnnouncement = bot.channels.cache.get(configjson["announcementID"]);// @ts-ignore
-                myAnnouncementData = bot.channels.cache.get(configjson["announcementDataID"]);// @ts-ignore
-                myWelcome = bot.channels.cache.get(configjson["welcomeID"]);// @ts-ignore
-                myTrialWelcome = bot.channels.cache.get(configjson["trialwelcomeID"]);// @ts-ignore
-                myChangelog = bot.channels.cache.get(configjson["changelogID"]);// @ts-ignore
-                myChangelog2 = bot.channels.cache.get(configjson["changelogID2"]);// @ts-ignore
-                myGuildChat = bot.channels.cache.get(configjson["guildchatID"]);
+                myGate = await bot.channels.fetch(configjson["gateID"]);// @ts-ignore
+                myGear = await bot.channels.fetch(configjson["gearID"]);// @ts-ignore
+                myGearData = await bot.channels.fetch(configjson["gearDataID"]);// @ts-ignore
+                mySignUp = await bot.channels.fetch(configjson["signUpID"]);// @ts-ignore
+                mySignUpData = await bot.channels.fetch(configjson["signUpDataID"]);// @ts-ignore
+                myTrial = await bot.channels.fetch(configjson["trialreactionID"]);// @ts-ignore
+                myTrialHistory = await bot.channels.fetch(configjson["trialhistoryID"]);// @ts-ignore
+                myAnnouncement = await bot.channels.fetch(configjson["announcementID"]);// @ts-ignore
+                myAnnouncementData = await bot.channels.fetch(configjson["announcementDataID"]);// @ts-ignore
+                myWelcome = await bot.channels.fetch(configjson["welcomeID"]);// @ts-ignore
+                myTrialWelcome = await bot.channels.fetch(configjson["trialwelcomeID"]);// @ts-ignore
+                myChangelog = await bot.channels.fetch(configjson["changelogID"]);// @ts-ignore
+                myChangelog2 = await bot.channels.fetch(configjson["changelogID2"]);// @ts-ignore
+                myGuildChat = await bot.channels.fetch(configjson["guildchatID"]);
 
                 logger.log("INFO: Booting up attempt...");
                 if (myServer && myDevServer && myGate && myGear && myGearData && classEmojis && mySignUp
@@ -2009,14 +2009,11 @@ if (configjson && itemsjson && alarmsjson) {
                     }
                 } else {
                     logger.log("...failed, retrying in " + loading + "ms");
-                    loading = loading * 2;
                 }
             } catch (e) {
-                logger.log("...exception occured, retrying in " + loading + "ms");
-                loading = loading * 2;
+                console.log(e);
             }
         }, loading);
-
     });
 } else {
     logger.log("INFO: Couldn't find config.json and items.json files, aborting.");
