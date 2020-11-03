@@ -1,11 +1,13 @@
+// @ts-check
+const Discord = require('discord.js');
 const logger = require('./logger');
 
 // ------ discord interactions ------
 
 /**
  * wrapper to edit a bot message
- * @param {message} message the discord message linked
- * @param {string or embed} content the content to send
+ * @param {Discord.Message} message the discord message linked
+ * @param {string | Discord.MessageEmbed} content the content to send
  * @returns whether the message got edited
  */
 async function wEditMsg(message, content) {
@@ -23,8 +25,8 @@ async function wEditMsg(message, content) {
 
 /**
  * wrapper to send a bot message to a channel
- * @param {channel} channel the discord channel
- * @param {string or embed} content the content to send
+ * @param {Discord.TextChannel | Discord.DMChannel | Discord.NewsChannel} channel the discord channel
+ * @param {string | Discord.MessageEmbed} content the content to send
  * @returns the message sent
  */
 async function wSendChannel(channel, content) {
@@ -40,8 +42,8 @@ async function wSendChannel(channel, content) {
 
 /**
  * wrapper to send a bot message to the author
- * @param {author} author the discord author
- * @param {string or embed} content the content to send
+ * @param {Discord.User} author the discord author
+ * @param {string | Discord.MessageEmbed} content the content to send
  * @returns the message sent
  */
 async function wSendAuthor(author, content) {
@@ -57,7 +59,7 @@ async function wSendAuthor(author, content) {
 
 /**
  * wrapper to delete a message
- * @param {message} message the message to delete
+ * @param {Discord.Message | Discord.PartialMessage} message the message to delete
  */
 async function wDelete(message) {
     try {

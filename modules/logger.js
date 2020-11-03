@@ -1,4 +1,8 @@
+// @ts-check
+const Discord = require("discord.js");
+
 // ------ logging ------
+
 /**
  * @returns {string} timestamp string (yyyy-mm-dd hh:min)
  */
@@ -9,9 +13,13 @@ function timestamp() {
     var dd = today.getDate();
     var mm = today.getMonth() + 1; //January is 0!
     var yyyy = today.getFullYear();
+    // @ts-ignore
     if (min < 10) { min = '0' + min }
+    // @ts-ignore
     if (hh < 10) { hh = '0' + hh }
+    // @ts-ignore
     if (dd < 10) { dd = '0' + dd }
+    // @ts-ignore
     if (mm < 10) { mm = '0' + mm }
     return yyyy + '-' + mm + '-' + dd + " " + hh + ':' + min;
 }
@@ -28,7 +36,7 @@ function log(string) {
 /**
  * output an error in console
  * @param {string} string the message to write
- * @param {exception} e the exception that occured
+ * @param {any} e the exception that occured
  */
 function logError(string, e) {
     var toWrite = timestamp() + ": " + string;
@@ -39,7 +47,7 @@ function logError(string, e) {
 /**
  * output in a channel
  * @param {string} string what to write
- * @param {channel} channel the dest channel
+ * @param {Discord.TextChannel} channel the dest channel
  */
 function logToChannel(string, channel) {
     var toWrite = timestamp() + ": " + string;

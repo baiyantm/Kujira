@@ -1,3 +1,4 @@
+// @ts-check
 const SignUpArray = require("./SignUpArray");
 const SignUp = require("./SignUp");
 
@@ -5,10 +6,22 @@ const SignUp = require("./SignUp");
  * Player class (member: GuildMember | string, classname: string, ap: string, aap: string, dp:string, real:boolean)
  */
 module.exports = class Player {
+    /**
+     * 
+     * @param {*} member 
+     * @param {*} classname 
+     * @param {*} ap 
+     * @param {*} aap 
+     * @param {*} dp 
+     * @param {*} real 
+     */
     constructor(member, classname, ap, aap, dp, real) {
         //id can be null
         this.id = real ? member.id : member;
         this.name = real ? member.displayName : member;
+        /**
+         * @type string
+         */
         this.classname = classname;
         this.ap = ap;
         this.aap = aap;
@@ -54,9 +67,11 @@ module.exports = class Player {
          */
         this.valueFormat = function (value) {
             if (value < 10) {
+                // @ts-ignore
                 value = "0" + value;
             }
             if (value < 100) {
+                // @ts-ignore
                 value = "0" + value;
             }
             return value;
@@ -181,6 +196,7 @@ module.exports = class Player {
         }
 
         this.unsetSucc = function () {
+            // @ts-ignore
             this.classname = this.classname.substring(0, this.classname.length - 4);
         }
 
@@ -193,10 +209,10 @@ module.exports = class Player {
         }
 
         /**
-         * @param {string | number} newAxe
+         * @param {string} newAxe
          */
         this.setAxe = function (newAxe) {
-            if (Number.isInteger(newAxe) && newAxe >= 0 && newAxe <= 5) {
+            if (Number.isInteger(newAxe) && Number.parseInt(newAxe) >= 0 && Number.parseInt(newAxe) <= 5) {
                 this.axe = newAxe;
             } else {
                 if (newAxe.toLowerCase().startsWith("pri") || newAxe.toLowerCase() == "i") {

@@ -1,25 +1,16 @@
 // @ts-check
+const Discord = require('discord.js');
 const fs = require('fs');
 const { parse } = require('json2csv');
-const Discord = require("discord.js");
 const files = require("./modules/files");
 const interactions = require("./modules/interactions");
 const logger = require("./modules/logger");
 const util = require("./modules/util");
 const Player = require('./classes/Player');
 const PlayerArray = require('./classes/PlayerArray');
-// @ts-ignore
-const SignUpArray = require('./classes/SignUpArray');
-// @ts-ignore
-const { ifError } = require('assert');
-// @ts-ignore
-const { time } = require('console');
-const { resolve } = require('path');
 
 async function initLookout() {
-    logger.log("INFO: Initializing lookout ...");
-
-    bot.user.setPresence({ game: { name: "up" } });
+    bot.user.setPresence({ activity: { name: 'up', type: "PLAYING" } });
 
     if (myAnnouncement) {
         setupPresence();
@@ -45,21 +36,20 @@ async function initLookout() {
 
     var botMsg = { reference: null }; //because JavaScript
     //lookup for a previous message so we keep using it
-    await myGear.fetchMessages({ limit: 100 }).then(messages => {
-        var found = 0;
-        messages.forEach(message => {
-            if (message.author.id == bot.user.id) {
-                if (!found) {
-                    botMsg.reference = message;
-                    logger.log("INFO: Found an existing message, keeping it and refreshing it.");
-                    found++;
-                } else if (found == 1) {
-                    botMsg.reference = null;
-                    logger.log("INFO: Found multiple existing messages, aborting and generating a new one instead.");
-                    found++;
-                }
+    let messages = await myGear.messages.fetch({ limit: 100 });
+    var found = 0;
+    messages.forEach(message => {
+        if (message.author.id == bot.user.id) {
+            if (!found) {
+                botMsg.reference = message;
+                logger.log("INFO: Found an existing message, keeping it and refreshing it.");
+                found++;
+            } else if (found == 1) {
+                botMsg.reference = null;
+                logger.log("INFO: Found multiple existing messages, aborting and generating a new one instead.");
+                found++;
             }
-        });
+        }
     });
 
     await refreshBotMsg(myGear, botMsg, players);
@@ -85,57 +75,56 @@ async function initLookout() {
         } else {
             if (['MESSAGE_REACTION_ADD'].includes(packet.t)) {
                 // Grab the channel to check the message from
-                const channel = bot.channels.get(packet.d.channel_id);
+                const channel = bot.channels.cache.get(packet.d.channel_id);
                 // There's no need to emit if the message is cached, because the event will fire anyway for that
                 // @ts-ignore
-                if (channel.messages.has(packet.d.message_id)) return;
+                if (channel.messages.cache.has(packet.d.message_id)) return;
                 // Since we have confirmed the message is not cached, let's fetch it
                 // @ts-ignore
-                channel.fetchMessage(packet.d.message_id).then(message => {
+                channel.messages.fetch(packet.d.message_id).then(message => {
                     // Emojis can have identifiers of name:id format, so we have to account for that case as well
                     const emoji = packet.d.emoji.id ? `${packet.d.emoji.name}:${packet.d.emoji.id}` : packet.d.emoji.name;
                     // This gives us the reaction we need to emit the event properly, in top of the message object
-                    const reaction = message.reactions.get(emoji);
+                    const reaction = message.reactions.cache.get(emoji);
                     // Adds the currently reacting user to the reaction's users collection.
-                    if (reaction) reaction.users.set(packet.d.user_id, bot.users.get(packet.d.user_id));
+                    if (reaction) reaction.users.cache.set(packet.d.user_id, bot.users.cache.get(packet.d.user_id));
                     // Check which type of event it is before emitting
-                    bot.emit('messageReactionAdd', reaction, bot.users.get(packet.d.user_id));
+                    bot.emit('messageReactionAdd', reaction, bot.users.cache.get(packet.d.user_id));
                 });
             } else if (['MESSAGE_REACTION_REMOVE'].includes(packet.t)) {
                 // Grab the channel to check the message from
-                const channel = bot.channels.get(packet.d.channel_id);
+                const channel = bot.channels.cache.get(packet.d.channel_id);
                 // There's no need to emit if the message is cached, because the event will fire anyway for that
                 // @ts-ignore
-                if (channel.messages.has(packet.d.message_id)) return;
+                if (channel.messages.cache.has(packet.d.message_id)) return;
                 // Since we have confirmed the message is not cached, let's fetch it
                 // @ts-ignore
-                channel.fetchMessage(packet.d.message_id).then(message => {
+                channel.messages.fetch(packet.d.message_id).then(message => {
                     // Emojis can have identifiers of name:id format, so we have to account for that case as well
                     const emoji = packet.d.emoji.id ? `${packet.d.emoji.name}:${packet.d.emoji.id}` : packet.d.emoji.name;
                     // This gives us the reaction we need to emit the event properly, in top of the message object
-                    const reaction = message.reactions.get(emoji);
+                    const reaction = message.reactions.cache.get(emoji);
                     // Adds the currently reacting user to the reaction's users collection.
-                    if (reaction) reaction.users.set(packet.d.user_id, bot.users.get(packet.d.user_id));
+                    if (reaction) reaction.users.cache.set(packet.d.user_id, bot.users.cache.get(packet.d.user_id));
                     // Check which type of event it is before emitting
-                    bot.emit('messageReactionRemove', reaction, bot.users.get(packet.d.user_id));
+                    bot.emit('messageReactionRemove', reaction, bot.users.cache.get(packet.d.user_id));
                 });
             } else if (['MESSAGE_UPDATE'].includes(packet.t)) {
-                const channel = bot.channels.get(packet.d.channel_id);
+                const channel = bot.channels.cache.get(packet.d.channel_id);
                 // There's no need to emit if the message is cached, because the event will fire anyway for that
                 // @ts-ignore
-                if (channel.messages.has(packet.d.id)) return;
+                if (channel.messages.cache.has(packet.d.id)) return;
                 // Since we have confirmed the message is not cached, let's fetch it
                 // @ts-ignore
-                channel.fetchMessage(packet.d.id).then(message => {
+                channel.messages.fetch(packet.d.id).then(message => {
                     bot.emit('messageUpdate', null, message);
                 });
             } else if (['MESSAGE_DELETE'].includes(packet.t)) {
-                const channel = bot.channels.get(packet.d.channel_id);
+                const channel = bot.channels.cache.get(packet.d.channel_id);
                 // There's no need to emit if the message is cached, because the event will fire anyway for that
                 // @ts-ignore
-                if (channel.messages.has(packet.d.id)) return;
+                if (channel.messages.cache.has(packet.d.id)) return;
                 // Since we have confirmed the message is not cached, let's fetch it
-                // @ts-ignore
                 bot.emit('messageDelete', { channel: { id: packet.d.channel_id }, id: packet.d.id });
             }
         }
@@ -164,24 +153,24 @@ async function initLookout() {
         process.exit(0);
     });
 
-    logger.log("INFO: ... lookout initialization done");
+    logger.log("INFO: Initialization done");
 }
 
 /**
  * listener for member leaving guild
- * @param {Discord.GuildMember} member 
+ * @param {Discord.GuildMember | Discord.PartialGuildMember} member 
  */
 async function onLeaveHandler(member) {
     if (member.guild.id == myServer.id) {
-        interactions.wSendChannel(myWelcome, member + "(" + member.user.username + ") has left the server.");
+        interactions.wSendChannel(myWelcome, member.toString + "(" + member.user.username + ") has left the server.");
     } else if (member.guild.id == myTrialServer.id) {
-        interactions.wSendChannel(myTrialWelcome, member + "(" + member.user.username + ") has left the server.");
+        interactions.wSendChannel(myTrialWelcome, member.toString + "(" + member.user.username + ") has left the server.");
     }
 }
 
 /**
  * listener for message edit
- * @param {Discord.Message} newMessage 
+ * @param {Discord.Message | Discord.PartialMessage} newMessage 
  * @param {{reference : any}} annCache 
  */
 async function onEditHandler(newMessage, annCache) {
@@ -192,7 +181,7 @@ async function onEditHandler(newMessage, annCache) {
 
 /**
  * listener for message delete
- * @param {Discord.Message} deletedMessage 
+ * @param {Discord.Message | Discord.PartialMessage} deletedMessage 
  * @param {{reference : any}} annCache 
  */
 async function onDeleteHandler(deletedMessage, annCache) {
@@ -202,6 +191,7 @@ async function onDeleteHandler(deletedMessage, annCache) {
             await cacheAnnouncements(annCache);
         }
     } catch (e) {
+        console.error(e);
         logger.logError("ERROR : Delete event caching problem", e);
     }
 }
@@ -209,7 +199,7 @@ async function onDeleteHandler(deletedMessage, annCache) {
 /**
  * listener for emoji add event
  * @param {Discord.MessageReaction} messageReaction 
- * @param {Discord.User} user 
+ * @param {Discord.User | Discord.PartialUser} user 
  */
 async function onReactionRemoveHandler(messageReaction, user) {
     if (messageReaction.message.channel.id == myTrial.id) {
@@ -220,7 +210,7 @@ async function onReactionRemoveHandler(messageReaction, user) {
 /**
  * listener for emoji add event
  * @param {Discord.MessageReaction} messageReaction 
- * @param {Discord.User} user 
+ * @param {Discord.User | Discord.PartialUser} user 
  */
 async function onReactionAddHandler(messageReaction, user) {
     if (messageReaction.message.channel.id == mySignUp.id) {
@@ -233,23 +223,24 @@ async function onReactionAddHandler(messageReaction, user) {
 /**
  * listener for emoji add event on trial channel
  * @param {Discord.MessageReaction} messageReaction 
- * @param {Discord.User} user 
+ * @param {Discord.User | Discord.PartialUser} user  
  */
 async function trialReactionAddHandler(messageReaction, user) {
     if ("⚔️" == messageReaction.emoji.name) {
         const guild = messageReaction.message.guild;
-        const guildMember = guild.members.get(user.id);
-        if (!guildMember.roles.find(x => x.name == "Officer")) {
+        const guildMember = guild.members.cache.get(user.id);
+        if (!guildMember.roles.cache.find(x => x.name == "Officer")) {
             const roleIndex = await getNextTrialRoleIndex(guild);
-            const role = guild.roles.find(x => x.name == "Trial " + roleIndex);
-            const channel = guild.channels.find(x => x.name == "trial-" + roleIndex);
+            const role = guild.roles.cache.find(x => x.name == "Trial " + roleIndex);
+            const channel = guild.channels.cache.find(x => x.name == "trial-" + roleIndex);
             try {
                 // @ts-ignore
                 await historizeChannel(channel, myTrialHistory);
 
-                await guildMember.addRole(role);
-                await guildMember.addRole(guild.roles.find(x => x.name == "Trialee"));
-                await interactions.wSendChannel(channel, user + " Hi, please post your gear screenshot here in this format: https://imgur.com/a/eYiNNgd")
+                await guildMember.roles.add(role);
+                await guildMember.roles.add(guild.roles.cache.find(x => x.name == "Trialee"));
+                // @ts-ignore
+                await interactions.wSendChannel(channel, user.toString() + " Hi, please post your gear screenshot here in this format: https://imgur.com/a/eYiNNgd")
             } catch (e) {
                 console.error(e);
                 logger.log("ERROR: Couldn't add " + role.name + " to " + guildMember.user.tag);
@@ -268,7 +259,7 @@ async function getNextTrialRoleIndex(guild) {
     let trialRole;
     while (!available) {
         let roleName = "Trial " + roleCount;
-        trialRole = guild.roles.find(x => x.name == roleName);
+        trialRole = guild.roles.cache.find(x => x.name == roleName);
         if (trialRole != undefined) {
             available = isTrialRoleAvailable(guild, trialRole);
             if (!available) {
@@ -316,8 +307,8 @@ async function createNewTrialChannelAndRole(guild, roleCount, trialRole, roleNam
  */
 function isTrialRoleAvailable(guild, role) {
     let available = true;
-    guild.members.forEach(member => {
-        if (member.roles.has(role.id)) {
+    guild.members.cache.forEach(member => {
+        if (member.roles.cache.has(role.id)) {
             available = false;
         }
     });
@@ -327,17 +318,18 @@ function isTrialRoleAvailable(guild, role) {
 /**
  * listener for emoji add event on trial channel
  * @param {Discord.MessageReaction} messageReaction 
- * @param {Discord.User} user 
+ * @param {Discord.User | Discord.PartialUser} user 
  */
 async function trialReactionRemoveHandler(messageReaction, user) {
     if ("⚔️" == messageReaction.emoji.name) {
-        const guildMember = messageReaction.message.guild.members.get(user.id);
-        if (!guildMember.roles.find(x => x.name == "Officer")) {
-            guildMember.roles.forEach(role => {
+        const guildMember = messageReaction.message.guild.members.cache.get(user.id);
+        if (!guildMember.roles.cache.find(x => x.name == "Officer")) {
+            guildMember.roles.cache.forEach(role => {
                 if (role.name.startsWith("Trial")) {
                     try {
-                        guildMember.removeRole(role);
+                        guildMember.roles.remove(role);
                     } catch (e) {
+                        console.error(e);
                         logger.log("ERROR: Failed to remove role \"" + role + "\"");
                     }
                 }
@@ -349,23 +341,25 @@ async function trialReactionRemoveHandler(messageReaction, user) {
 /**
  * listener for emoji add event on signup channel
  * @param {Discord.MessageReaction} messageReaction 
- * @param {Discord.User} user 
+ * @param {Discord.User | Discord.PartialUser} user 
  */
 async function signUpReactionAddHandler(messageReaction, user) {
     let message = messageReaction.message;
-    let yesReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["yesreaction"]).first();
-    let noReaction = message.reactions.filter(messageReaction => messageReaction.emoji.name == configjson["noreaction"]).first();
+    let yesReaction = message.reactions.cache.filter(messageReaction => messageReaction.emoji.name == configjson["yesreaction"]).first();
+    let noReaction = message.reactions.cache.filter(messageReaction => messageReaction.emoji.name == configjson["noreaction"]).first();
     if (messageReaction.emoji.name == configjson["noreaction"]) {
-        if (user.id != bot.user.id && (await noReaction.fetchUsers()).get(user.id)) {
+        if (user.id != bot.user.id && (await noReaction.fetch()).users.cache.get(user.id)) {
             if (yesReaction) {
-                yesReaction.remove(user);
+                // @ts-ignore
+                yesReaction.users.remove(user);
             }
         }
     }
     if (messageReaction.emoji.name == configjson["yesreaction"]) {
-        if (user.id != bot.user.id && (await yesReaction.fetchUsers()).get(user.id)) {
+        if (user.id != bot.user.id && (await yesReaction.fetch()).users.cache.get(user.id)) {
             if (noReaction) {
-                noReaction.remove(user);
+                // @ts-ignore
+                noReaction.users.remove(user);
             }
         }
     }
@@ -373,7 +367,7 @@ async function signUpReactionAddHandler(messageReaction, user) {
 
 /**
  * listener for message event
- * @param {Discord.Message} message the message sent
+ * @param {Discord.Message | Discord.PartialMessage} message the message sent
  * @param {Object} botMsg reference to the bot message
  * @param {{reference : any}} annCache 
  */
@@ -407,10 +401,14 @@ async function onMessageHandler(message, botMsg, annCache) {
             }
         }
     } catch (e) {
-        logger.logError("On message listener error. Something really bad went wrong", e);
+        console.error(e);
+        logger.logError("On message listener error", e);
     }
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function signupDataChannelHandler(enteredCommand, message, commands) {
     if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
         commands = itemsjson["commands"]["signup"]["adv"];
@@ -423,6 +421,9 @@ async function signupDataChannelHandler(enteredCommand, message, commands) {
     }
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function gateChannelHandler(commands, enteredCommand, message) {
     if (enteredCommand == commands["ok"]) {
         await okCommand(message);
@@ -431,13 +432,12 @@ async function gateChannelHandler(commands, enteredCommand, message) {
 }
 
 /**
- * 
- * @param {Discord.Message} message 
+ * @param {Discord.Message | Discord.PartialMessage} message 
  */
 async function okCommand(message) {
-    let publicRole = message.guild.roles.find(x => x.name == "Public");
-    if (!message.member.roles.has(publicRole.id)) {
-        await message.member.addRole(publicRole);
+    let publicRole = message.guild.roles.cache.find(x => x.name == "Public");
+    if (!message.member.roles.cache.has(publicRole.id)) {
+        await message.member.roles.add(publicRole);
         logger.log("ROLE: " + publicRole + " role added to " + message.author.tag);
         await interactions.wSendAuthor(message.author, itemsjson["urlguildpage"]);
         await interactions.wSendAuthor(message.author, itemsjson["gateguide"] + "\n\nReminder that you agreed to the following rules :\n" + itemsjson["gaterules"]);
@@ -445,6 +445,9 @@ async function okCommand(message) {
     }
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function signupChannelHandler(enteredCommand, message, commands) {
     if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
         commands = itemsjson["commands"]["signup"]["adv"];
@@ -470,7 +473,9 @@ async function signupChannelHandler(enteredCommand, message, commands) {
     }
 }
 
-// @ts-ignore
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function resetCommand(message, args) {
     await clearChannel(message.channel);
     await generateSignUpMessages(configjson["defaultCount"]);
@@ -479,10 +484,9 @@ async function resetCommand(message, args) {
 
 /**
  * 
- * @param {Discord.Message} message 
+ * @param {Discord.Message | Discord.PartialMessage} message 
  * @param {*} args 
  */
-// @ts-ignore
 async function dumpCommand(message, args) {
     startLoading(message);
     await collectSignUps();
@@ -491,6 +495,9 @@ async function dumpCommand(message, args) {
     deleteCommand(message);
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function generateCommand(message, args) {
     deleteCommand(message);
     if (Number(args) <= 14) {
@@ -502,15 +509,20 @@ async function generateCommand(message, args) {
     players.resetPlayersSignUps();
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function reactCommand(message) {
-    await message.channel.fetchMessages({ limit: 2 }).then(async (messages) => {
-        let toReact = messages.last();
-        await toReact.react(configjson["yesreaction"]);
-        await toReact.react(configjson["noreaction"]);
-    });
+    let messages = await message.channel.messages.fetch({ limit: 2 });
+    let toReact = messages.last();
+    await toReact.react(configjson["yesreaction"]);
+    await toReact.react(configjson["noreaction"]);
     await deleteCommand(message);
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function gearChannelHandler(enteredCommand, message, commands, botMsg) {
     if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
         commands = itemsjson["commands"]["gear"]["adv"];
@@ -570,6 +582,9 @@ async function gearChannelHandler(enteredCommand, message, commands, botMsg) {
     }, configjson["refreshDelay"]);
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function clearCommand(message) {
     await clearChannel(message.channel);
 }
@@ -578,6 +593,9 @@ function removeAllCommand() {
     players.length = 0;
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function removePlayerCommand(message, args) {
     let playerId = "";
     if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
@@ -589,6 +607,9 @@ async function removePlayerCommand(message, args) {
     await removePlayer(players, playerId, message.author);
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function helpCommand(message, deletion) {
     startLoading(message);
     let helpMessage = await interactions.wSendChannel(message.channel, itemsjson["gearhelp"]);
@@ -600,6 +621,9 @@ async function helpCommand(message, deletion) {
     endLoading(message, 0);
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function manualAddCommand(args, message, commands) {
     let split = args.split(" ");
     if (split.length >= 5) {
@@ -650,6 +674,9 @@ async function manualAddCommand(args, message, commands) {
     }
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function shortUpdateGearCommand(message, firstSplit) {
     let playerToFind = players.get(message.author.id);
     let ap = parseInt(firstSplit[0]);
@@ -664,6 +691,9 @@ async function shortUpdateGearCommand(message, firstSplit) {
     }
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function updateGearCommand(split, commands, classToFind, message) {
     let succ = null;
     if (split.length == 4) {
@@ -693,6 +723,9 @@ async function updateGearCommand(split, commands, classToFind, message) {
     }
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function succCommand(message) {
     let playerToFind = players.get(message.author.id);
     if (playerToFind && itemsjson["classlistSucc"].find(currentclassname => currentclassname == playerToFind.classname)) {
@@ -703,6 +736,9 @@ async function succCommand(message) {
     }
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function awakCommand(message) {
     let playerToFind = players.get(message.author.id);
     if (playerToFind) {
@@ -713,6 +749,9 @@ async function awakCommand(message) {
     }
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function axeCommand(split, message, args) {
     if (split.length == 1) {
         await updatePlayerAxe(message.author, args);
@@ -723,6 +762,9 @@ async function axeCommand(split, message, args) {
     }
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function allChannelsHandler(enteredCommand, commands, message) {
     commands = itemsjson["commands"]["any"]["guest"];
     enteredCommand = enteredCommand.substr(1);
@@ -741,7 +783,6 @@ async function allChannelsHandler(enteredCommand, commands, message) {
         let rolename = args;
         //add roles here
         if (rolename == "rem" || rolename == "reminder") {
-            // @ts-ignore
             await changeRole(message, rolename, args);
         }
     }
@@ -759,46 +800,62 @@ async function allChannelsHandler(enteredCommand, commands, message) {
     }
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function changeRole(message, rolename, args) {
-    let role = message.guild.roles.find(x => x.name == rolename.charAt(0).toUpperCase() + rolename.slice(1));
-    if (message.member.roles.has(role.id)) {
-        await removeRole(message, role, args);
-    }
-    else {
-        await addRole(message, role, args);
+    let role = message.guild.roles.cache.find(x => x.name == rolename.charAt(0).toUpperCase() + rolename.slice(1));
+    if (role) {
+        if (message.member.roles.cache.has(role.id)) {
+            await removeRole(message, role, args);
+        }
+        else {
+            await addRole(message, role, args);
+        }
+    } else {
+        logger.log("ERROR: No role " + rolename + " found");
     }
 }
 
 /**
  * 
- * @param {Discord.Message} message 
+ * @param {Discord.Message | Discord.PartialMessage} message 
  * @param {Discord.Role} role 
  * @param {string} args 
  */
 async function addRole(message, role, args) {
     try {
-        await message.member.addRole(role);
+        await message.member.roles.add(role);
         interactions.wSendAuthor(message.author, role.name + ' role added.');
         logger.log('ROLE: ' + role.name + ' role added to ' + message.author.tag);
         interactions.wDelete(message);
     }
     catch (e) {
+        console.error(e);
         interactions.wSendAuthor(message.author, args + ' role not found or not self-assignable.');
     }
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ * @param {Discord.Role} role
+ */
 async function removeRole(message, role, args) {
     try {
-        await message.member.removeRole(role);
+        await message.member.roles.remove(role);
         interactions.wSendAuthor(message.author, role.name + ' role removed.');
         logger.log('ROLE: ' + role.name + ' role removed from ' + message.author.tag);
         interactions.wDelete(message);
     }
     catch (e) {
+        console.error(e);
         interactions.wSendAuthor(message.author, args + ' role not found or not self-assignable.');
     }
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 function gearCommand(message, args) {
     startLoading(message);
     let idToFind;
@@ -818,6 +875,9 @@ function gearCommand(message, args) {
     endLoading(message, 0);
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function rankingsCommand(args, message) {
     if (!args) {
         startLoading(message);
@@ -834,6 +894,9 @@ async function rankingsCommand(args, message) {
     }
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function statsCommand(args, message) {
     if (!args) {
         startLoading(message);
@@ -875,6 +938,9 @@ async function statsCommand(args, message) {
     }
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function reminderCommand(message) {
     let today = new Date();
     let day = today.getDay();
@@ -892,6 +958,9 @@ async function reminderCommand(message) {
     interactions.wSendChannel(message.channel, reminderMessage);
 }
 
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
 async function attendanceCommand(message) {
     startLoading(message);
     await collectSignUps();
@@ -933,41 +1002,40 @@ function getPercentAttendanceForADay(day) {
  * @param {{reference : any}} annCache 
  */
 async function cacheAnnouncements(annCache) {
-    await myAnnouncement.fetchMessages({ limit: 100 }).then(messages => {
-        messages.forEach(async message => {
-            await message.reactions.forEach(async reaction => {
-                await reaction.fetchUsers();
-            });
+    let messages = await myAnnouncement.messages.fetch({ limit: 100 });
+    messages.forEach(async message => {
+        message.reactions.cache.forEach(async reaction => {
+            await reaction.users.fetch();
         });
-        annCache.reference = messages;
     });
+    annCache.reference = messages;
 }
 
 /**
- * @param {Discord.Message} message 
+ * @param {Discord.Message | Discord.PartialMessage} message 
  * @returns an embed containing info about the message
  */
 async function getHistoryEmbed(message) {
     let authorName = message.author.tag;
-    let authorAvatar = message.author.avatarURL;
+    let authorAvatar = message.author.avatarURL();
     let content = message.content;
     if (message.embeds.length > 0) {
         authorName = message.embeds[0].author.name;
         authorAvatar = message.embeds[0].author.iconURL;
         content = message.embeds[0].description;
     }
-    const embed = new Discord.RichEmbed();
+    const embed = new Discord.MessageEmbed();
     let embedColor = 3447003;
     embed.setColor(embedColor);
     embed.setAuthor(authorName, authorAvatar);
     embed.setDescription(content);
     embed.setTimestamp(message.editedTimestamp ? message.editedTimestamp : message.createdTimestamp);
     message.attachments.forEach(attachment => {
-        embed.attachFile("./download/" + message.id + "/" + attachment.filename);
+        embed.files.push("./download/" + message.id + "/" + attachment.name);
     });
-    message.reactions.forEach(async reaction => {
+    message.reactions.cache.forEach(async reaction => {
         let users = "";
-        reaction.users.forEach(user => {
+        reaction.users.cache.forEach(user => {
             users += user + "\n";
         });
         if (users) {
@@ -979,30 +1047,23 @@ async function getHistoryEmbed(message) {
 
 /**
  * downloads files attached to the message and put it in download/messageid
- * @param {Discord.Message} message
+ * @param {Discord.Message | Discord.PartialMessage} message
  */
 async function downloadFilesFromMessage(message) {
-    return new Promise(async (resolve, reject) => {
-        if (message.attachments.size > 0) {
-            await message.attachments.forEach(async element => {
-                try {
-                    if (!fs.existsSync("./download/" + message.id + "/")) {
-                        fs.mkdirSync("./download/" + message.id + "/");
-                    }
-                    await files.download(element.url, "./download/" + message.id + "/" + element.filename, () => { });
-                    resolve();
-                } catch (e) {
-                    logger.logError("Could not download " + element.filename + " file", e);
-                    reject();
+    if (message.attachments.size > 0) {
+        for (const iattachment of message.attachments) {
+            let element = iattachment[1];
+            try {
+                if (!fs.existsSync("./download/" + message.id + "/")) {
+                    fs.mkdirSync("./download/" + message.id + "/");
                 }
-            });
-            setTimeout(() => {
-                reject();
-            }, 30000);
-        } else {
-            reject();
+                await files.download(element.url, "./download/" + message.id + "/" + element.name, () => { });
+            } catch (e) {
+                console.error(e);
+                logger.logError("Could not download " + element.name + " file", e);
+            }
         }
-    });
+    }
 }
 
 /**
@@ -1110,28 +1171,28 @@ async function getDaySignUp(day) {
     let signUps = [];
     let reactionMessage = await getDaySignUpMessage(day, mySignUp);
     if (reactionMessage) {
-        let yesReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
-        let noReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
+        let yesReaction = reactionMessage.reactions.cache.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
+        let noReaction = reactionMessage.reactions.cache.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
         if (noReaction) {
-            let users = await noReaction.fetchUsers();
+            let users = await noReaction.users.fetch();
             await Promise.all(users.map(async user => {
-                let member = await myServer.fetchMember(await bot.fetchUser(user.id));
-                if (member.roles.find(x => x.name == "Members")) {
+                let member = await myServer.members.fetch(await bot.users.fetch(user.id));
+                if (member.roles.cache.find(x => x.name == "Members")) {
                     addMemberToSignUps(member, signUps, "no");
                 }
             }));
         }
         if (yesReaction) {
-            let users = await yesReaction.fetchUsers();
+            let users = await yesReaction.users.fetch();
             await Promise.all(users.map(async user => {
-                let member = await myServer.fetchMember(await bot.fetchUser(user.id));
-                if (member.roles.find(x => x.name == "Members")) {
+                let member = await myServer.members.fetch(await bot.users.fetch(user.id));
+                if (member.roles.cache.find(x => x.name == "Members")) {
                     addMemberToSignUps(member, signUps, "yes");
                 }
             }));
         }
-        myServer.members.forEach(member => {
-            if (member.roles.find(x => x.name == "Members")) {
+        myServer.members.cache.forEach(member => {
+            if (member.roles.cache.find(x => x.name == "Members")) {
                 addMemberToSignUps(member, signUps, "N/A");
             }
         });
@@ -1182,9 +1243,8 @@ function signUpsHasId(signUps, id) {
 async function getDaySignUpMessage(day, channel) {
     let message;
     let dateName = util.findCorrespondingDayName(day).toLowerCase();
-    await channel.fetchMessages({ limit: 100 }).then(async messages => {
-        message = await messages.find(message => message.content.toLowerCase().startsWith(dateName));
-    });
+    let messages = await channel.messages.fetch({ limit: 100 });
+    message = messages.find(message => message.content.toLowerCase().startsWith(dateName));
     return message;
 }
 
@@ -1192,8 +1252,8 @@ async function collectSignUps() {
     for (let day = 0; day < 7; day++) {
         let reactionMessage = await getDaySignUpMessage(day, mySignUp);
         if (reactionMessage) {
-            let yesReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
-            let noReaction = reactionMessage.reactions.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
+            let yesReaction = reactionMessage.reactions.cache.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
+            let noReaction = reactionMessage.reactions.cache.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
             if (noReaction) {
                 await fetchSignUps(noReaction, day, "no");
             }
@@ -1217,12 +1277,12 @@ async function collectSignUps() {
  * @param {string} emojiName 
  */
 async function fetchSignUps(reaction, day, emojiName) {
-    let users = await reaction.fetchUsers();
+    let users = await reaction.users.fetch();
     await Promise.all(users.map(async (user) => {
         if (!user.bot) {
             try {
-                let member = await myServer.fetchMember(await bot.fetchUser(user.id));
-                if (member && member.roles.find(x => x.name == "Members")) {
+                let member = await myServer.members.fetch(await bot.users.fetch(user.id));
+                if (member && member.roles.cache.find(x => x.name == "Members")) {
                     let foundPlayer = players.get(member.id);
                     if (foundPlayer) {
                         foundPlayer.setSignUpDay(day, emojiName);
@@ -1233,7 +1293,7 @@ async function fetchSignUps(reaction, day, emojiName) {
             catch (e) {
                 if (e.message == 'Unknown Member') {
                     logger.log("INFO: " + user + " is not a member !");
-                    await reaction.remove(user);
+                    await reaction.users.remove(user);
                 } else {
                     throw e;
                 }
@@ -1289,7 +1349,7 @@ function addSignUpInfo(playerInfo, player) {
 
 async function getSignUpsEmbed() {
     let day = new Date();
-    const embed = new Discord.RichEmbed();
+    const embed = new Discord.MessageEmbed();
     let embedTitle = ":bookmark_tabs: SIGN UPS";
     let embedColor = 3447003;
     embed.setColor(embedColor);
@@ -1367,7 +1427,7 @@ function getFormattedAttendanceForWeek() {
  * remove a player from a player list
  * @param {PlayerArray} players 
  * @param {string} playerId 
- * @param {Discord.GuildMember} origin
+ * @param {Discord.User | Discord.PartialUser} origin
  */
 async function removePlayer(players, playerId, origin) {
     let removed = players.remove(playerId);
@@ -1385,7 +1445,7 @@ async function removePlayer(players, playerId, origin) {
  * @param {PlayerArray} players 
  * @param {Player} player 
  * @param {boolean} succ succ was true or not (null if no succ info given)
- * @param {Discord.GuildMember} origin
+ * @param {Discord.User | Discord.PartialUser} origin
  */
 async function updatePlayer(players, player, succ, origin) {
     let content = "";
@@ -1460,7 +1520,7 @@ async function savePlayers() {
 /**
  * if the bot message exists, edits it
  * if not, sends a new one
- * @param {Discord.Message} channel the channel where the original message comes from
+ * @param {Discord.Channel} channel the channel where the original message comes from
  * @param {Object} botMsg the bot message
  * @param {PlayerArray} players
  * @returns the new message
@@ -1489,7 +1549,7 @@ async function newBotMessage(channel, content) {
  * @param {Discord.TextChannel} channelDestination
  */
 async function historizeChannel(channelSource, channelDestination) {
-    let messages = await channelSource.fetchMessages();
+    let messages = await channelSource.messages.fetch();
     messages = messages.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
     let pdfPath = await createHistoryPDF(messages);
     files.uploadFileToChannel(pdfPath, channelDestination, "History of " + channelSource.name);
@@ -1539,17 +1599,17 @@ async function createHistoryPDF(messages) {
 }
 
 /**
- * @param {Discord.Message} message 
+ * @param {Discord.Message | Discord.PartialMessage} message 
  * @param {any[]} content 
  */
 async function addMessageAttachmentToPDFContent(message, content) {
     await downloadFilesFromMessage(message);
     for (const iattachment of message.attachments) {
         let attachment = iattachment[1];
-        if (attachment.filename.toUpperCase().endsWith('PNG') ||
-            attachment.filename.toUpperCase().endsWith('JPEG') ||
-            attachment.filename.toUpperCase().endsWith('JPG')) {
-            let filePath = 'download/' + message.id + '/' + attachment.filename;
+        if (attachment.name.toUpperCase().endsWith('PNG') ||
+            attachment.name.toUpperCase().endsWith('JPEG') ||
+            attachment.name.toUpperCase().endsWith('JPG')) {
+            let filePath = 'download/' + message.id + '/' + attachment.name;
             const imageToBase64 = require('image-to-base64');
             let image64 = await imageToBase64(filePath);
             content.push({
@@ -1562,9 +1622,7 @@ async function addMessageAttachmentToPDFContent(message, content) {
 
 function getFormattedDate(date) {
     return 'd/m/Y at h:mm'
-        // @ts-ignore
         .replace('Y', date.getFullYear())
-        // @ts-ignore
         .replace('m', date.getMonth() + 1)
         // @ts-ignore
         .replace('d', util.zeroString(date.getDate()))
@@ -1587,20 +1645,13 @@ function getFonts() {
 
 /**
  * deletes all messages in the channel
- * @param {Discord.TextChannel} channel the channel to clean
+ * @param {Discord.TextChannel | Discord.DMChannel | Discord.NewsChannel} channel the channel to clean
  */
 async function clearChannel(channel) {
-    let deleteCount = 100;
-    try {
-        await channel.bulkDelete(deleteCount);
-        logger.log("INFO: Deleted " + deleteCount + " messages in " + channel);
-    } catch (e) {
-        // PLAN B YOU KNOW IT, ONE BY ONE, YES DISCORD DEVS
-        let messages = await channel.fetchMessages();
-        for (const imessage of messages) {
-            let message = imessage[1];
-            message.delete();
-        }
+    let messages = await channel.messages.fetch({ limit: 100 });
+    for (const imessage of messages) {
+        let message = imessage[1];
+        message.delete();
     }
 }
 
@@ -1609,22 +1660,22 @@ async function clearChannel(channel) {
 */
 
 /**
- * @param {Discord.Message} message 
+ * @param {Discord.Message | Discord.PartialMessage} message 
  */
 function startLoading(message) {
     message.react("🔄");
 }
 
 /**
- * @param {Discord.Message} message 
+ * @param {Discord.Message | Discord.PartialMessage} message 
  */
 async function endLoading(message, retry) {
-    let reaction = message.reactions.find(r => r.emoji.name == "🔄");
+    let reaction = message.reactions.cache.find(r => r.emoji.name == "🔄");
     if (reaction != null) {
-        await reaction.remove(bot.user);
+        await reaction.users.remove(bot.user);
         message.react("✅");
     } else {
-        if(retry < 5) {
+        if (retry < 5) {
             setTimeout(() => {
                 endLoading(message, retry++);
             }, 1000);
@@ -1649,7 +1700,7 @@ function setupCustomAlarms() {
 function dailyTimeout(id, time) {
     bot.setTimeout(async () => {
         if (time > 0 && players.get(id) && players.get(id).signUps[new Date().getDay()].status == "yes") {
-            interactions.wSendChannel(myServer.members.find(x => x.id == id), "Oublie pas les addons PvP");
+            interactions.wSendAuthor(myServer.members.cache.find(x => x.id == id).user, "Oublie pas les addons PvP");
         }
         dailyTimeout(id, 86400000);
     }, time);
@@ -1662,7 +1713,7 @@ function setupAlarms() {
         for (const hour in alarmsjson[dayName]) {
             let minUntilAlarm = mod(util.getMinUntil(util.findCorrespondingDayNumber(dayName.toLowerCase()), hour, 0), 10080);
             let msUntilAlarm = minUntilAlarm * 60 * 1000;
-            let alarmText = myServer.roles.find(x => x.name === "Rem") + "\n";
+            let alarmText = myServer.roles.cache.find(x => x.name === "Rem") + "\n";
             alarmsjson[dayName][hour].forEach(alarm => {
                 alarmText += "Hey don't forget to grab your " + alarm + " 💰\n";
             });
@@ -1685,30 +1736,29 @@ function mod(n, m) {
 
 async function setupPresence() {
     bot.setInterval(async () => {
-        await myAnnouncement.fetchMessages({ limit: 1 }).then(messages => {
-            let message = messages.first();
-            let issuedTimestamp = message.editedTimestamp ? message.editedTimestamp : message.createdTimestamp;
-            let startDate = new Date();
-            let seconds = (issuedTimestamp - startDate.getTime()) / 1000;
-            let presence = Math.abs(seconds) > 86400 ? "Remedy" : "Announcement " + util.displayHoursMinBefore(Math.abs(Math.round(seconds / 60))) + " ago";
-            try {
-                bot.user.setPresence({
-                    game:
-                    {
-                        name: presence,
-                        type: "PLAYING"
-                    }
-                });
-            } catch (e) {
-                logger.logError("Game status error", e);
-            }
-        });
+        let message = await (await myAnnouncement.messages.fetch({ limit: 1 })).first();
+        let issuedTimestamp = message.editedTimestamp ? message.editedTimestamp : message.createdTimestamp;
+        let startDate = new Date();
+        let seconds = (issuedTimestamp - startDate.getTime()) / 1000;
+        let presence = Math.abs(seconds) > 86400 ? "Remedy" : "Announcement " + util.displayHoursMinBefore(Math.abs(Math.round(seconds / 60))) + " ago";
+        try {
+            bot.user.setPresence({
+                activity:
+                {
+                    name: presence,
+                    type: "PLAYING"
+                }
+            });
+        } catch (e) {
+            console.error(e);
+            logger.logError("Game status error", e);
+        }
     }, 60000);
 }
 
 /**
  * delete a command message
- * @param {Discord.Message} message 
+ * @param {Discord.Message | Discord.PartialMessage} message 
  */
 async function deleteCommand(message) {
     if ((!message.content.startsWith("! ") || (message.content.startsWith("! ") && !await checkAdvPermission(message))) && message.author.id != bot.user.id) {
@@ -1720,12 +1770,12 @@ async function deleteCommand(message) {
 
 /**
  * whether the user has int user permissions
- * @param {Discord.Message} message the original message
+ * @param {Discord.Message | Discord.PartialMessage} message the original message
  * @returns true if user is allowed, false if not
  */
 function checkIntPermission(message) {
     let allowed = false;
-    if (message.member.roles.find(x => x.name == "Members")) {
+    if (message.member.roles.cache.find(x => x.name == "Members")) {
         allowed = true;
     }
     return allowed;
@@ -1733,12 +1783,12 @@ function checkIntPermission(message) {
 
 /**
  * whether the user has adv user permissions
- * @param {Discord.Message} message the original message
+ * @param {Discord.Message | Discord.PartialMessage} message the original message
  * @returns true if user is allowed, false if not
  */
 async function checkAdvPermission(message) {
     let allowed = false;
-    if (message.member.roles.find(x => x.name == "Officers") || message.member.roles.find(x => x.name == "Officer")) {
+    if (message.member.roles.cache.find(x => x.name == "Officers") || message.member.roles.cache.find(x => x.name == "Officer")) {
         allowed = true;
     } else {
         await interactions.wSendAuthor(message.author, 'Insufficient permissions.');
@@ -1757,14 +1807,16 @@ async function checkAdvPermission(message) {
  */
 async function revivePlayer(id, classname, ap, aap, dp, axe = 0, signUps, real) {
     try {
-        let playerId = real ? await myServer.fetchMember(await bot.fetchUser(id)) : id;
+        let playerId = real ? await myServer.members.fetch(await bot.users.fetch(id)) : id;
         let newPlayer = new Player(playerId, classname, ap, aap, dp, real);
-        newPlayer.setAxe(axe);
+
+        newPlayer.setAxe(axe + "");
         if (signUps) {
             newPlayer.setSignUps(signUps);
         }
         return newPlayer;
     } catch (e) {
+        console.error(e);
         logger.logError("No member found for " + id + " !", e);
         return null;
     }
@@ -1776,52 +1828,30 @@ async function revivePlayer(id, classname, ap, aap, dp, axe = 0, signUps, real) 
  * @param {Discord.TextChannel} channel the channel to download from
  */
 async function downloadGearFileFromChannel(filename, channel) {
-    return new Promise((resolve, reject) => {
-        channel.fetchMessages({ limit: 1 }).then(async messages => {
-            messages.forEach(message => {
-                if (message.content == configjson["gearDataMessage"] && message.attachments) {
-                    message.attachments.forEach(async element => {
-                        if (element.filename == filename) {
-                            logger.log("HTTP: Downloading " + filename + " ...");
-                            try {
-                                await files.download(element.url, "./download/" + filename, () => { });
-                                logger.log("HTTP: ...success !");
-                                resolve();
-                            } catch (e) {
-                                logger.logError("Could not download the file", e);
-                                reject();
-                            }
-                        }
-                    });
-
+    try {
+        let message = (await (await channel.messages.fetch({ limit: 1 })).first());
+        if (message.content == configjson["gearDataMessage"] && message.attachments) {
+            for (const iattachment of message.attachments) {
+                let element = iattachment[1];
+                if (element.name == filename) {
+                    await files.download(element.url, "./download/" + filename, () => { });
+                    logger.log("HTTP: " + filename + " downloaded");
                 }
-            });
-        });
-        setTimeout(() => {
-            reject();
-        }, 30000);
-    });
+            }
+
+        }
+    } catch (e) {
+        console.error(e);
+        logger.logError("Could not download the file " + filename, e);
+    }
 }
 
 /**
  * fetch an emoji from the server
  * @param {string} name 
  */
-async function fetchEmoji(name) {
-    return new Promise((resolve, reject) => {
-        try {
-            myDevServer.emojis.find(emoji => {
-                if (emoji.name == name) {
-                    resolve(emoji);
-                }
-            });
-        } catch (e) {
-            reject(name);
-        }
-        setTimeout(() => {
-            reject(name);
-        }, 10000);
-    });
+function fetchEmoji(name) {
+    return myDevServer.emojis.cache.find(emoji => emoji.name == name);
 }
 
 // ------ bot general behavior ------
@@ -1839,53 +1869,136 @@ if (configjson && itemsjson && alarmsjson) {
     var token = process.env.TOKEN ? process.env.TOKEN : configjson["token"];
     bot.login(token);
 
+    var playersjson;
+
     //more globals
+    /**
+     * @type Discord.Guild
+     */
     var myServer;
+    /**
+     * @type Discord.Guild
+     */
     var myTrialServer;
+    /**
+     * @type Discord.Guild
+     */
     var myDevServer;
+    /**
+     * @type Discord.TextChannel
+     */
     var myGate;
+    /**
+     * @type Discord.TextChannel
+     */
     var myGear;
+    /**
+     * @type Discord.TextChannel
+     */
     var myGearData;
+    /**
+     * @type Discord.TextChannel
+     */
     var mySignUp;
+    /**
+     * @type Discord.TextChannel
+     */
     var mySignUpData;
+    /**
+     * @type Discord.TextChannel
+     */
     var myTrial;
+    /**
+     * @type Discord.TextChannel
+     */
     var myTrialHistory;
+    /**
+     * @type Discord.TextChannel
+     */
     var myAnnouncement;
+    /**
+     * @type Discord.TextChannel
+     */
     var myAnnouncementData;
+    /**
+     * @type Discord.TextChannel
+     */
     var myWelcome;
+    /**
+     * @type Discord.TextChannel
+     */
     var myTrialWelcome;
+    /**
+     * @type Discord.TextChannel
+     */
     var myChangelog;
+    /**
+     * @type Discord.TextChannel
+     */
     var myChangelog2;
+    /**
+     * @type Discord.TextChannel
+     */
     var myGuildChat;
     var players = new PlayerArray(itemsjson["classlist"]);
     var classEmojis = [];
-    var loading = 1000;
+    var loading = 2000;
 
     bot.once("ready", async () => {
         logger.log("INFO: Logged in as " + bot.user.tag);
-        bot.user.setPresence({ game: { name: "booting up..." } });
+        bot.user.setPresence({ activity: { name: "booting up..." } });
 
-        myServer = bot.guilds.get(configjson["botServerID"]);
-        myTrialServer = bot.guilds.get(configjson["botTrialServerID"]);
-        myDevServer = bot.guilds.get(configjsonfile["dev"]["botServerID"]);
-        myGearData = bot.channels.get(configjson["gearDataID"]);
-
-        itemsjson["classlist"].forEach(async classname => {
-            classEmojis.push(await fetchEmoji(classname));
-        });
-        itemsjson["classlistSucc"].forEach(async classname => {
-            classEmojis.push(await fetchEmoji(classname + "Succ"));
-        });
-        players.setClassEmojis(classEmojis);
-
-        //attempt to load a previously saved state
         try {
+            myServer = bot.guilds.cache.get(configjson["botServerID"]);
+            myTrialServer = bot.guilds.cache.get(configjson["botTrialServerID"]);
+            myDevServer = bot.guilds.cache.get(configjsonfile["dev"]["botServerID"]);
             // @ts-ignore
-            await downloadGearFileFromChannel("players.json", myGearData);
+            myGate = await bot.channels.fetch(configjson["gateID"]);// @ts-ignore
+            myGear = await bot.channels.fetch(configjson["gearID"]);// @ts-ignore
+            myGearData = await bot.channels.fetch(configjson["gearDataID"]);// @ts-ignore
+            mySignUp = await bot.channels.fetch(configjson["signUpID"]);// @ts-ignore
+            mySignUpData = await bot.channels.fetch(configjson["signUpDataID"]);// @ts-ignore
+            myTrial = await bot.channels.fetch(configjson["trialreactionID"]);// @ts-ignore
+            myTrialHistory = await bot.channels.fetch(configjson["trialhistoryID"]);// @ts-ignore
+            myAnnouncement = await bot.channels.fetch(configjson["announcementID"]);// @ts-ignore
+            myAnnouncementData = await bot.channels.fetch(configjson["announcementDataID"]);// @ts-ignore
+            myWelcome = await bot.channels.fetch(configjson["welcomeID"]);// @ts-ignore
+            myTrialWelcome = await bot.channels.fetch(configjson["trialwelcomeID"]);// @ts-ignore
+            myChangelog = await bot.channels.fetch(configjson["changelogID"]);// @ts-ignore
+            myChangelog2 = await bot.channels.fetch(configjson["changelogID2"]);// @ts-ignore
+            myGuildChat = await bot.channels.fetch(configjson["guildchatID"]);
+
+            logger.log("INFO: Booting up attempt...");
+            if (myServer && myDevServer && myGate && myGear && myGearData && classEmojis && mySignUp
+                && mySignUpData && myAnnouncement && myAnnouncementData && myWelcome && myChangelog && myGuildChat) {
+
+                initEmojis();
+
+                //attempt to load a previously saved state
+                players = await initPlayers(players);
+
+                logger.log("INFO: ... success !");
+
+                if (!init) {
+                    initLookout();
+                    init = true;
+                } else {
+                    logger.log("INFO: Lookout already started");
+                }
+            } else {
+                logger.log("...failed, retrying in " + loading + "ms");
+            }
         } catch (e) {
-            logger.log("INFO: Couldn't find or download the players file");
+            console.error(e);
         }
-        var playersjson = files.openJsonFile("./download/players.json", "utf8");
+    });
+} else {
+    logger.log("INFO: Couldn't find config.json and items.json files, aborting.");
+}
+async function initPlayers(players) {
+    try {
+        await downloadGearFileFromChannel("players.json", myGearData);
+        playersjson = files.openJsonFile("./download/players.json", "utf8");
         if (playersjson) {
             for (const currentPlayer of playersjson) {
                 let revivedPlayer = await revivePlayer(
@@ -1903,44 +2016,20 @@ if (configjson && itemsjson && alarmsjson) {
                 }
             }
         }
-
-        logger.log("INFO: Starting in " + loading + "ms");
-        var interval = setInterval(async () => {
-            myServer = bot.guilds.get(configjson["botServerID"]);
-            myDevServer = bot.guilds.get(configjsonfile["dev"]["botServerID"]);
-            myGate = bot.channels.get(configjson["gateID"]);
-            myGear = bot.channels.get(configjson["gearID"]);
-            myGearData = bot.channels.get(configjson["gearDataID"]);
-            mySignUp = bot.channels.get(configjson["signUpID"]);
-            mySignUpData = bot.channels.get(configjson["signUpDataID"]);
-            myTrial = bot.channels.get(configjson["trialreactionID"]);
-            myTrialHistory = bot.channels.get(configjson["trialhistoryID"]);
-            myAnnouncement = bot.channels.get(configjson["announcementID"]);
-            myAnnouncementData = bot.channels.get(configjson["announcementDataID"]);
-            myWelcome = bot.channels.get(configjson["welcomeID"]);
-            myTrialWelcome = bot.channels.get(configjson["trialwelcomeID"]);
-            myChangelog = bot.channels.get(configjson["changelogID"]);
-            myChangelog2 = bot.channels.get(configjson["changelogID2"]);
-            myGuildChat = bot.channels.get(configjson["guildchatID"]);
-
-            logger.log("INFO: Booting up attempt...");
-            if (myServer && myDevServer && myGate && myGear && myGearData && classEmojis && mySignUp
-                && mySignUpData && myAnnouncement && myAnnouncementData && myWelcome && myChangelog && myGuildChat) {
-                clearInterval(interval);
-                logger.log("INFO: ... success !");
-
-                if (!init) {
-                    initLookout();
-                    init = true;
-                } else {
-                    logger.log("INFO: Lookout already started");
-                }
-            } else {
-                logger.log("...failed, retrying in " + loading + "ms");
-            }
-        }, loading);
-
-    });
-} else {
-    logger.log("INFO: Couldn't find config.json and items.json files, aborting.");
+        return players;
+    } catch (e) {
+        console.error(e);
+        logger.log("INFO: Players file not found");
+    }
 }
+
+function initEmojis() {
+    itemsjson["classlist"].forEach(async (classname) => {
+        classEmojis.push(fetchEmoji(classname));
+    });
+    itemsjson["classlistSucc"].forEach(async (classname) => {
+        classEmojis.push(fetchEmoji(classname + "Succ"));
+    });
+    players.setClassEmojis(classEmojis);
+}
+
