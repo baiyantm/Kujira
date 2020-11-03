@@ -25,7 +25,7 @@ async function initLookout() {
     }
 
     var annCache = { reference: null }; //because JavaScript
-    await cacheAnnouncements(annCache);
+    //await cacheAnnouncements(annCache);
     annCache.reference.forEach(async message => {
         try {
             await downloadFilesFromMessage(message);
@@ -2005,24 +2005,26 @@ async function initPlayers() {
     try {
         await downloadGearFileFromChannel("players.json", myGearData);
         playersjson = files.openJsonFile("./download/players.json", "utf8");
-        for (const currentPlayer of playersjson) {
-            let revivedPlayer = await revivePlayer(
-                currentPlayer["id"],
-                currentPlayer["classname"],
-                currentPlayer["ap"],
-                currentPlayer["aap"],
-                currentPlayer["dp"],
-                currentPlayer["axe"],
-                currentPlayer["signUps"],
-                currentPlayer["real"]
-            );
-            if (revivedPlayer) {
-                players.add(revivedPlayer);
+        if(playersjson) {
+            for (const currentPlayer of playersjson) {
+                let revivedPlayer = await revivePlayer(
+                    currentPlayer["id"],
+                    currentPlayer["classname"],
+                    currentPlayer["ap"],
+                    currentPlayer["aap"],
+                    currentPlayer["dp"],
+                    currentPlayer["axe"],
+                    currentPlayer["signUps"],
+                    currentPlayer["real"]
+                );
+                if (revivedPlayer) {
+                    players.add(revivedPlayer);
+                }
             }
         }
     } catch (e) {
         console.error(e);
-        logger.log("INFO: Couldn't find or download the players file");
+        logger.log("INFO: Players file not found");
     }
 }
 
