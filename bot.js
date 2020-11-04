@@ -273,22 +273,31 @@ async function getNextTrialRoleIndex(guild) {
     return roleCount;
 }
 
+/**
+ * 
+ * @param {Discord.Guild} guild 
+ * @param {number} roleCount 
+ * @param {Discord.Role} trialRole 
+ * @param {string} roleName 
+ */
 async function createNewTrialChannelAndRole(guild, roleCount, trialRole, roleName) {
-    let lastTrialChannel = guild.channels.find(channel => channel.name.startsWith("trial-" + (roleCount - 1)));
+    let lastTrialChannel = guild.channels.cache.find(channel => channel.name.startsWith("trial-" + (roleCount - 1)));
     let newTrialChannel = await lastTrialChannel.clone({
         name: "trial-" + roleCount,
         permissionOverwrites: lastTrialChannel.permissionOverwrites
     });
-    newTrialChannel.edit({
+    await newTrialChannel.edit({
         position: lastTrialChannel.position + 1
     });
-    let lastTrialRole = guild.roles.find(x => x.name == "Trial " + (roleCount - 1));
-    trialRole = await guild.createRole({
-        name: roleName,
-        position: lastTrialRole.position - 1,
-        permissions: lastTrialRole.permissions
+    let lastTrialRole = guild.roles.cache.find(x => x.name == "Trial " + (roleCount - 1));
+    trialRole = await guild.roles.create({
+        data: {
+            name: roleName,
+            position: lastTrialRole.position - 1,
+            permissions: lastTrialRole.permissions
+        }
     });
-    newTrialChannel.overwritePermissions(trialRole, {
+    await newTrialChannel.updateOverwrite(trialRole, {
         VIEW_CHANNEL: true,
         SEND_MESSAGES: true,
         EMBED_LINKS: true,
