@@ -261,7 +261,7 @@ async function getNextTrialRoleIndex(guild) {
         let roleName = "Trial " + roleCount;
         trialRole = guild.roles.cache.find(x => x.name == roleName);
         if (trialRole != undefined) {
-            available = isTrialRoleAvailable(guild, trialRole);
+            available = await isTrialRoleAvailable(guild, trialRole);
             if (!available) {
                 roleCount++;
             }
