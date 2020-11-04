@@ -81,7 +81,7 @@ async function initLookout() {
                 if (channel.messages.cache.has(packet.d.message_id)) return;
                 // Since we have confirmed the message is not cached, let's fetch it
                 // @ts-ignore
-                channel.messages.fetch(packet.d.message_id).then(message => {
+                channel.messages.fetch(packet.d.message_id).then(async message => {
                     // Emojis can have identifiers of name:id format, so we have to account for that case as well
                     const emoji = packet.d.emoji.id ? `${packet.d.emoji.name}:${packet.d.emoji.id}` : packet.d.emoji.name;
                     // This gives us the reaction we need to emit the event properly, in top of the message object
@@ -89,7 +89,7 @@ async function initLookout() {
                     // Adds the currently reacting user to the reaction's users collection.
                     if (reaction) reaction.users.cache.set(packet.d.user_id, bot.users.cache.get(packet.d.user_id));
                     // Check which type of event it is before emitting
-                    bot.emit('messageReactionAdd', reaction, bot.users.cache.get(packet.d.user_id));
+                    bot.emit('messageReactionAdd', reaction, (await bot.users.fetch(packet.d.user_id)));
                 });
             } else if (['MESSAGE_REACTION_REMOVE'].includes(packet.t)) {
                 // Grab the channel to check the message from
@@ -319,7 +319,7 @@ async function isTrialRoleAvailable(guild, role) {
     let members = await guild.members.fetch();
     for (const imember of members) {
         let member = imember[1];
-        if (member.roles.resolveID(role.id)) {
+        if (member.roles.cache.has(role.id)) {
             available = false;
         }
     }
