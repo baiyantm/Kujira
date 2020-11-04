@@ -449,10 +449,10 @@ async function okCommand(message) {
     let publicRole = message.guild.roles.cache.find(x => x.name == "Public");
     if (!message.member.roles.cache.has(publicRole.id)) {
         await message.member.roles.add(publicRole);
-        logger.log("ROLE: " + publicRole + " role added to " + message.author.tag);
+        logger.log("ROLE: " + publicRole + " role added to " + message.author.tag.toString());
         await interactions.wSendAuthor(message.author, itemsjson["urlguildpage"]);
         await interactions.wSendAuthor(message.author, itemsjson["gateguide"] + "\n\nReminder that you agreed to the following rules :\n" + itemsjson["gaterules"]);
-        await interactions.wSendChannel(myWelcome, message.author + " agreed to the rules and got the public role.");
+        await interactions.wSendChannel(myWelcome, message.author.toString() + " agreed to the rules and got the public role.");
     }
 }
 
