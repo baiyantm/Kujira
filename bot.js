@@ -228,7 +228,7 @@ async function onReactionAddHandler(messageReaction, user) {
 async function trialReactionAddHandler(messageReaction, user) {
     if ("⚔️" == messageReaction.emoji.name) {
         const guild = messageReaction.message.guild;
-        const guildMember = guild.members.cache.get(user.id);
+        const guildMember = await guild.members.fetch(user.id);
         if (!guildMember.roles.cache.find(x => x.name == "Officer")) {
             const roleIndex = await getNextTrialRoleIndex(guild);
             const role = guild.roles.cache.find(x => x.name == "Trial " + roleIndex);
