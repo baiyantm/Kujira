@@ -162,9 +162,9 @@ async function initLookout() {
  */
 async function onLeaveHandler(member) {
     if (member.guild.id == myServer.id) {
-        interactions.wSendChannel(myWelcome, member.toString + "(" + member.user.username + ") has left the server.");
+        interactions.wSendChannel(myWelcome, member.toString() + "(" + member.user.username + ") has left the server.");
     } else if (member.guild.id == myTrialServer.id) {
-        interactions.wSendChannel(myTrialWelcome, member.toString + "(" + member.user.username + ") has left the server.");
+        interactions.wSendChannel(myTrialWelcome, member.toString() + "(" + member.user.username + ") has left the server.");
     }
 }
 
