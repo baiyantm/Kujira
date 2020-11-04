@@ -314,13 +314,15 @@ async function createNewTrialChannelAndRole(guild, roleCount, trialRole, roleNam
  * gets the next trial role, if not available, creates it
  * @param {Discord.Guild} guild 
  */
-function isTrialRoleAvailable(guild, role) {
+async function isTrialRoleAvailable(guild, role) {
     let available = true;
-    guild.members.cache.forEach(member => {
-        if (member.roles.cache.has(role.id)) {
+    let members = await guild.members.fetch();
+    for (const imember of members) {
+        let member = imember[1];
+        if (member.roles.resolveID(role.id)) {
             available = false;
         }
-    });
+    }
     return available;
 }
 
@@ -1581,7 +1583,7 @@ async function createHistoryPDF(messages) {
             for (const imessage of messages) {
                 let message = imessage[1];
                 let strDate = getFormattedDate(message.createdAt);
-                content.push(message.author.username + " (" + strDate + ") : " + message);
+                content.push(message.author.toString() + " (" + strDate + ") : " + message.toString());
                 if (message.attachments.size > 0) {
                     await addMessageAttachmentToPDFContent(message, content);
                 }
