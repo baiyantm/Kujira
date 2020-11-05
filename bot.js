@@ -1477,7 +1477,7 @@ async function updatePlayer(players, player, succ, origin) {
         content += "> New player\n";
         content += players.displayFullPlayer(player) + "\n";
     }
-    content += "(Command origin: " + origin + ")";
+    content += "(Command origin: " + origin.toString() + ")";
     await interactions.wSendChannel(myChangelog, content);
     await interactions.wSendChannel(myChangelog2, content);
 }
