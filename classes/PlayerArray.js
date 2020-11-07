@@ -504,9 +504,9 @@ module.exports = class PlayerArray extends Array {
         });
 
         let maxAAP = util.compare(players, (max, player) => {
-            return player.isSuccession() ? false : max.aap < player.aap;
+            return max.aap < player.aap;
         });
-        let maxAAPplayers = players.filter(element => element.isSuccession() ? false : element.aap == maxAAP.aap);
+        let maxAAPplayers = players.filter(element => element.aap == maxAAP.aap);
         let maxAAPstring = "";
         maxAAPplayers.forEach(player => {
             maxAAPstring += this.displayFullPlayer(player) + "\n";
