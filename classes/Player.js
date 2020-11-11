@@ -212,8 +212,8 @@ module.exports = class Player {
          * @param {string} newAxe
          */
         this.setAxe = function (newAxe) {
-            if (Number.isInteger(newAxe) && Number.parseInt(newAxe) >= 0 && Number.parseInt(newAxe) <= 5) {
-                this.axe = newAxe;
+            if (newAxe >= "0" && newAxe <= "5") {
+                this.axe = Number(newAxe);
             } else {
                 if (newAxe.toLowerCase().startsWith("pri") || newAxe.toLowerCase() == "i") {
                     this.axe = 1;
