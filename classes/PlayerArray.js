@@ -147,12 +147,16 @@ module.exports = class PlayerArray extends Array {
             let playersPerField = 20;
             let index = 0;
             let rank = 0;
+            let previousRank = {rank : 0, gs : 0};
             sortedPlayers.forEach(player => {
                 if (sortedPlayersString[index] == undefined) {
                     sortedPlayersString[index] = "";
                 }
                 let rankString = "";
-                switch (rank) {
+                let rankToShow = previousRank.gs == player.getGS() ? previousRank.rank : rank;
+                previousRank.rank = rankToShow;
+                previousRank.gs = player.getGS();
+                switch (rankToShow) {
                     case 0:
                         rankString = "🥇";
                         break;
@@ -163,7 +167,7 @@ module.exports = class PlayerArray extends Array {
                         rankString = "🥉";
                         break;
                     default:
-                        rankString = "**" + util.zeroString(rank + 1) + "** : ";
+                        rankString = "**" + util.zeroString(Number(rankToShow) + 1) + "** : ";
                         break;
                 }
                 sortedPlayersString[index] += rankString + " (" + player.getGS() + ") " + player.name + "\n";
