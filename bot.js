@@ -1047,10 +1047,10 @@ async function getHistoryEmbed(message) {
     message.reactions.cache.forEach(async reaction => {
         let users = "";
         reaction.users.cache.forEach(user => {
-            users += user + "\n";
+            users += user.toString() + "\n";
         });
         if (users) {
-            embed.addField("Reacted with " + reaction.emoji, users, true);
+            embed.addField("Reacted with " + reaction.emoji.toString(), users, true);
         }
     });
     return embed;
