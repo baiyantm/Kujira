@@ -597,7 +597,11 @@ async function gearChannelHandler(enteredCommand, message, commands, botMsg) {
  * @param {Discord.Message | Discord.PartialMessage} message 
  */
 async function clearCommand(message) {
-    await clearChannel(message.channel);
+    if (message.channel instanceof Discord.TextChannel && message.channel.name.startsWith("trial-")) {
+        await historizeChannel(message.channel, myTrialHistory);
+    } else {
+        await clearChannel(message.channel);
+    }
 }
 
 function removeAllCommand() {
@@ -1659,11 +1663,14 @@ function getFonts() {
  * @param {Discord.TextChannel | Discord.DMChannel | Discord.NewsChannel} channel the channel to clean
  */
 async function clearChannel(channel) {
-    let messages = await channel.messages.fetch({ limit: 255 }, false, true);
-    for (const imessage of messages) {
-        let message = imessage[1];
-        message.delete();
-    }
+    let messages;
+    do {
+        messages = await channel.messages.fetch({ limit: 15 }, false, true);
+        for (const imessage of messages) {
+            let message = imessage[1];
+            await message.delete();
+        }
+    } while (messages.size >= 2);
 }
 
 /*
