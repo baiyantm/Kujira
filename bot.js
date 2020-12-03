@@ -1564,7 +1564,7 @@ async function historizeChannel(channelSource, channelDestination) {
     messages = messages.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
     let pdfPath = await createHistoryPDF(messages);
     files.uploadFileToChannel(pdfPath, channelDestination, "History of " + channelSource.name);
-    clearChannel(channelSource);
+    await clearChannel(channelSource);
 }
 
 /**
@@ -1659,7 +1659,7 @@ function getFonts() {
  * @param {Discord.TextChannel | Discord.DMChannel | Discord.NewsChannel} channel the channel to clean
  */
 async function clearChannel(channel) {
-    let messages = await channel.messages.fetch({ limit: 100 });
+    let messages = await channel.messages.fetch({ limit: 255 }, false, true);
     for (const imessage of messages) {
         let message = imessage[1];
         message.delete();
