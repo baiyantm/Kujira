@@ -1587,7 +1587,7 @@ async function createHistoryPDF(messages) {
             for (const imessage of messages) {
                 let message = imessage[1];
                 let strDate = getFormattedDate(message.createdAt);
-                content.push(message.author.toString() + " (" + strDate + ") : " + message.toString());
+                content.push(message.author.username.toString() + " (" + strDate + ") : " + message.toString());
                 if (message.attachments.size > 0) {
                     await addMessageAttachmentToPDFContent(message, content);
                 }
