@@ -1719,8 +1719,10 @@ function dailyTimeout(id, time) {
     bot.setTimeout(async () => {
         if (time > 0 && players.get(id) && players.get(id).signUps[new Date().getDay()].status == "yes") {
             interactions.wSendAuthor(myServer.members.cache.find(x => x.id == id).user, "Oublie pas les addons PvP");
+            dailyTimeout(id, 86400000);
+        } else {
+            dailyTimeout(id, time + 86400000);
         }
-        dailyTimeout(id, 86400000);
     }, time);
 }
 
