@@ -1351,6 +1351,11 @@ function getFormattedSignUps() {
     return signUps;
 }
 
+/**
+ * 
+ * @param {any} playerInfo 
+ * @param {Player} player 
+ */
 function addSignUpInfo(playerInfo, player) {
     let date = new Date();
     playerInfo.status = player.signUps[date.getDay()].status;
@@ -1358,7 +1363,8 @@ function addSignUpInfo(playerInfo, player) {
         playerInfo[util.findCorrespondingDayName(i)] = player.signUps[i].status;
     }
     for (let i = 0; i < 7; i++) {
-        playerInfo[util.findCorrespondingDayName(i) + " Timestamp"] = player.signUps[i].date ? player.signUps[i].date.toLocaleDateString() + " " + player.signUps[i].date.toLocaleTimeString() : "";
+        let date = player.signUps[i].date;
+        playerInfo[util.findCorrespondingDayName(i) + " Timestamp"] = date ? util.findCorrespondingDayName(date.getDay()) + " " + date.getHours() + ":" + date.getMinutes() : "";
     }
 }
 
