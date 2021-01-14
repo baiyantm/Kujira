@@ -1364,7 +1364,7 @@ function addSignUpInfo(playerInfo, player) {
     }
     for (let i = 0; i < 7; i++) {
         let date = player.signUps[i].date;
-        playerInfo[util.findCorrespondingDayName(i) + " Timestamp"] = date ? util.findCorrespondingDayName(date.getDay()) + " " + date.getHours() + ":" + date.getMinutes() : "";
+        playerInfo[util.findCorrespondingDayName(i) + " Timestamp"] = date ? util.findCorrespondingDayName(date.getDay()) + " " + util.valueFormat(date.getHours(), 10) + ":" + util.valueFormat(date.getMinutes(), 10) : "";
     }
 }
 
