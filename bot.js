@@ -1712,8 +1712,10 @@ async function endLoading(message, retry) {
  */
 function setupCustomAlarms() {
     let azreeId = "217391541918892032";
+    let cameId = "161231191708663808";
     let minUtilAlarm = util.getMinUntil(new Date().getDay(), 19, 45) * 60 * 1000;
-    dailyTimeout(azreeId, minUtilAlarm);
+    dailyTimeout(cameId, minUtilAlarm, "TS sound thingie reminder");
+    dailyTimeout(azreeId, minUtilAlarm, "Oublie pas les addons PvP");
     logger.log("INFO: Custom alarms set");
 }
 
@@ -1721,10 +1723,10 @@ function setupCustomAlarms() {
  * @param {string} id 
  * @param {number} time 
  */
-function dailyTimeout(id, time) {
+function dailyTimeout(id, time, message) {
     bot.setTimeout(async () => {
         if (time > 0 && players.get(id) && players.get(id).signUps[new Date().getDay()].status == "yes") {
-            interactions.wSendAuthor(myServer.members.cache.find(x => x.id == id).user, "Oublie pas les addons PvP");
+            interactions.wSendAuthor(myServer.members.cache.find(x => x.id == id).user, message);
             dailyTimeout(id, 86400000);
         } else {
             dailyTimeout(id, time + 86400000);
