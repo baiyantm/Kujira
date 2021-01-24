@@ -1574,7 +1574,7 @@ async function historizeChannel(channelSource, channelDestination) {
     if(messages.size > 0) {
         messages = messages.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
         let pdfPath = await createHistoryPDF(messages);
-        files.uploadFileToChannel(pdfPath, channelDestination, "History of " + channelSource.name);
+        files.uploadFileToChannel(pdfPath, channelDestination, "History of " + channelSource.name + " (" + messages.first().mentions.users.first().toString() + ")");
     }
     await clearChannel(channelSource);
 }
