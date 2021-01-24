@@ -1571,9 +1571,11 @@ async function newBotMessage(channel, content) {
  */
 async function historizeChannel(channelSource, channelDestination) {
     let messages = await channelSource.messages.fetch();
-    messages = messages.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
-    let pdfPath = await createHistoryPDF(messages);
-    files.uploadFileToChannel(pdfPath, channelDestination, "History of " + channelSource.name);
+    if(messages.size > 0) {
+        messages = messages.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+        let pdfPath = await createHistoryPDF(messages);
+        files.uploadFileToChannel(pdfPath, channelDestination, "History of " + channelSource.name);
+    }
     await clearChannel(channelSource);
 }
 
