@@ -873,13 +873,7 @@ async function removeRole(message, role, args) {
  */
 function gearCommand(message, args) {
     startLoading(message);
-    let idToFind;
-    if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
-        idToFind = message.mentions.members.first().id;
-    }
-    else {
-        idToFind = args;
-    }
+    let idToFind = getPlayerByIdOrMention(message, args);
     let playerFound = players.get(idToFind);
     if (playerFound) {
         interactions.wSendChannel(message.channel, players.displayFullPlayerGS(playerFound));
@@ -914,6 +908,7 @@ async function rankingsCommand(args, message) {
  */
 async function statsCommand(args, message) {
     if (!args) {
+        // if there are no arguments
         startLoading(message);
         interactions.wSendChannel(message.channel, players.getStatsEmbed(null));
         endLoading(message, 0);
@@ -921,12 +916,18 @@ async function statsCommand(args, message) {
     else {
         let split = args.split(" ");
         if (split.length == 1) {
-            if (itemsjson["classlist"].includes(split[0])) {
+            let idToFind = getPlayerByIdOrMention(message, split[0]);
+            let playerFound = players.get(idToFind);
+            if (playerFound) {
+                // if it's a player
+                interactions.wSendChannel(message.channel, players.displayFullPlayerGS(playerFound));
+            } else if (itemsjson["classlist"].includes(split[0])) {
+                // if it's a class
                 startLoading(message);
                 interactions.wSendChannel(message.channel, players.getStatsEmbed(split[0]));
                 endLoading(message, 0);
-            }
-            else {
+            } else {
+                // if it's a day
                 let day;
                 if (split[0]) {
                     if (split[0] == "today") {
@@ -951,6 +952,16 @@ async function statsCommand(args, message) {
             }
         }
     }
+}
+
+function getPlayerByIdOrMention(message, id) {
+    let idToFind;
+    if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
+        idToFind = message.mentions.members.first().id;
+    } else {
+        idToFind = id;
+    }
+    return idToFind;
 }
 
 /**
@@ -1571,11 +1582,11 @@ async function newBotMessage(channel, content) {
  */
 async function historizeChannel(channelSource, channelDestination) {
     let messages = await channelSource.messages.fetch();
-    if(messages.size > 0) {
+    if (messages.size > 0) {
         messages = messages.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
         let pdfPath = await createHistoryPDF(messages);
         let historyMessage = "History of " + channelSource.name;
-        if(messages.first().mentions.users.first()) {
+        if (messages.first().mentions.users.first()) {
             historyMessage += " (" + messages.first().mentions.users.first().toString() + ")";
         }
         files.uploadFileToChannel(pdfPath, channelDestination, historyMessage);
