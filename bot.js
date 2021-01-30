@@ -1737,16 +1737,18 @@ function setupCustomAlarms() {
 }
 
 /**
- * @param {string} id 
- * @param {number} time 
+ * send an alarm with a message in time minutes if the person at the id is signed up
+ * @param {string} id
+ * @param {number} time
+ * @param {string} message
  */
 function dailyTimeout(id, time, message) {
     bot.setTimeout(async () => {
         if (time > 0 && players.get(id) && players.get(id).signUps[new Date().getDay()].status == "yes") {
             interactions.wSendAuthor(myServer.members.cache.find(x => x.id == id).user, message);
-            dailyTimeout(id, 86400000);
+            dailyTimeout(id, 86400000, message);
         } else {
-            dailyTimeout(id, time + 86400000);
+            dailyTimeout(id, time + 86400000, message);
         }
     }, time);
 }
