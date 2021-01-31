@@ -36,7 +36,7 @@ async function initLookout() {
 
     var botMsg = { reference: null }; //because JavaScript
     //lookup for a previous message so we keep using it
-    let messages = await myGear.messages.fetch({ limit: 100 });
+    let messages = await fetchAllMessages(myGear);
     var found = 0;
     messages.forEach(message => {
         if (message.author.id == bot.user.id) {
@@ -1028,7 +1028,7 @@ function getPercentAttendanceForADay(day) {
  * @param {{reference : any}} annCache 
  */
 async function cacheAnnouncements(annCache) {
-    let messages = await myAnnouncement.messages.fetch({ limit: 100 });
+    let messages = await fetchAllMessages(myAnnouncement);
     messages.forEach(async message => {
         message.reactions.cache.forEach(async reaction => {
             await reaction.users.fetch();
@@ -1269,9 +1269,35 @@ function signUpsHasId(signUps, id) {
 async function getDaySignUpMessage(day, channel) {
     let message;
     let dateName = util.findCorrespondingDayName(day).toLowerCase();
-    let messages = await channel.messages.fetch({ limit: 100 });
+    let messages = await fetchAllMessages(channel);
     message = messages.find(message => message.content.toLowerCase().startsWith(dateName));
     return message;
+}
+
+/**
+ * @param {Discord.TextChannel} channel 
+ * @param {number} limit
+ * @return array containing all messages of the channel
+ */
+async function fetchAllMessages(channel, limit = 500) {
+    const sum_messages = [];
+    let last_id;
+
+    while (true) {
+        const options = { limit: 100 };
+        if (last_id) {
+            options.before = last_id;
+        }
+
+        const messages = await channel.messages.fetch(options);
+        sum_messages.push(...messages.array());
+        last_id = messages.last().id;
+
+        if (messages.size != 100 || sum_messages.length >= limit) {
+            break;
+        }
+    }
+    return sum_messages;
 }
 
 async function collectSignUps() {
@@ -1581,13 +1607,13 @@ async function newBotMessage(channel, content) {
  * @param {Discord.TextChannel} channelDestination
  */
 async function historizeChannel(channelSource, channelDestination) {
-    let messages = await channelSource.messages.fetch();
-    if (messages.size > 0) {
+    let messages = await fetchAllMessages(channelSource);
+    if (messages.length > 0) {
         messages = messages.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
         let pdfPath = await createHistoryPDF(messages);
         let historyMessage = "History of " + channelSource.name;
-        if (messages.first().mentions.users.first()) {
-            historyMessage += " (" + messages.first().mentions.users.first().toString() + ")";
+        if (messages[0].mentions.users.first()) {
+            historyMessage += " (" + messages[0].mentions.users.first().toString() + ")";
         }
         files.uploadFileToChannel(pdfPath, channelDestination, historyMessage);
     }
@@ -1595,7 +1621,7 @@ async function historizeChannel(channelSource, channelDestination) {
 }
 
 /**
- * @param {Discord.Collection <String, Discord.Message>} messages
+ * @param {Discord.Message[]} messages
  */
 async function createHistoryPDF(messages) {
     return new Promise(async (resolve, reject) => {
@@ -1607,8 +1633,7 @@ async function createHistoryPDF(messages) {
             let fs = require('fs');
 
             let content = [];
-            for (const imessage of messages) {
-                let message = imessage[1];
+            for (const message of messages) {
                 let strDate = getFormattedDate(message.createdAt);
                 content.push(message.author.username.toString() + " (" + strDate + ") : " + message.toString());
                 if (message.attachments.size > 0) {
