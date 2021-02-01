@@ -1291,7 +1291,9 @@ async function fetchAllMessages(channel, limit = 500) {
 
         const messages = await channel.messages.fetch(options);
         sum_messages.push(...messages.array());
-        last_id = messages.last().id;
+        if(messages.last()) {
+            last_id = messages.last().id;
+        }
 
         if (messages.size != 100 || sum_messages.length >= limit) {
             break;
