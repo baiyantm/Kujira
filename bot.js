@@ -10,7 +10,7 @@ const util = require("./modules/util");
 const Player = require('./classes/Player');
 const PlayerArray = require('./classes/PlayerArray');
 
-downloadShrinkPDF();
+ghostScriptGet();
 
 async function initLookout() {
     bot.user.setPresence({ activity: { name: 'up', type: "PLAYING" } });
@@ -601,7 +601,7 @@ async function gearChannelHandler(enteredCommand, message, commands, botMsg) {
  */
 async function clearCommand(message) {
     startLoading(message);
-    if (message.channel instanceof Discord.TextChannel && message.channel.name.startsWith("trial-")) {
+    if (message.channel instanceof Discord.TextChannel && message.channel.name.startsWith("trial-") && message.guild == myTrialServer) {
         await historizeChannel(message.channel, myTrialHistory);
     } else {
         await clearChannel(message.channel);
@@ -1618,11 +1618,18 @@ async function historizeChannel(channelSource, channelDestination) {
     if (messages.length > 0) {
         messages = messages.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
         let pdfPath = await createHistoryPDF(messages);
-        let historyMessage = "History of " + channelSource.name;
+        let name = "";
         if (messages[0].mentions.users.first()) {
-            historyMessage += " (" + messages[0].mentions.users.first().toString() + ")";
+            name = " (" + messages[0].mentions.users.first().toString() + ")";
         }
-        files.uploadFileToChannel(pdfPath, channelDestination, historyMessage);
+        let historyMessage = "History of " + channelSource.name + name;
+        let output = pdfPath.replace('.', 'o.');
+        if(!hasGs) {
+            optimizePDF(pdfPath, output);
+            files.uploadFileToChannel(output, channelDestination, historyMessage);
+        } else {
+            files.uploadFileToChannel(pdfPath, channelDestination, historyMessage);
+        }
     }
     await clearChannel(channelSource);
 }
@@ -1660,7 +1667,6 @@ async function createHistoryPDF(messages) {
             pdfDoc.end();
             stream.on('finish', function () {
                 logger.log('INFO: ' + pdfName + ' created');
-                optimizePDF(pdfName, pdfName);
                 resolve(pdfName);
             });
         } catch (err) {
@@ -1670,19 +1676,14 @@ async function createHistoryPDF(messages) {
     });
 }
 
+var hasGs;
 /**
- * download shrinkpdf.sh, script to shrink a pdf file using gs
+ * make sure we have gs
+ * maybe make this work for windows in the future idk
  */
-function downloadShrinkPDF() {
-    Shell.exec('apt-get install ghostscript');
-    const http = require('http'); // or 'https' for https:// URLs
-    const fs = require('fs');
-
-    const file = fs.createWriteStream("download/shrinkpdf.sh");
-    const request = http.get("http://www.alfredklomp.com/programming/shrinkpdf/shrinkpdf.sh", function (response) {
-        response.pipe(file);
-    });
-    logger.log("INFO: Downloaded shrinkpdf");
+function ghostScriptGet() {
+    hasGs = !Shell.exec('apt-get install ghostscript').code;
+    logger.log('CONFIG: GS ' + (hasGs ? 'ON' : 'OFF'));
 }
 
 /**
@@ -1691,10 +1692,26 @@ function downloadShrinkPDF() {
  * @param {string} output output path
  */
 function optimizePDF(input, output) {
-    let path = require('path');
-    let shrinkpdf = ['download', 'shrinkpdf.sh'].join(path.sep);
-    let OPTS = input + ' ' + output + ' 250';
-    Shell.exec(shrinkpdf + ' ' + OPTS);
+    let dpi = 250;
+    let shrinkpdf = 'gs					\
+    -q -dNOPAUSE -dBATCH -dSAFER		\
+    -sDEVICE=pdfwrite			\
+    -dCompatibilityLevel=1.3		\
+    -dPDFSETTINGS=/screen			\
+    -dEmbedAllFonts=true			\
+    -dSubsetFonts=true			\
+    -dAutoRotatePages=/None		\
+    -dColorImageDownsampleType=/Bicubic	\
+    -dColorImageResolution='+ dpi + '		\
+    -dGrayImageDownsapleType=/Bicubic	\
+    -dGrayImageResolution='+ dpi + '		\
+    -dMonoImageDownsampleType=/Subsample	\
+    -dMonoImageResolution='+ dpi + '		\
+    -sOutputFile="'+ output + '"			\
+    "'+ input + '"';
+    logger.log('EXEC:\n' + shrinkpdf);
+    let trace = Shell.exec(shrinkpdf);
+    logger.log('TRACE:\n' + trace.stdout);
 }
 
 /**
