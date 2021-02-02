@@ -33,7 +33,7 @@ async function download(url, dest, cb) {
  * uploads a file to a channel
  * @param {string} filepath the path to the file to upload
  * @param {Discord.TextChannel} channel the dest channel
- * @param {string} content the dest channel
+ * @param {string} content the message
  */
 function uploadFileToChannel(filepath, channel, content) {
     channel.send(content, {

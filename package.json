@@ -14,7 +14,8 @@
         "image-to-base64": "^2.1.1",
         "json2csv": "^4.5.4",
         "pdfmake": "^0.1.69",
-        "request": "^2.88.2"
+        "request": "^2.88.2",
+        "shelljs": "^0.8.4"
     },
     "engines": {
         "node": "14.9.x"

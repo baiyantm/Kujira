@@ -1,4 +1,5 @@
 // @ts-check
+const Shell = require('shelljs');
 const Discord = require('discord.js');
 const fs = require('fs');
 const { parse } = require('json2csv');
@@ -8,6 +9,8 @@ const logger = require("./modules/logger");
 const util = require("./modules/util");
 const Player = require('./classes/Player');
 const PlayerArray = require('./classes/PlayerArray');
+
+downloadShrinkPDF();
 
 async function initLookout() {
     bot.user.setPresence({ activity: { name: 'up', type: "PLAYING" } });
@@ -1291,7 +1294,7 @@ async function fetchAllMessages(channel, limit = 500) {
 
         const messages = await channel.messages.fetch(options);
         sum_messages.push(...messages.array());
-        if(messages.last()) {
+        if (messages.last()) {
             last_id = messages.last().id;
         }
 
@@ -1654,6 +1657,8 @@ async function createHistoryPDF(messages) {
             let stream = pdfDoc.pipe(fs.createWriteStream(pdfName));
             pdfDoc.end();
             stream.on('finish', function () {
+                logger.log('INFO: ' + pdfName + ' created');
+                optimizePDF(pdfName, pdfName);
                 resolve(pdfName);
             });
         } catch (err) {
@@ -1661,6 +1666,33 @@ async function createHistoryPDF(messages) {
             reject(err);
         }
     });
+}
+
+/**
+ * download shrinkpdf.sh, script to shrink a pdf file using gs
+ */
+function downloadShrinkPDF() {
+    Shell.exec('apt-get install ghostscript');
+    const http = require('http'); // or 'https' for https:// URLs
+    const fs = require('fs');
+
+    const file = fs.createWriteStream("download/shrinkpdf.sh");
+    const request = http.get("http://www.alfredklomp.com/programming/shrinkpdf/shrinkpdf.sh", function (response) {
+        response.pipe(file);
+    });
+    logger.log("INFO: Downloaded shrinkpdf");
+}
+
+/**
+ * shell exec pts/pdfsizeopt to optimize a pdf's filesize
+ * @param {string} input input path
+ * @param {string} output output path
+ */
+function optimizePDF(input, output) {
+    let path = require('path');
+    let shrinkpdf = ['download', 'shrinkpdf.sh'].join(path.sep);
+    let OPTS = input + ' ' + output + ' 250';
+    Shell.exec(shrinkpdf + ' ' + OPTS);
 }
 
 /**
