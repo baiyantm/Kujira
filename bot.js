@@ -606,7 +606,6 @@ async function clearCommand(message) {
     } else {
         await clearChannel(message.channel);
     }
-    endLoading(message);
 }
 
 function removeAllCommand() {
@@ -1614,6 +1613,7 @@ async function newBotMessage(channel, content) {
  * @param {Discord.TextChannel} channelDestination
  */
 async function historizeChannel(channelSource, channelDestination) {
+    logger.log("INFO: Historizing " + channelSource.name);
     let messages = await fetchAllMessages(channelSource);
     if (messages.length > 0) {
         messages = messages.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
@@ -1624,7 +1624,7 @@ async function historizeChannel(channelSource, channelDestination) {
         }
         let historyMessage = "History of " + channelSource.name + name;
         let output = pdfPath.replace('.', 'o.');
-        if (!hasGs) {
+        if (hasGs) {
             optimizePDF(pdfPath, output);
             files.uploadFileToChannel(output, channelDestination, historyMessage);
         } else {
@@ -1682,11 +1682,11 @@ var hasGs;
  * maybe make this work for windows in the future idk
  */
 function ghostScriptGet() {
-    hasGs = Shell.exec('gs --help').stdout.startsWith('GPL');
-    let hasApt = Shell.exec('apt-get -h').stdout.startsWith("apt");
+    hasGs = Shell.exec('gs --help', { silent: true }).stdout.startsWith('GPL');
+    let hasApt = Shell.exec('apt-get -h', { silent: true }).stdout.startsWith("apt");
     if (!hasGs && hasApt) {
-        Shell.exec('apt-get install ghostscript');
-        hasGs = Shell.exec('gs --help').stdout.startsWith('GPL');
+        Shell.exec('apt-get install ghostscript', { silent: true });
+        hasGs = Shell.exec('gs --help', { silent: true }).stdout.startsWith('GPL');
     }
     logger.log('CONFIG: GS ' + (hasGs ? 'ON' : 'OFF'));
 }
@@ -1715,8 +1715,8 @@ function optimizePDF(input, output) {
     -sOutputFile="'+ output + '"			\
     "'+ input + '"';
     logger.log('EXEC:\n' + shrinkpdf);
-    let trace = Shell.exec(shrinkpdf);
-    logger.log('TRACE:\n' + trace.stdout);
+    let code = Shell.exec(shrinkpdf).code;
+    logger.log('RESULT:\n' + code);
 }
 
 /**
