@@ -1624,7 +1624,7 @@ async function historizeChannel(channelSource, channelDestination) {
         }
         let historyMessage = "History of " + channelSource.name + name;
         let output = pdfPath.replace('.', 'o.');
-        if(!hasGs) {
+        if (!hasGs) {
             optimizePDF(pdfPath, output);
             files.uploadFileToChannel(output, channelDestination, historyMessage);
         } else {
@@ -1682,7 +1682,12 @@ var hasGs;
  * maybe make this work for windows in the future idk
  */
 function ghostScriptGet() {
-    hasGs = !Shell.exec('apt-get install ghostscript').code;
+    hasGs = Shell.exec('gs').stdout.startsWith('GPL');
+    let hasApt = Shell.exec('apt-get -h').stdout.startsWith("apt");
+    if (!hasGs && hasApt) {
+        Shell.exec('apt-get install ghostscript');
+        hasGs = Shell.exec('gs').stdout.startsWith('GPL');
+    }
     logger.log('CONFIG: GS ' + (hasGs ? 'ON' : 'OFF'));
 }
 
