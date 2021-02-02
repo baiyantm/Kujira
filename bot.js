@@ -600,11 +600,13 @@ async function gearChannelHandler(enteredCommand, message, commands, botMsg) {
  * @param {Discord.Message | Discord.PartialMessage} message 
  */
 async function clearCommand(message) {
+    startLoading(message);
     if (message.channel instanceof Discord.TextChannel && message.channel.name.startsWith("trial-")) {
         await historizeChannel(message.channel, myTrialHistory);
     } else {
         await clearChannel(message.channel);
     }
+    endLoading(message);
 }
 
 function removeAllCommand() {
