@@ -1682,11 +1682,11 @@ var hasGs;
  * maybe make this work for windows in the future idk
  */
 function ghostScriptGet() {
-    hasGs = Shell.exec('gs').stdout.startsWith('GPL');
+    hasGs = Shell.exec('gs --help').stdout.startsWith('GPL');
     let hasApt = Shell.exec('apt-get -h').stdout.startsWith("apt");
     if (!hasGs && hasApt) {
         Shell.exec('apt-get install ghostscript');
-        hasGs = Shell.exec('gs').stdout.startsWith('GPL');
+        hasGs = Shell.exec('gs --help').stdout.startsWith('GPL');
     }
     logger.log('CONFIG: GS ' + (hasGs ? 'ON' : 'OFF'));
 }
