@@ -474,7 +474,7 @@ module.exports = class PlayerArray extends Array {
         let minDP = util.compare(players, (min, player) => {
             return player.isDpBuild() ? false : min.dp > player.dp;
         });
-        let minDPplayers = players.filter(element => element.dp == minDP.dp);
+        let minDPplayers = players.filter(element => element.isDpBuild() ? false : element.dp == minDP.dp);
         let minDPstring = "";
         minDPplayers.forEach(player => {
             minDPstring += this.displayFullPlayer(player) + "\n";
@@ -483,7 +483,7 @@ module.exports = class PlayerArray extends Array {
         let minGS = util.compare(players, (min, player) => {
             return player.isDpBuild() ? false : min.getGS() > player.getGS();
         });
-        let minGSplayers = players.filter(element => element.getGS() == minGS.getGS());
+        let minGSplayers = players.filter(element => element.isDpBuild() ? false : element.getGS() == minGS.getGS());
         let minGSstring = "";
         minGSplayers.forEach(player => {
             minGSstring += this.displayFullPlayer(player) + "\n";
@@ -501,7 +501,7 @@ module.exports = class PlayerArray extends Array {
         let maxAP = util.compare(players, (max, player) => {
             return player.isDpBuild() ? false : max.ap < player.ap;
         });
-        let maxAPplayers = players.filter(element => element.ap == maxAP.ap);
+        let maxAPplayers = players.filter(element => element.isDpBuild() ? false : element.ap == maxAP.ap);
         let maxAPstring = "";
         maxAPplayers.forEach(player => {
             maxAPstring += this.displayFullPlayer(player) + "\n";
@@ -510,7 +510,7 @@ module.exports = class PlayerArray extends Array {
         let maxAAP = util.compare(players, (max, player) => {
             return player.isDpBuild() ? false : max.aap < player.aap;
         });
-        let maxAAPplayers = players.filter(element => element.aap == maxAAP.aap);
+        let maxAAPplayers = players.filter(element => element.isDpBuild() ? false : element.aap == maxAAP.aap);
         let maxAAPstring = "";
         maxAAPplayers.forEach(player => {
             maxAAPstring += this.displayFullPlayer(player) + "\n";
@@ -519,7 +519,7 @@ module.exports = class PlayerArray extends Array {
         let maxDP = util.compare(players, (max, player) => {
             return player.isDpBuild() ? false : max.dp < player.dp;
         });
-        let maxDPplayers = players.filter(element => element.dp == maxDP.dp);
+        let maxDPplayers = players.filter(element => element.isDpBuild() ? false : element.dp == maxDP.dp);
         let maxDPstring = "";
         maxDPplayers.forEach(player => {
             maxDPstring += this.displayFullPlayer(player) + "\n";
@@ -528,7 +528,7 @@ module.exports = class PlayerArray extends Array {
         let maxGS = util.compare(players, (max, player) => {
             return player.isDpBuild() ? false : max.getGS() < player.getGS();
         });
-        let maxGSplayers = players.filter(element => element.getGS() == maxGS.getGS());
+        let maxGSplayers = players.filter(element => element.isDpBuild() ? false : element.getGS() == maxGS.getGS());
         let maxGSstring = "";
         maxGSplayers.forEach(player => {
             maxGSstring += this.displayFullPlayer(player) + "\n";
