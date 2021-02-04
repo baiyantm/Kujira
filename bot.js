@@ -237,9 +237,10 @@ async function trialReactionAddHandler(messageReaction, user) {
             const role = guild.roles.cache.find(x => x.name == "Trial " + roleIndex);
             const channel = guild.channels.cache.find(x => x.name == "trial-" + roleIndex);
             try {
-                // @ts-ignore
-                await historizeChannel(channel, myTrialHistory);
-
+                if(channel) {
+                    // @ts-ignore
+                    await historizeChannel(channel, myTrialHistory);
+                }
                 await guildMember.roles.add(role);
                 await guildMember.roles.add(guild.roles.cache.find(x => x.name == "Trialee"));
                 // @ts-ignore
@@ -267,6 +268,11 @@ async function getNextTrialRoleIndex(guild) {
             available = await isTrialRoleAvailable(guild, trialRole);
             if (!available) {
                 roleCount++;
+            } else {
+                let trialChannel = guild.channels.cache.find(channel => channel.name.startsWith("trial-" + roleCount));
+                if(!trialChannel) {
+                    await createNewTrialChannelAndRole(guild, roleCount, trialRole, roleName);
+                }
             }
         } else {
             await createNewTrialChannelAndRole(guild, roleCount, trialRole, roleName);
@@ -284,7 +290,9 @@ async function getNextTrialRoleIndex(guild) {
  * @param {string} roleName 
  */
 async function createNewTrialChannelAndRole(guild, roleCount, trialRole, roleName) {
-    let lastTrialChannel = guild.channels.cache.find(channel => channel.name.startsWith("trial-" + (roleCount - 1)));
+    let channels = guild.channels.cache.array();
+    let trialMax = getTrialMaxNumber(channels);
+    let lastTrialChannel = guild.channels.cache.find(channel => channel.name.startsWith("trial-" + trialMax));
     let newTrialChannel = await lastTrialChannel.clone({
         name: "trial-" + roleCount,
         permissionOverwrites: lastTrialChannel.permissionOverwrites
@@ -292,14 +300,16 @@ async function createNewTrialChannelAndRole(guild, roleCount, trialRole, roleNam
     await newTrialChannel.edit({
         position: lastTrialChannel.position + 1
     });
-    let lastTrialRole = guild.roles.cache.find(x => x.name == "Trial " + (roleCount - 1));
-    trialRole = await guild.roles.create({
-        data: {
-            name: roleName,
-            position: lastTrialRole.position - 1,
-            permissions: lastTrialRole.permissions
-        }
-    });
+    let lastTrialRole = guild.roles.cache.find(x => x.name == "Trial " + trialMax);
+    if(!trialRole) {
+        trialRole = await guild.roles.create({
+            data: {
+                name: roleName,
+                position: lastTrialRole.position - 1,
+                permissions: lastTrialRole.permissions
+            }
+        });
+    }
     await newTrialChannel.updateOverwrite(trialRole, {
         VIEW_CHANNEL: true,
         SEND_MESSAGES: true,
@@ -311,6 +321,18 @@ async function createNewTrialChannelAndRole(guild, roleCount, trialRole, roleNam
     });
     newTrialChannel.permissionOverwrites.get(lastTrialRole.id).delete();
     return trialRole;
+}
+
+function getTrialMaxNumber(channels) {
+    let trialMax = 1;
+    for (let i = 0; i < channels.length; i++) {
+        let channel = channels[i];
+        if (channel.name.startsWith("trial-")) {
+            let trialNumber = parseInt(channel.name.split("-")[1]);
+            trialMax = trialMax > trialNumber ? trialMax : trialNumber;
+        }
+    }
+    return trialMax;
 }
 
 /**
