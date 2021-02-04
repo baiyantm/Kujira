@@ -472,7 +472,7 @@ module.exports = class PlayerArray extends Array {
         });
 
         let minDP = util.compare(players, (min, player) => {
-            return min.dp > player.dp;
+            return player.isDpBuild() ? false : min.dp > player.dp;
         });
         let minDPplayers = players.filter(element => element.dp == minDP.dp);
         let minDPstring = "";
@@ -481,7 +481,7 @@ module.exports = class PlayerArray extends Array {
         });
 
         let minGS = util.compare(players, (min, player) => {
-            return min.getGS() > player.getGS();
+            return player.isDpBuild() ? false : min.getGS() > player.getGS();
         });
         let minGSplayers = players.filter(element => element.getGS() == minGS.getGS());
         let minGSstring = "";
@@ -499,7 +499,7 @@ module.exports = class PlayerArray extends Array {
         });
 
         let maxAP = util.compare(players, (max, player) => {
-            return max.ap < player.ap;
+            return player.isDpBuild() ? false : max.ap < player.ap;
         });
         let maxAPplayers = players.filter(element => element.ap == maxAP.ap);
         let maxAPstring = "";
@@ -508,7 +508,7 @@ module.exports = class PlayerArray extends Array {
         });
 
         let maxAAP = util.compare(players, (max, player) => {
-            return max.aap < player.aap;
+            return player.isDpBuild() ? false : max.aap < player.aap;
         });
         let maxAAPplayers = players.filter(element => element.aap == maxAAP.aap);
         let maxAAPstring = "";
@@ -517,7 +517,7 @@ module.exports = class PlayerArray extends Array {
         });
 
         let maxDP = util.compare(players, (max, player) => {
-            return max.dp < player.dp;
+            return player.isDpBuild() ? false : max.dp < player.dp;
         });
         let maxDPplayers = players.filter(element => element.dp == maxDP.dp);
         let maxDPstring = "";
@@ -526,7 +526,7 @@ module.exports = class PlayerArray extends Array {
         });
 
         let maxGS = util.compare(players, (max, player) => {
-            return max.getGS() < player.getGS();
+            return player.isDpBuild() ? false : max.getGS() < player.getGS();
         });
         let maxGSplayers = players.filter(element => element.getGS() == maxGS.getGS());
         let maxGSstring = "";
