@@ -249,6 +249,7 @@ module.exports = class PlayerArray extends Array {
                 embed.addField("Best Axe : " + stats.max.axe.value.getAxe(true), stats.max.axe.string, true);
                 embed.addField("Worst Axe : " + stats.min.axe.value.getAxe(true), stats.min.axe.string, true);
             }
+            embed.addField("Average Axe Lv : ", avg.axe, true);
         } else if (players.length > 0) {
             embed.setDescription(this.displayFullPlayer(players[0]));
         } else {
@@ -429,6 +430,9 @@ module.exports = class PlayerArray extends Array {
             }),
             "gs": util.avg(players, player => {
                 return player.isDpBuild() ? 0 : player.getGS();
+            }),
+            "axe": util.avg(players, player => {
+                return player.axe;
             })
         };
         return avg;
