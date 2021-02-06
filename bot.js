@@ -823,7 +823,7 @@ async function allChannelsHandler(enteredCommand, commands, message) {
     else if (enteredCommand == commands["sub"]) {
         let rolename = args;
         //add roles here
-        if (rolename == "rem" || rolename == "reminder") {
+        if (rolename == "rem" || rolename == "reminder" || rolename == "dnd") {
             await changeRole(message, rolename, args);
         }
     }
