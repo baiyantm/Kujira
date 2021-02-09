@@ -233,6 +233,7 @@ async function trialReactionAddHandler(messageReaction, user) {
         const guild = messageReaction.message.guild;
         const guildMember = await guild.members.fetch(user.id);
         if (!guildMember.roles.cache.find(x => x.name == "Officer")) {
+            interactions.wSendChannel(myTrialWelcome, guildMember.toString() + " clicked on ⚔️");
             const roleIndex = await getNextTrialRoleIndex(guild);
             const role = guild.roles.cache.find(x => x.name == "Trial " + roleIndex);
             const channel = guild.channels.cache.find(x => x.name == "trial-" + roleIndex);
@@ -246,6 +247,7 @@ async function trialReactionAddHandler(messageReaction, user) {
                 // @ts-ignore
                 await interactions.wSendChannel(channel, user.toString() + " Hi, please post your gear screenshot here in this format: https://imgur.com/a/eYiNNgd")
             } catch (e) {
+                interactions.wSendChannel(myTrialWelcome, "Error while trying to add a trialee : " + e.toString());
                 console.error(e);
                 logger.log("ERROR: Couldn't add " + role.name + " to " + guildMember.user.tag);
             }
@@ -360,6 +362,7 @@ async function trialReactionRemoveHandler(messageReaction, user) {
     if ("⚔️" == messageReaction.emoji.name) {
         const guildMember = messageReaction.message.guild.members.cache.get(user.id);
         if (!guildMember.roles.cache.find(x => x.name == "Officer")) {
+            interactions.wSendChannel(myTrialWelcome, guildMember.toString() + " unclicked on ⚔️");
             guildMember.roles.cache.forEach(role => {
                 if (role.name.startsWith("Trial")) {
                     try {
