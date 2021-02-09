@@ -1425,11 +1425,11 @@ function addSignUpInfo(playerInfo, player) {
     let date = new Date();
     playerInfo.status = player.signUps[date.getDay()].status;
     for (let i = 0; i < 7; i++) {
-        playerInfo[util.findCorrespondingDayName(i)] = player.signUps[i].status;
-    }
-    for (let i = 0; i < 7; i++) {
         let date = player.signUps[i].date;
-        playerInfo[util.findCorrespondingDayName(i) + " Timestamp"] = date ? util.findCorrespondingDayName(date.getDay()) + " " + util.valueFormat(date.getHours(), 10) + ":" + util.valueFormat(date.getMinutes(), 10) : "";
+        playerInfo[util.findCorrespondingDayName(i)] = player.signUps[i].status;
+        if(date) {
+            playerInfo[util.findCorrespondingDayName(i)] += ' on ' + util.findCorrespondingDayName(date.getDay()) + " " + util.valueFormat(date.getHours(), 10) + ":" + util.valueFormat(date.getMinutes(), 10);
+        }
     }
 }
 
