@@ -1633,11 +1633,12 @@ async function updatePlayerAxe(author, args) {
  * @param {string} args 
  */
 async function updatePlayerHorse(author, args) {
+    let horseType = args.toLowerCase();
     let playerFound = players.get(author.id);
     if (playerFound && playerFound instanceof Player) {
-        if (args && itemsjson['horselist'].includes(args) && playerFound.horse != args) {
+        if (horseType && itemsjson['horselist'].includes(horseType) && playerFound.horse != horseType) {
             let oldPlayer = { ...playerFound };
-            playerFound.horse = args;
+            playerFound.horse = horseType;
             let content = "> Updated " + playerFound.getNameOrMention() + "'s horse :\n" + players.getHorseEmoji(oldPlayer) + " -> " + players.getHorseEmoji(playerFound);
             await interactions.wSendChannel(myChangelog, content);
             await interactions.wSendChannel(myChangelog2, content);
