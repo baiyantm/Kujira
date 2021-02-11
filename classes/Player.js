@@ -28,6 +28,7 @@ module.exports = class Player {
         this.dp = dp;
         this.real = real;
         this.axe = 0;
+        this.horse = undefined;
         this.signUps = new SignUpArray();
 
         /**
@@ -41,24 +42,23 @@ module.exports = class Player {
         this.name = this.applyNamePolicy(this.name);
 
         /**
-         * @returns a string with the name including gs
-         */
-        this.displayWithGS = function () {
-            return this.name + " " + (this.hasAxe() ? "(**" + this.getAxe() + "**)" : "") + "\n\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" + this.displayNoName() + " (" + this.getGS() + ")";
-        };
-
-        /**
-         * @returns a string with the name
-         */
-        this.display = function () {
-            return this.name + " " + (this.hasAxe() ? "(**" + this.getAxe() + "**)" : "") + "\n\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" + this.displayNoName();
-        };
-
-        /**
          * @returns a string with the name
          */
         this.displayNoName = function () {
             return this.valueFormat(this.ap) + " / " + this.valueFormat(this.aap) + " / " + this.valueFormat(this.dp);
+        };
+
+        /**
+         * @returns a string with the name
+         */
+        this.display = function (classEmoji, horseEmoji,
+            showClass = false, showAxe = false, showHorse = false, showName = false, showGs = false) {
+            return (showClass ? classEmoji + "\xa0" : "") +
+                (showName ? this.name + " " : "") +
+                (showAxe ? (this.hasAxe() ? "(**" + this.getAxe() + "**)" : "") : "") +
+                (showHorse ? (this.hasHorse() ? horseEmoji : "") : "") +
+                "\n\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" + this.displayNoName() +
+                (showGs ? " (" + this.getGS() + ")" : "");
         };
 
         /**
@@ -102,10 +102,6 @@ module.exports = class Player {
 
         this.getNameOrMention = function () {
             return this.real ? "<@" + this.id + ">" : this.id;
-        }
-
-        this.toString = function () {
-            return this.display();
         }
 
         /**
@@ -208,6 +204,10 @@ module.exports = class Player {
             return this.axe;
         }
 
+        this.hasHorse = function () {
+            return this.horse;
+        }
+
         /**
          * @param {string} newAxe
          */
@@ -264,6 +264,10 @@ module.exports = class Player {
 
         this.resetSignUps = function () {
             this.signUps.reset();
+        };
+
+        this.toString = function () {
+            return this.display();
         }
     }
 }

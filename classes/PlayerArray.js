@@ -10,6 +10,7 @@ module.exports = class PlayerArray extends Array {
     constructor(classList) {
         super();
         this.classEmojis = [];
+        this.horseEmojis = [];
         this.classList = classList;
     }
 
@@ -19,6 +20,14 @@ module.exports = class PlayerArray extends Array {
      */
     setClassEmojis(classEmojis) {
         this.classEmojis = classEmojis;
+    }
+
+    /**
+     * sets the horseEmojis attribute
+     * @param {any[]} horseEmojis 
+     */
+    setHorseEmojis(horseEmojis) {
+        this.horseEmojis = horseEmojis;
     }
 
     /**
@@ -147,7 +156,7 @@ module.exports = class PlayerArray extends Array {
             let playersPerField = 20;
             let index = 0;
             let rank = 0;
-            let previousRank = {rank : 0, gs : 0};
+            let previousRank = { rank: 0, gs: 0 };
             sortedPlayers.forEach(player => {
                 if (sortedPlayersString[index] == undefined) {
                     sortedPlayersString[index] = "";
@@ -351,7 +360,8 @@ module.exports = class PlayerArray extends Array {
      * @returns a string containing the server class emoji and the player display
      */
     displayFullPlayerGS(player) {
-        return this.getClassEmoji(player) + "\xa0" + player.displayWithGS();
+        return player.display(this.getClassEmoji(player), this.getHorseEmoji(player),
+            true, true, true, true, true);
     }
 
     /**
@@ -359,7 +369,8 @@ module.exports = class PlayerArray extends Array {
      * @returns a string containing the server class emoji and the player display
      */
     displayFullPlayer(player) {
-        return this.getClassEmoji(player) + "\xa0" + player;
+        return player.display(this.getClassEmoji(player), this.getHorseEmoji(player),
+            true, true, true, true, false);
     }
 
     /**
@@ -376,6 +387,14 @@ module.exports = class PlayerArray extends Array {
      */
     getClassEmoji(player) {
         return this.classEmojis.find(emoji => emoji.name == player.getEmojiClassName()).toString();
+    }
+
+    /**
+     * return the emoji matching the player's horse
+     * @param {Player} player 
+     */
+    getHorseEmoji(player) {
+        return player.horse ? this.horseEmojis.find(emoji => emoji.name == player.horse).toString() : '';
     }
 
     /**

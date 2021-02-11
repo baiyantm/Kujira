@@ -30,7 +30,8 @@
                 "help": "help",
                 "succession": "succ",
                 "awakening": "awak",
-                "axe": "axe"
+                "axe": "axe",
+                "horse": "horse"
             }
         },
         "signup": {
@@ -90,6 +91,11 @@
         "guardian",
         "hashashin",
         "nova"
+    ],
+    "horselist" : [
+        "pegasus",
+        "unicorn",
+        "doom"
     ],
     "days": [
         "mon",

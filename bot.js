@@ -238,7 +238,7 @@ async function trialReactionAddHandler(messageReaction, user) {
             const role = guild.roles.cache.find(x => x.name == "Trial " + roleIndex);
             const channel = guild.channels.cache.find(x => x.name == "trial-" + roleIndex);
             try {
-                if(channel) {
+                if (channel) {
                     // @ts-ignore
                     await historizeChannel(channel, myTrialHistory);
                 }
@@ -272,7 +272,7 @@ async function getNextTrialRoleIndex(guild) {
                 roleCount++;
             } else {
                 let trialChannel = guild.channels.cache.find(channel => channel.name.startsWith("trial-" + roleCount));
-                if(!trialChannel) {
+                if (!trialChannel) {
                     await createNewTrialChannelAndRole(guild, roleCount, trialRole, roleName);
                 }
             }
@@ -303,7 +303,7 @@ async function createNewTrialChannelAndRole(guild, roleCount, trialRole, roleNam
         position: lastTrialChannel.position + 1
     });
     let lastTrialRole = guild.roles.cache.find(x => x.name == "Trial " + trialMax);
-    if(!trialRole) {
+    if (!trialRole) {
         trialRole = await guild.roles.create({
             data: {
                 name: roleName,
@@ -602,7 +602,10 @@ async function gearChannelHandler(enteredCommand, message, commands, botMsg) {
                 await awakCommand(message);
             }
             else if (enteredCommand == commands["axe"]) {
-                await axeCommand(split, message, args);
+                await axeCommand(message, args);
+            }
+            else if (enteredCommand == commands["horse"]) {
+                await horseCommand(message, args);
             }
             else if (classToFind) {
                 await updateGearCommand(split, commands, classToFind, message);
@@ -722,12 +725,15 @@ async function manualAddCommand(args, message, commands) {
  * @param {Discord.Message | Discord.PartialMessage} message 
  */
 async function shortUpdateGearCommand(message, firstSplit) {
-    let playerToFind = players.get(message.author.id);
     let ap = parseInt(firstSplit[0]);
     let aap = parseInt(firstSplit[1]);
     let dp = parseInt(firstSplit[2]);
-    if (playerToFind && Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
-        let player = new Player(message.member, playerToFind.classname, ap, aap, dp, true);
+    let playerFound = players.get(message.author.id);
+    if (playerFound && playerFound instanceof Player &&
+        Number.isInteger(ap) && ap >= 0 && ap < 400 &&
+        Number.isInteger(aap) && aap >= 0 && aap < 400 &&
+        Number.isInteger(dp) && dp >= 0 && dp < 600) {
+        let player = new Player(message.member, playerFound.classname, ap, aap, dp, true);
         await updatePlayer(players, player, null, message.author);
     }
     else {
@@ -771,9 +777,10 @@ async function updateGearCommand(split, commands, classToFind, message) {
  * @param {Discord.Message | Discord.PartialMessage} message 
  */
 async function succCommand(message) {
-    let playerToFind = players.get(message.author.id);
-    if (playerToFind && itemsjson["classlistSucc"].find(currentclassname => currentclassname == playerToFind.classname)) {
-        await updatePlayer(players, playerToFind, true, message.author);
+    let playerFound = players.get(message.author.id);
+    if (playerFound && playerFound instanceof Player
+        && itemsjson["classlistSucc"].find(currentclassname => currentclassname == playerFound.classname)) {
+        await updatePlayer(players, playerFound, true, message.author);
     }
     else {
         interactions.wSendAuthor(message.author, "Invalid command. Not registered to update to succession or not a succession class.");
@@ -784,9 +791,9 @@ async function succCommand(message) {
  * @param {Discord.Message | Discord.PartialMessage} message 
  */
 async function awakCommand(message) {
-    let playerToFind = players.get(message.author.id);
-    if (playerToFind) {
-        await updatePlayer(players, playerToFind, false, message.author);
+    let playerFound = players.get(message.author.id);
+    if (playerFound && playerFound instanceof Player) {
+        await updatePlayer(players, playerFound, false, message.author);
     }
     else {
         interactions.wSendAuthor(message.author, "Invalid command. Not registered to update to awakening.");
@@ -796,13 +803,28 @@ async function awakCommand(message) {
 /**
  * @param {Discord.Message | Discord.PartialMessage} message 
  */
-async function axeCommand(split, message, args) {
+async function axeCommand(message, args) {
+    let split = args.split(" ");
     if (split.length == 1) {
         await updatePlayerAxe(message.author, args);
     }
     else {
         // too many arguments !
         interactions.wSendAuthor(message.author, "Invalid axe command.");
+    }
+}
+
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
+async function horseCommand(message, args) {
+    let split = args.split(" ");
+    if (split.length == 1) {
+        await updatePlayerHorse(message.author, args);
+    }
+    else {
+        // too many arguments !
+        interactions.wSendAuthor(message.author, "Invalid horse command.");
     }
 }
 
@@ -904,8 +926,8 @@ function gearCommand(message, args) {
     startLoading(message);
     let idToFind = getPlayerByIdOrMention(message, args);
     let playerFound = players.get(idToFind);
-    if (playerFound) {
-        interactions.wSendChannel(message.channel, players.displayFullPlayerGS(playerFound));
+    if (playerFound && playerFound instanceof Player) {
+        interactions.wSendChannel(message.channel, players.displayFullPlayer(playerFound));
     }
     else {
         interactions.wSendChannel(message.channel, "Couldn't find this player.");
@@ -947,9 +969,9 @@ async function statsCommand(args, message) {
         if (split.length == 1) {
             let idToFind = getPlayerByIdOrMention(message, split[0]);
             let playerFound = players.get(idToFind);
-            if (playerFound) {
+            if (playerFound && playerFound instanceof Player) {
                 // if it's a player
-                interactions.wSendChannel(message.channel, players.displayFullPlayerGS(playerFound));
+                interactions.wSendChannel(message.channel, players.displayFullPlayer(playerFound));
             } else if (itemsjson["classlist"].includes(split[0])) {
                 // if it's a class
                 startLoading(message);
@@ -1429,9 +1451,9 @@ function addSignUpInfo(playerInfo, player) {
     playerInfo.status = player.signUps[date.getDay()].status;
     for (let i = 0; i < 7; i++) {
         let date = player.signUps[i].date;
-        playerInfo[util.findCorrespondingDayName(i)] = player.signUps[i].status;
-        if(date) {
-            playerInfo[util.findCorrespondingDayName(i)] += ' on ' + util.findCorrespondingDayName(date.getDay()) + " " + util.valueFormat(date.getHours(), 10) + ":" + util.valueFormat(date.getMinutes(), 10);
+        playerInfo[util.findCorrespondingDayName(i)] = util.findCorrespondingDayName(date.getDay()) + " " + util.valueFormat(date.getHours(), 10) + ":" + util.valueFormat(date.getMinutes(), 10);
+        if (date) {
+            playerInfo[util.findCorrespondingDayName(i)] += ' - ' + player.signUps[i].status;
         }
     }
 }
@@ -1589,12 +1611,33 @@ function changeLogFormatter(prefix, value1, value2, dspvalue1 = value1, dspvalue
  * @param {string} args 
  */
 async function updatePlayerAxe(author, args) {
-    let playerToFind = players.get(author.id);
-    if (playerToFind) {
-        let oldAxe = playerToFind.getAxe(true);
-        playerToFind.setAxe(args);
-        await interactions.wSendChannel(myChangelog, "> Updated " + playerToFind.getNameOrMention() + "'s axe :\n" + oldAxe + " -> " + playerToFind.getAxe(true));
-        await interactions.wSendChannel(myChangelog2, "> Updated " + playerToFind.getNameOrMention() + "'s axe :\n" + oldAxe + " -> " + playerToFind.getAxe(true));
+    let playerFound = players.get(author.id);
+    if (playerFound && playerFound instanceof Player) {
+        let oldAxe = playerFound.getAxe(true);
+        playerFound.setAxe(args);
+        let content = "> Updated " + playerFound.getNameOrMention() + "'s axe :\n" + oldAxe + " -> " + playerFound.getAxe(true);
+        await interactions.wSendChannel(myChangelog, content);
+        await interactions.wSendChannel(myChangelog2, content);
+    } else {
+        await interactions.wSendAuthor(author, "You need to be registered to do that.");
+    }
+}
+
+/**
+ * updates a player's horse and logs it in changelog
+ * @param {Discord.User} author 
+ * @param {string} args 
+ */
+async function updatePlayerHorse(author, args) {
+    let playerFound = players.get(author.id);
+    if (playerFound && playerFound instanceof Player) {
+        if (args && itemsjson['horselist'].includes(args) && playerFound.horse != args) {
+            let oldPlayer = { ...playerFound };
+            playerFound.horse = args;
+            let content = "> Updated " + playerFound.getNameOrMention() + "'s horse :\n" + players.getHorseEmoji(oldPlayer) + " -> " + players.getHorseEmoji(playerFound);
+            await interactions.wSendChannel(myChangelog, content);
+            await interactions.wSendChannel(myChangelog2, content);
+        }
     } else {
         await interactions.wSendAuthor(author, "You need to be registered to do that.");
     }
@@ -1960,11 +2003,12 @@ async function checkAdvPermission(message) {
  * @param {number} axe
  * @returns a player object with the given data
  */
-async function revivePlayer(id, classname, ap, aap, dp, axe = 0, signUps, real) {
+async function revivePlayer(id, classname, ap, aap, dp, axe = 0, horse = undefined, signUps, real) {
     try {
         let playerId = real ? await myServer.members.fetch(await bot.users.fetch(id)) : id;
         let newPlayer = new Player(playerId, classname, ap, aap, dp, real);
 
+        newPlayer.horse = horse;
         newPlayer.setAxe(axe + "");
         if (signUps) {
             newPlayer.setSignUps(signUps);
@@ -2097,6 +2141,7 @@ if (configjson && itemsjson && alarmsjson) {
     var myGuildChat;
     var players = new PlayerArray(itemsjson["classlist"]);
     var classEmojis = [];
+    var horseEmojis = [];
     var loading = 2000;
 
     bot.once("ready", async () => {
@@ -2124,7 +2169,7 @@ if (configjson && itemsjson && alarmsjson) {
             myGuildChat = await bot.channels.fetch(configjson["guildchatID"]);
 
             logger.log("INFO: Booting up attempt...");
-            if (myServer && myDevServer && myGate && myGear && myGearData && classEmojis && mySignUp
+            if (myServer && myDevServer && myGate && myGear && myGearData && mySignUp
                 && mySignUpData && myAnnouncement && myAnnouncementData && myWelcome && myChangelog && myGuildChat) {
 
                 initEmojis();
@@ -2163,6 +2208,7 @@ async function initPlayers(players) {
                     currentPlayer["aap"],
                     currentPlayer["dp"],
                     currentPlayer["axe"],
+                    currentPlayer["horse"],
                     currentPlayer["signUps"],
                     currentPlayer["real"]
                 );
@@ -2185,6 +2231,10 @@ function initEmojis() {
     itemsjson["classlistSucc"].forEach(async (classname) => {
         classEmojis.push(fetchEmoji(classname + "Succ"));
     });
+    itemsjson["horselist"].forEach(async (horsename) => {
+        horseEmojis.push(fetchEmoji(horsename));
+    });
     players.setClassEmojis(classEmojis);
+    players.setHorseEmojis(horseEmojis);
 }
 
