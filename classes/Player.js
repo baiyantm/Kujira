@@ -54,9 +54,9 @@ module.exports = class Player {
         this.display = function (classEmoji, horseEmoji,
             showClass = false, showAxe = false, showHorse = false, showName = false, showGs = false) {
             return (showClass ? classEmoji + "\xa0" : "") +
-                (showName ? this.name + " " : "") +
-                (showAxe ? (this.hasAxe() ? "(**" + this.getAxe() + "**)" : "") : "") +
-                (showHorse ? (this.hasHorse() ? horseEmoji : "") : "") +
+                (showName ? this.name + "\xa0" : "") +
+                (showAxe ? (this.hasAxe() ? "(**" + this.getAxe() + "**)" + "\xa0" : "") : "") +
+                (showHorse ? (this.hasHorse() ? horseEmoji + "\xa0" : "") : "") +
                 "\n\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0" + this.displayNoName() +
                 (showGs ? " (" + this.getGS() + ")" : "");
         };

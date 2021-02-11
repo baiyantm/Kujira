@@ -46,7 +46,7 @@
     },
     "gateguide": "Welcome to the discord, if you are there for mercing please contact an officer if not already done.\nIf you are a new recruit an officer should already be taking care of you.",
     "gaterules": "- Be respectful to everyone regardless of gender, race, orientation or religion\n- Excessive usage of inappropriate language is not tolerated.\n- No doxing or linking to any personal information outside from the origin of it.\n- No witch-hunting/name-shaming.",
-    "gearhelp": "> Commands\n`<classname> [succession|awakening] <ap> <aap> <dp>` (gear channel) - update your class and gear in the list\n`axe <axelevel>` (gear channel) - update your axe enhancement level\n`?gear <name>` (any channel) - show the gear of the player by name\n`?gear <mention>` (any channel) - show the gear of the player by mention\n`?stats [classname]` (any channel) - show stats for all classes or specified class\nor `?stats` <mention or name> same as ?gear\nor `?stats [dayname]` (any channel) - show info about players signed up as yes on specified day\n`?rankings [classname]` (any channel) - show rankings for all classes or specified class\n`?attendance` (any channel) - show % of attendance during the week",
+    "gearhelp": "> Commands\n`<classname> [succession|awakening] <ap> <aap> <dp>` (gear channel) - update your class and gear in the list\n`axe <axelevel>` (gear channel) - update your axe enhancement level\n`horse <horsetype>` (gear channel) - update your horse type: pegasus/unicorn/doom/normal(t8)\n`?gear <name>` (any channel) - show the gear of the player by name\n`?gear <mention>` (any channel) - show the gear of the player by mention\n`?stats [classname]` (any channel) - show stats for all classes or specified class\nor `?stats` <mention or name> same as ?gear\nor `?stats [dayname]` (any channel) - show info about players signed up as yes on specified day\n`?rankings [classname]` (any channel) - show rankings for all classes or specified class\n`?attendance` (any channel) - show % of attendance during the week",
     "urlguildpage": "https://cdn.discordapp.com/attachments/594828641050034185/773202120798109716/remedy_guild_page_03-11-20.png",
     "classlist": [
         "warrior",
@@ -95,7 +95,8 @@
     "horselist" : [
         "pegasus",
         "unicorn",
-        "doom"
+        "doom",
+        "normal"
     ],
     "days": [
         "mon",
