@@ -128,7 +128,13 @@ module.exports = class Player {
          * @returns an object containing only attributes of a Player
          */
         this.getInfo = function () {
-            return { "id": this.id, "name": this.name, "class": this.getClassName(), "ap": this.ap, "aap": this.aap, "dp": this.dp, "gs": this.getGS(), "succession": (this.isSuccession() ? "yes" : "no"), "axe": this.axe }
+            return {
+                "id": this.id, "name": this.name, "class": this.getClassName(),
+                "ap": this.ap, "aap": this.aap, "dp": this.dp, "gs": this.getGS(),
+                "succession": (this.isSuccession() ? "yes" : "no"),
+                "axe": this.axe,
+                "horse": this.horse
+            }
         }
 
         /**

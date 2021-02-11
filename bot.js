@@ -1424,7 +1424,7 @@ async function dumpSignUps() {
 function getFormattedSignUps() {
     let signUps = [];
     players.forEach(player => {
-        if (player.isReal()) {
+        if (player instanceof Player && player.isReal()) {
             let playerInfo = player.getInfo();
             addSignUpInfo(playerInfo, player);
             signUps.push(playerInfo);
@@ -1451,10 +1451,14 @@ function addSignUpInfo(playerInfo, player) {
     playerInfo.status = player.signUps[date.getDay()].status;
     for (let i = 0; i < 7; i++) {
         let date = player.signUps[i].date;
-        playerInfo[util.findCorrespondingDayName(i)] = util.findCorrespondingDayName(date.getDay()) + " " + util.valueFormat(date.getHours(), 10) + ":" + util.valueFormat(date.getMinutes(), 10);
+        playerInfo[util.findCorrespondingDayName(i)] = "";
         if (date) {
-            playerInfo[util.findCorrespondingDayName(i)] += ' - ' + player.signUps[i].status;
+            playerInfo[util.findCorrespondingDayName(i)] = util.findCorrespondingDayName(date.getDay()) +
+                " " + util.valueFormat(date.getHours(), 10) +
+                ":" + util.valueFormat(date.getMinutes(), 10) +
+                ' - ';
         }
+        playerInfo[util.findCorrespondingDayName(i)] += player.signUps[i].status;
     }
 }
 
