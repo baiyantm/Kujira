@@ -927,7 +927,7 @@ function gearCommand(message, args) {
     let idToFind = getPlayerByIdOrMention(message, args);
     let playerFound = players.get(idToFind);
     if (playerFound && playerFound instanceof Player) {
-        interactions.wSendChannel(message.channel, players.displayFullPlayer(playerFound));
+        interactions.wSendChannel(message.channel, players.displayFullPlayerGS(playerFound));
     }
     else {
         interactions.wSendChannel(message.channel, "Couldn't find this player.");
@@ -971,7 +971,7 @@ async function statsCommand(args, message) {
             let playerFound = players.get(idToFind);
             if (playerFound && playerFound instanceof Player) {
                 // if it's a player
-                interactions.wSendChannel(message.channel, players.displayFullPlayer(playerFound));
+                interactions.wSendChannel(message.channel, players.displayFullPlayerGS(playerFound));
             } else if (itemsjson["classlist"].includes(split[0])) {
                 // if it's a class
                 startLoading(message);
