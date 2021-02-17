@@ -7,11 +7,12 @@ const Discord = require('discord.js');
 const Player = require("./Player");
 
 module.exports = class PlayerArray extends Array {
-    constructor(classList) {
+    constructor(classList, horseList) {
         super();
         this.classEmojis = [];
         this.horseEmojis = [];
         this.classList = classList;
+        this.horseList = horseList;
     }
 
     /**
@@ -219,6 +220,7 @@ module.exports = class PlayerArray extends Array {
 
             let stats = this.getMinMax(players);
             let avg = this.getAverages(players);
+            let horses = this.getHorsesStats(players);
 
             if (!classname) {
                 let countedClasses = this.getCountedClasses(players);
@@ -258,7 +260,9 @@ module.exports = class PlayerArray extends Array {
                 embed.addField("Best Axe : " + stats.max.axe.value.getAxe(true), stats.max.axe.string, true);
                 embed.addField("Worst Axe : " + stats.min.axe.value.getAxe(true), stats.min.axe.string, true);
             }
-            embed.addField("Average Axe Lv : ", avg.axe, true);
+            let miscStr = "Average axe lv: " + avg.axe;
+            miscStr += "\n" + horses;
+            embed.addField("Miscellaneous : ", miscStr, true);
         } else if (players.length > 0) {
             embed.setDescription(this.displayFullPlayer(players[0]));
         } else {
@@ -615,6 +619,36 @@ module.exports = class PlayerArray extends Array {
             },
         };
         return minmax;
+    }
+
+    /**
+     * return an array mapping horsename to a displayable string
+     * @param {PlayerArray} players 
+     */
+    getHorsesStats(players) {
+        let horseStr = "";
+        let horses = this.getCountedHorses(players);
+        this.horseList.forEach(horseName => {
+            horseStr += this.horseEmojis.find(emoji => emoji.name == horseName).toString() + " : " + horses[horseName] + "\n";
+        });
+        return horseStr;
+    }
+
+    /**
+     * return an array mapping horsename to horsename count
+     * @param {PlayerArray} players 
+     */
+    getCountedHorses(players) {
+        let countedHorses = [];
+        this.horseList.forEach(horseName => {
+            countedHorses[horseName] = 0;
+            players.forEach(player => {
+                if (player.horse == horseName) {
+                    countedHorses[horseName]++;
+                }
+            });
+        });
+        return countedHorses;
     }
 
     resetPlayersSignUps() {

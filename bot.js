@@ -2144,7 +2144,7 @@ if (configjson && itemsjson && alarmsjson) {
      * @type Discord.TextChannel
      */
     var myGuildChat;
-    var players = new PlayerArray(itemsjson["classlist"]);
+    var players = new PlayerArray(itemsjson["classlist"], itemsjson["horselist"]);
     var classEmojis = [];
     var horseEmojis = [];
     var loading = 2000;
