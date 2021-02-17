@@ -1636,10 +1636,16 @@ async function updatePlayerHorse(author, args) {
     let horseType = args.toLowerCase();
     let playerFound = players.get(author.id);
     if (playerFound && playerFound instanceof Player) {
+        let oldPlayer = { ...playerFound };
+        let content = "> Updated " + playerFound.getNameOrMention() + "'s horse :\n" + players.getHorseEmoji(oldPlayer) + " -> ";
         if (horseType && itemsjson['horselist'].includes(horseType) && playerFound.horse != horseType) {
-            let oldPlayer = { ...playerFound };
             playerFound.horse = horseType;
-            let content = "> Updated " + playerFound.getNameOrMention() + "'s horse :\n" + players.getHorseEmoji(oldPlayer) + " -> " + players.getHorseEmoji(playerFound);
+            content += players.getHorseEmoji(playerFound);
+            await interactions.wSendChannel(myChangelog, content);
+            await interactions.wSendChannel(myChangelog2, content);
+        } else if(horseType && horseType == "none") {
+            playerFound.horse = "";
+            content += "none";
             await interactions.wSendChannel(myChangelog, content);
             await interactions.wSendChannel(myChangelog2, content);
         }
