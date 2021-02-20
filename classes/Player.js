@@ -56,15 +56,13 @@ module.exports = class Player {
 
             let classSpace = "\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0";
             let misc = "";
-            if(showHorse && this.hasHorse() && showAxe && this.hasAxe()) {
-                // shows misc in a separate line
-                misc += "\n" + classSpace;
-                misc += (showHorse ? (this.hasHorse() ? horseEmoji + "\xa0" : "") : "") + " - ";
+            if((showHorse && this.hasHorse()) || (showAxe && this.hasAxe())) {
+                misc += (showHorse ? (this.hasHorse() ? horseEmoji + "\xa0" : "") : "");
+                if(misc != "") {
+                    misc +=  " - ";
+                }
                 misc += (showAxe ? (this.hasAxe() ? "**" + this.getAxe() + "**" + "\xa0" : "") : "");
-            } else {
-                // shows misc inline
-                misc += (showHorse ? (this.hasHorse() ? horseEmoji + "\xa0" : "") : "") +
-                (showAxe ? (this.hasAxe() ? "(**" + this.getAxe() + "**)" + "\xa0" : "") : "");
+                misc = " - " + misc;
             }
             return (showClass ? classEmoji + "\xa0" : "") +
                 (showName ? this.name + "\xa0" : "") +
