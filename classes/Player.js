@@ -58,7 +58,7 @@ module.exports = class Player {
             let misc = "";
             if((showHorse && this.hasHorse()) || (showAxe && this.hasAxe())) {
                 misc += (showHorse ? (this.hasHorse() ? horseEmoji + "\xa0" : "") : "");
-                if(misc != "") {
+                if(misc != "" && showAxe && this.hasAxe()) {
                     misc +=  " - ";
                 }
                 misc += (showAxe ? (this.hasAxe() ? "**" + this.getAxe() + "**" + "\xa0" : "") : "");
