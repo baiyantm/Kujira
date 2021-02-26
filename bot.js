@@ -13,11 +13,7 @@ const PlayerArray = require('./classes/PlayerArray');
 ghostScriptGet();
 
 async function initLookout() {
-    bot.user.setPresence({ activity: { name: 'up', type: "PLAYING" } });
-
-    if (myAnnouncement) {
-        setupPresence();
-    }
+    bot.user.setPresence({ activity: { name: 'commands', type: 'LISTENING' } });
 
     if (myGuildChat) {
         setupAlarms();
@@ -1941,28 +1937,6 @@ function setupAlarms() {
  */
 function mod(n, m) {
     return ((n % m) + m) % m;
-}
-
-async function setupPresence() {
-    bot.setInterval(async () => {
-        let message = await (await myAnnouncement.messages.fetch({ limit: 1 })).first();
-        let issuedTimestamp = message.editedTimestamp ? message.editedTimestamp : message.createdTimestamp;
-        let startDate = new Date();
-        let seconds = (issuedTimestamp - startDate.getTime()) / 1000;
-        let presence = Math.abs(seconds) > 86400 ? "Remedy" : "Announcement " + util.displayHoursMinBefore(Math.abs(Math.round(seconds / 60))) + " ago";
-        try {
-            bot.user.setPresence({
-                activity:
-                {
-                    name: presence,
-                    type: "PLAYING"
-                }
-            });
-        } catch (e) {
-            console.error(e);
-            logger.logError("Game status error", e);
-        }
-    }, 60000);
 }
 
 /**
