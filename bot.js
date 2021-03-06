@@ -418,7 +418,6 @@ async function onMessageHandler(message, botMsg, annCache) {
             }
         } else if (message.channel.id == myGate.id) {
             // === GATE ===
-            commands = itemsjson["commands"]["gate"]["guest"];
             await gateChannelHandler(commands, enteredCommand, message);
         } else if (message.channel.id == mySignUp.id) {
             // === SIGNUP ===
@@ -460,10 +459,39 @@ async function signupDataChannelHandler(enteredCommand, message, commands) {
  * @param {Discord.Message | Discord.PartialMessage} message 
  */
 async function gateChannelHandler(commands, enteredCommand, message) {
-    if (enteredCommand == commands["ok"]) {
-        await okCommand(message);
+    if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
+        commands = itemsjson["commands"]["gate"]["adv"];
+        enteredCommand = enteredCommand.substr(1);
+        if (enteredCommand == commands["gate"]) {
+            await gateCommand();
+        }
+    } else {
+        commands = itemsjson["commands"]["gate"]["guest"];
+        if (enteredCommand == commands["ok"]) {
+            await okCommand(message);
+        }
     }
     deleteCommand(message);
+}
+
+/**
+ * sends the gate message
+ */
+async function gateCommand() {
+    let gateEmbed = new Discord.MessageEmbed();
+    gateEmbed.title = "You're about to enter the Remedy guild's discord";
+    gateEmbed.color = 3447003;
+    gateEmbed.description = `*Please be aware of the following rules before proceeding*
+    
+    - Be respectful to everyone regardless of gender, race, orientation or religion.
+    - Excessive usage of inappropriate language is not tolerated.
+    - No doxing or linking to any personal information outside from the origin of it.
+    - No witch-hunting/name-shaming.
+    
+    Failure to respect those rules can lead to warnings or bans.
+    
+    If you understand type \`ok\` here`;
+    interactions.wSendChannel(myGate, gateEmbed);
 }
 
 /**
@@ -1887,9 +1915,7 @@ async function endLoading(message, retry) {
  */
 function setupCustomAlarms() {
     let azreeId = "217391541918892032";
-    let cameId = "161231191708663808";
     let minUtilAlarm = util.getMinUntil(new Date().getDay(), 19, 45) * 60 * 1000;
-    dailyTimeout(cameId, minUtilAlarm, "TS sound thingie reminder");
     dailyTimeout(azreeId, minUtilAlarm, "Oublie pas les addons PvP");
     logger.log("INFO: Custom alarms set");
 }
