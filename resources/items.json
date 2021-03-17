@@ -72,7 +72,8 @@
         "shai",
         "guardian",
         "hashashin",
-        "nova"
+        "nova",
+        "sage"
     ],
     "classlistSucc": [
         "warrior",
@@ -93,7 +94,8 @@
         "lahn",
         "guardian",
         "hashashin",
-        "nova"
+        "nova",
+        "sage"
     ],
     "horselist" : [
         "pegasus",
