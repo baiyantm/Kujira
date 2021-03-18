@@ -404,7 +404,7 @@ async function signUpReactionAddHandler(messageReaction, user) {
 }
 
 /**
- * listener for emoji add event on signup channel
+ * removes the user from the message reaction
  * @param {Discord.MessageReaction} messageReaction 
  * @param {Discord.User | Discord.PartialUser} user 
  */
