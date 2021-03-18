@@ -380,23 +380,38 @@ async function trialReactionRemoveHandler(messageReaction, user) {
  */
 async function signUpReactionAddHandler(messageReaction, user) {
     let message = messageReaction.message;
-    let yesReaction = message.reactions.cache.filter(messageReaction => messageReaction.emoji.name == configjson["yesreaction"]).first();
-    let noReaction = message.reactions.cache.filter(messageReaction => messageReaction.emoji.name == configjson["noreaction"]).first();
+    let today = new Date();
+    let dateName = util.findCorrespondingDayName(today.getDay()).toLowerCase();
+    let lockedSignUps = today.getHours() >= 19 && today.getHours() <= 20 && message.content.toLowerCase().startsWith(dateName);
+    let yesReaction = message.reactions.cache.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
+    let noReaction = message.reactions.cache.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
     if (messageReaction.emoji.name == configjson["noreaction"]) {
-        if (user.id != bot.user.id && (await noReaction.fetch()).users.cache.get(user.id)) {
-            if (yesReaction) {
-                // @ts-ignore
-                yesReaction.users.remove(user);
-            }
+        if (user.id != bot.user.id && (await yesReaction.fetch()).users.cache.get(user.id)) {
+            removeUserFromReaction(yesReaction, user);
         }
     }
     if (messageReaction.emoji.name == configjson["yesreaction"]) {
-        if (user.id != bot.user.id && (await yesReaction.fetch()).users.cache.get(user.id)) {
-            if (noReaction) {
+        if (user.id != bot.user.id) {
+            if (lockedSignUps) {
+                removeUserFromReaction(yesReaction, user);
                 // @ts-ignore
-                noReaction.users.remove(user);
+                interactions.wSendAuthor(user, "✅ locked after 19:00, please contact an Officer");
+            } else if ((await noReaction.fetch()).users.cache.get(user.id)) {
+                removeUserFromReaction(noReaction, user);
             }
         }
+    }
+}
+
+/**
+ * listener for emoji add event on signup channel
+ * @param {Discord.MessageReaction} messageReaction 
+ * @param {Discord.User | Discord.PartialUser} user 
+ */
+function removeUserFromReaction(messageReaction, user) {
+    if (messageReaction) {
+        // @ts-ignore
+        messageReaction.users.remove(user);
     }
 }
 
@@ -1667,7 +1682,7 @@ async function updatePlayerHorse(author, args) {
             content += players.getHorseEmoji(playerFound);
             await interactions.wSendChannel(myChangelog, content);
             await interactions.wSendChannel(myChangelog2, content);
-        } else if(horseType && horseType == "none") {
+        } else if (horseType && horseType == "none") {
             playerFound.horse = "";
             content += "none";
             await interactions.wSendChannel(myChangelog, content);
