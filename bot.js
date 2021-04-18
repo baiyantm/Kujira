@@ -124,6 +124,7 @@ async function initLookout() {
                 // @ts-ignore
                 if (channel.messages.cache.has(packet.d.id)) return;
                 // Since we have confirmed the message is not cached, let's fetch it
+                // @ts-ignore
                 bot.emit('messageDelete', { channel: { id: packet.d.channel_id }, id: packet.d.id });
             }
         }
@@ -410,8 +411,7 @@ async function signUpReactionAddHandler(messageReaction, user) {
  */
 function removeUserFromReaction(messageReaction, user) {
     if (messageReaction) {
-        // @ts-ignore
-        messageReaction.users.remove(user);
+        messageReaction.users.remove(user.id);
     }
 }
 
@@ -1815,7 +1815,7 @@ function ghostScriptGet() {
  * @param {string} output output path
  */
 function optimizePDF(input, output) {
-    let dpi = 250;
+    let dpi = 200;
     let shrinkpdf = 'gs					\
     -q -dNOPAUSE -dBATCH -dSAFER		\
     -sDEVICE=pdfwrite			\
