@@ -59,10 +59,10 @@ module.exports = class Player {
             if((showHorse && this.hasHorse()) || (showAxe && this.hasAxe())) {
                 misc += (showHorse ? (this.hasHorse() ? horseEmoji + "\xa0" : "") : "");
                 if(misc != "" && showAxe && this.hasAxe()) {
-                    misc +=  " - ";
+                    misc +=  "\xa0-\xa0";
                 }
                 misc += (showAxe ? (this.hasAxe() ? "**" + this.getAxe() + "**" + "\xa0" : "") : "");
-                misc = " - " + misc;
+                misc = "\xa0-\xa0" + misc;
             }
             return (showClass ? classEmoji + "\xa0" : "") +
                 (showName ? this.name + "\xa0" : "") +
