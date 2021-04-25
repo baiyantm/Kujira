@@ -19,9 +19,9 @@ async function initLookout() {
         setupAlarms();
     }
 
-    if (myServer) {
+    /*if (myServer) {
         setupCustomAlarms();
-    }
+    }*/
 
     var annCache = { reference: null }; //because JavaScript
     await cacheAnnouncements(annCache);
@@ -124,6 +124,7 @@ async function initLookout() {
                 // @ts-ignore
                 if (channel.messages.cache.has(packet.d.id)) return;
                 // Since we have confirmed the message is not cached, let's fetch it
+                // @ts-ignore
                 bot.emit('messageDelete', { channel: { id: packet.d.channel_id }, id: packet.d.id });
             }
         }
@@ -410,8 +411,7 @@ async function signUpReactionAddHandler(messageReaction, user) {
  */
 function removeUserFromReaction(messageReaction, user) {
     if (messageReaction) {
-        // @ts-ignore
-        messageReaction.users.remove(user);
+        messageReaction.users.remove(user.id);
     }
 }
 
@@ -1590,7 +1590,6 @@ async function removePlayer(players, playerId, origin) {
         content += players.displayFullPlayer(removed[0]) + "\nRemoved from gear list.";
         content += "\n(Command origin: " + origin.toString() + ")";
         await interactions.wSendChannel(myChangelog, content);
-        await interactions.wSendChannel(myChangelog2, content);
     }
 }
 
@@ -1622,7 +1621,6 @@ async function updatePlayer(players, player, succ, origin) {
     }
     content += "(Command origin: " + origin.toString() + ")";
     await interactions.wSendChannel(myChangelog, content);
-    await interactions.wSendChannel(myChangelog2, content);
 }
 
 /**
@@ -1660,7 +1658,6 @@ async function updatePlayerAxe(author, args) {
         playerFound.setAxe(args);
         let content = "> Updated " + playerFound.getNameOrMention() + "'s axe :\n" + oldAxe + " -> " + playerFound.getAxe(true);
         await interactions.wSendChannel(myChangelog, content);
-        await interactions.wSendChannel(myChangelog2, content);
     } else {
         await interactions.wSendAuthor(author, "You need to be registered to do that.");
     }
@@ -1681,12 +1678,10 @@ async function updatePlayerHorse(author, args) {
             playerFound.horse = horseType;
             content += players.getHorseEmoji(playerFound);
             await interactions.wSendChannel(myChangelog, content);
-            await interactions.wSendChannel(myChangelog2, content);
         } else if (horseType && horseType == "none") {
             playerFound.horse = "";
             content += "none";
             await interactions.wSendChannel(myChangelog, content);
-            await interactions.wSendChannel(myChangelog2, content);
         }
     } else {
         await interactions.wSendAuthor(author, "You need to be registered to do that.");
@@ -1815,7 +1810,7 @@ function ghostScriptGet() {
  * @param {string} output output path
  */
 function optimizePDF(input, output) {
-    let dpi = 250;
+    let dpi = 200;
     let shrinkpdf = 'gs					\
     -q -dNOPAUSE -dBATCH -dSAFER		\
     -sDEVICE=pdfwrite			\
@@ -1929,9 +1924,9 @@ async function endLoading(message, retry) {
  * custom DMs
  */
 function setupCustomAlarms() {
-    let azreeId = "217391541918892032";
+    let personId = "";
     let minUtilAlarm = util.getMinUntil(new Date().getDay(), 19, 45) * 60 * 1000;
-    dailyTimeout(azreeId, minUtilAlarm, "Oublie pas les addons PvP");
+    dailyTimeout(personId, minUtilAlarm, "Oublie pas les addons PvP");
     logger.log("INFO: Custom alarms set");
 }
 
@@ -2160,10 +2155,6 @@ if (configjson && itemsjson && alarmsjson) {
     /**
      * @type Discord.TextChannel
      */
-    var myChangelog2;
-    /**
-     * @type Discord.TextChannel
-     */
     var myGuildChat;
     var players = new PlayerArray(itemsjson["classlist"], itemsjson["horselist"]);
     var classEmojis = [];
@@ -2191,7 +2182,6 @@ if (configjson && itemsjson && alarmsjson) {
             myWelcome = await bot.channels.fetch(configjson["welcomeID"]);// @ts-ignore
             myTrialWelcome = await bot.channels.fetch(configjson["trialwelcomeID"]);// @ts-ignore
             myChangelog = await bot.channels.fetch(configjson["changelogID"]);// @ts-ignore
-            myChangelog2 = await bot.channels.fetch(configjson["changelogID2"]);// @ts-ignore
             myGuildChat = await bot.channels.fetch(configjson["guildchatID"]);
 
             logger.log("INFO: Booting up attempt...");
