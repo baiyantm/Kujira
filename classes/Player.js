@@ -56,10 +56,10 @@ module.exports = class Player {
 
             let classSpace = "\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0";
             let misc = "";
-            if((showHorse && this.hasHorse()) || (showAxe && this.hasAxe())) {
+            if ((showHorse && this.hasHorse()) || (showAxe && this.hasAxe())) {
                 misc += (showHorse ? (this.hasHorse() ? horseEmoji + "\xa0" : "") : "");
-                if(misc != "" && showAxe && this.hasAxe()) {
-                    misc +=  "\xa0-\xa0";
+                if (misc != "" && showAxe && this.hasAxe()) {
+                    misc += "\xa0-\xa0";
                 }
                 misc += (showAxe ? (this.hasAxe() ? "**" + this.getAxe() + "**" + "\xa0" : "") : "");
                 misc = "\xa0-\xa0" + misc;

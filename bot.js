@@ -386,17 +386,14 @@ async function signUpReactionAddHandler(messageReaction, user) {
     let lockedSignUps = today.getHours() >= 19 && today.getHours() <= 20 && message.content.toLowerCase().startsWith(dateName);
     let yesReaction = message.reactions.cache.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
     let noReaction = message.reactions.cache.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
-    if (messageReaction.emoji.name == configjson["noreaction"]) {
-        if (user.id != bot.user.id && (await yesReaction.fetch()).users.cache.get(user.id)) {
+    if (user.id != bot.user.id) {
+        if (messageReaction.emoji.name == configjson["noreaction"] && (await yesReaction.fetch()).users.cache.get(user.id)) {
             removeUserFromReaction(yesReaction, user);
-        }
-    }
-    if (messageReaction.emoji.name == configjson["yesreaction"]) {
-        if (user.id != bot.user.id) {
+        } else if (messageReaction.emoji.name == configjson["yesreaction"]) {
             if (lockedSignUps) {
                 removeUserFromReaction(yesReaction, user);
                 // @ts-ignore
-                interactions.wSendAuthor(user, "✅ locked after 19:00, please contact an Officer");
+                interactions.wSendAuthor(user, configjson["yesreaction"] + " locked after 19:00, please contact an Officer");
             } else if ((await noReaction.fetch()).users.cache.get(user.id)) {
                 removeUserFromReaction(noReaction, user);
             }
@@ -410,9 +407,7 @@ async function signUpReactionAddHandler(messageReaction, user) {
  * @param {Discord.User | Discord.PartialUser} user 
  */
 function removeUserFromReaction(messageReaction, user) {
-    if (messageReaction) {
-        messageReaction.users.remove(user.id);
-    }
+    messageReaction.users.remove(user.id);
 }
 
 /**
