@@ -229,7 +229,7 @@ async function trialReactionAddHandler(messageReaction, user) {
     if ("⚔️" == messageReaction.emoji.name) {
         const guild = messageReaction.message.guild;
         const guildMember = await guild.members.fetch(user.id);
-        if (!guildMember.roles.cache.find(x => x.name == "Officer")) {
+        if (!advPermission(guildMember)) {
             interactions.wSendChannel(myTrialWelcome, guildMember.toString() + " clicked on ⚔️");
             const roleIndex = await getNextTrialRoleIndex(guild);
             const role = guild.roles.cache.find(x => x.name == "Trial " + roleIndex);
@@ -358,7 +358,7 @@ async function isTrialRoleAvailable(guild, role) {
 async function trialReactionRemoveHandler(messageReaction, user) {
     if ("⚔️" == messageReaction.emoji.name) {
         const guildMember = messageReaction.message.guild.members.cache.get(user.id);
-        if (!guildMember.roles.cache.find(x => x.name == "Officer")) {
+        if (!advPermission(guildMember)) {
             interactions.wSendChannel(myTrialWelcome, guildMember.toString() + " unclicked on ⚔️");
             guildMember.roles.cache.forEach(role => {
                 if (role.name.startsWith("Trial")) {
@@ -736,9 +736,11 @@ async function manualAddCommand(args, message, commands) {
                 let player;
                 if (!member) {
                     player = new Player(name, classToFind, ap, aap, dp, false);
+                    player.origin = message.guild.id;
                 }
                 else {
                     player = new Player(member, classToFind, ap, aap, dp, true);
+                    player.origin = message.guild.id;
                 }
                 await updatePlayer(players, player, succ, message.author);
             }
@@ -768,6 +770,7 @@ async function shortUpdateGearCommand(message, firstSplit) {
         Number.isInteger(aap) && aap >= 0 && aap < 400 &&
         Number.isInteger(dp) && dp >= 0 && dp < 600) {
         let player = new Player(message.member, playerFound.classname, ap, aap, dp, true);
+        player.origin = message.guild.id;
         await updatePlayer(players, player, null, message.author);
     }
     else {
@@ -796,6 +799,7 @@ async function updateGearCommand(split, commands, classToFind, message) {
         let dp = parseInt(split[2]);
         if (Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
             let player = new Player(message.member, classToFind, ap, aap, dp, true);
+            player.origin = message.guild.id;
             await updatePlayer(players, player, succ, message.author);
         }
         else {
@@ -975,14 +979,20 @@ function gearCommand(message, args) {
 async function rankingsCommand(args, message) {
     if (!args) {
         startLoading(message);
-        interactions.wSendChannel(message.channel, players.getRankingsEmbed(null));
+        interactions.wSendChannel(message.channel, players.getRankingsEmbed(null, message.guild.id));
         endLoading(message, 0);
     }
     else {
         let split = args.split(" ");
         if (itemsjson["classlist"].includes(split[0])) {
+            // if it's a class
             startLoading(message);
-            interactions.wSendChannel(message.channel, players.getRankingsEmbed(split[0]));
+            interactions.wSendChannel(message.channel, players.getRankingsEmbed(split[0], message.guild.id));
+            endLoading(message, 0);
+        } else if (split[0] == "all") {
+            // if it's all origins
+            startLoading(message);
+            interactions.wSendChannel(message.channel, players.getRankingsEmbed());
             endLoading(message, 0);
         }
     }
@@ -995,7 +1005,7 @@ async function statsCommand(args, message) {
     if (!args) {
         // if there are no arguments
         startLoading(message);
-        interactions.wSendChannel(message.channel, players.getStatsEmbed(null));
+        interactions.wSendChannel(message.channel, players.getStatsEmbed(null, message.guild.id));
         endLoading(message, 0);
     }
     else {
@@ -1009,7 +1019,12 @@ async function statsCommand(args, message) {
             } else if (itemsjson["classlist"].includes(split[0])) {
                 // if it's a class
                 startLoading(message);
-                interactions.wSendChannel(message.channel, players.getStatsEmbed(split[0]));
+                interactions.wSendChannel(message.channel, players.getStatsEmbed(split[0], message.guild.id));
+                endLoading(message, 0);
+            } else if (split[0] == "all") {
+                // if it's all origins
+                startLoading(message);
+                interactions.wSendChannel(message.channel, players.getStatsEmbed());
                 endLoading(message, 0);
             } else {
                 // if it's a day
@@ -1288,7 +1303,7 @@ async function getDaySignUp(day) {
             let users = await noReaction.users.fetch();
             await Promise.all(users.map(async user => {
                 let member = await myServer.members.fetch(await bot.users.fetch(user.id));
-                if (member.roles.cache.find(x => x.name == "Members")) {
+                if (intPermission(member)) {
                     addMemberToSignUps(member, signUps, "no");
                 }
             }));
@@ -1297,13 +1312,13 @@ async function getDaySignUp(day) {
             let users = await yesReaction.users.fetch();
             await Promise.all(users.map(async user => {
                 let member = await myServer.members.fetch(await bot.users.fetch(user.id));
-                if (member.roles.cache.find(x => x.name == "Members")) {
+                if (intPermission(member)) {
                     addMemberToSignUps(member, signUps, "yes");
                 }
             }));
         }
         myServer.members.cache.forEach(member => {
-            if (member.roles.cache.find(x => x.name == "Members")) {
+            if (intPermission(member)) {
                 addMemberToSignUps(member, signUps, "N/A");
             }
         });
@@ -1421,7 +1436,7 @@ async function fetchSignUps(reaction, day, emojiName) {
         if (!user.bot) {
             try {
                 let member = await myServer.members.fetch(await bot.users.fetch(user.id));
-                if (member && member.roles.cache.find(x => x.name == "Members")) {
+                if (member && intPermission(member)) {
                     let foundPlayer = players.get(member.id);
                     if (foundPlayer) {
                         foundPlayer.setSignUpDay(day, emojiName);
@@ -1692,7 +1707,7 @@ async function savePlayers() {
 /**
  * if the bot message exists, edits it
  * if not, sends a new one
- * @param {Discord.Channel} channel the channel where the original message comes from
+ * @param {Discord.GuildChannel} channel the channel where the original message comes from
  * @param {Object} botMsg the bot message
  * @param {PlayerArray} players
  * @returns the new message
@@ -1700,14 +1715,23 @@ async function savePlayers() {
 async function refreshBotMsg(channel, botMsg, players) {
     if (!botMsg.reference) {
         //no bot message to begin with, create a new one
-        botMsg.reference = await newBotMessage(channel, players.getEmbed());
+        botMsg.reference = await newBotMessage(channel, filterOriginBotMessage(players, channel));
     } else {
-        if (!await interactions.wEditMsg(botMsg.reference, players.getEmbed())) {
+        if (!await interactions.wEditMsg(botMsg.reference, filterOriginBotMessage(players, channel))) {
             //message probably got deleted or something, either way creating a new one
             logger.log("INFO: Couldn't find the existing bot message to edit, creating a new one");
-            botMsg.reference = await newBotMessage(channel, players.getEmbed());
+            botMsg.reference = await newBotMessage(channel, filterOriginBotMessage(players, channel));
         }
     }
+}
+
+/**
+ * @param {PlayerArray} players
+ * @param {Discord.GuildChannel} channel 
+ * @returns 
+ */
+function filterOriginBotMessage(players, channel) {
+    return channel.guild.id == myServer.id ? players.getEmbed(myServer.id) : players.getEmbed();
 }
 
 async function newBotMessage(channel, content) {
@@ -1989,10 +2013,18 @@ async function deleteCommand(message) {
  */
 function checkIntPermission(message) {
     let allowed = false;
-    if (message.member.roles.cache.find(x => x.name == "Members")) {
+    if (intPermission(message.member)) {
         allowed = true;
     }
     return allowed;
+}
+
+/**
+ * @param {Discord.GuildMember} member 
+ * @returns 
+ */
+function intPermission(member) {
+    return member.roles.cache.find(x => x.name == "Members");
 }
 
 /**
@@ -2002,12 +2034,20 @@ function checkIntPermission(message) {
  */
 async function checkAdvPermission(message) {
     let allowed = false;
-    if (message.member.roles.cache.find(x => x.name == "Officers") || message.member.roles.cache.find(x => x.name == "Officer")) {
+    if (advPermission(message.member)) {
         allowed = true;
     } else {
         await interactions.wSendAuthor(message.author, 'Insufficient permissions.');
     }
     return allowed;
+}
+
+/**
+ * @param {Discord.GuildMember} member 
+ * @returns 
+ */
+function advPermission(member) {
+    return member.roles.cache.find(x => x.name == "Officers") || member.roles.cache.find(x => x.name == "Officer");
 }
 
 /**
@@ -2017,13 +2057,18 @@ async function checkAdvPermission(message) {
  * @param {string} aap
  * @param {string} dp
  * @param {number} axe
+ * @param {string} horse
+ * @param {any[]} signUps
+ * @param {boolean} real
+ * @param {string} origin
  * @returns a player object with the given data
  */
-async function revivePlayer(id, classname, ap, aap, dp, axe = 0, horse = undefined, signUps, real) {
+async function revivePlayer(id, classname, ap, aap, dp, axe = 0, horse = undefined, signUps, real, origin = myServer.id) {
     try {
         let playerId = real ? await myServer.members.fetch(await bot.users.fetch(id)) : id;
         let newPlayer = new Player(playerId, classname, ap, aap, dp, real);
 
+        newPlayer.origin = origin;
         newPlayer.horse = horse;
         newPlayer.setAxe(axe + "");
         if (signUps) {
@@ -2221,7 +2266,8 @@ async function initPlayers(players) {
                     currentPlayer["axe"],
                     currentPlayer["horse"],
                     currentPlayer["signUps"],
-                    currentPlayer["real"]
+                    currentPlayer["real"],
+                    currentPlayer["origin"]
                 );
                 if (revivedPlayer) {
                     players.add(revivedPlayer);
@@ -2235,7 +2281,7 @@ async function initPlayers(players) {
     }
 }
 
-function initEmojis() {
+async function initEmojis() {
     itemsjson["classlist"].forEach(async (classname) => {
         classEmojis.push(fetchEmoji(classname));
     });

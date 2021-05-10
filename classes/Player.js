@@ -30,6 +30,7 @@ module.exports = class Player {
         this.axe = 0;
         this.horse = undefined;
         this.signUps = new SignUpArray();
+        this.origin = "";
 
         /**
          * @param {string} name

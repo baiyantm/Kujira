@@ -133,17 +133,30 @@ module.exports = class PlayerArray extends Array {
         return this.filter(currentPlayer => currentPlayer.getClassName() == classname);
     }
 
+    /**
+     * @param {string} origin 
+     * @returns array of players having this classname
+     */
+    getPlayersWithOrigin(origin) {
+        return this.filter(currentPlayer => currentPlayer.origin == origin);
+    }
+
     // ----- DISPLAY -----
 
     /**
-         * @param {string} classname 
+         * @param {string} [classname]
+         * @param {string} [origin] 
          * @returns discord embed
          */
-    getRankingsEmbed(classname) {
+    getRankingsEmbed(classname, origin) {
         let players = this;
         if (classname) {
             // @ts-ignore
             players = players.getPlayersWithClass(classname);
+        }
+        if (origin) {
+            // @ts-ignore
+            players = players.getPlayersWithOrigin(origin);
         }
         const embed = new Discord.MessageEmbed();
         let embedTitle = ":pencil: RANKINGS" + (classname ? " for " + classname.charAt(0).toUpperCase() + classname.slice(1) : "");
@@ -201,17 +214,23 @@ module.exports = class PlayerArray extends Array {
     }
 
     /**
-     * @param {string} classname 
+     * @param {string} [classname]
+     * @param {string} [origin]
      * @returns discord embed
      */
-    getStatsEmbed(classname) {
+    getStatsEmbed(classname, origin) {
         let players = this;
         if (classname) {
             // @ts-ignore
             players = players.getPlayersWithClass(classname);
         }
+        if (origin) {
+            // @ts-ignore
+            players = players.getPlayersWithOrigin(origin);
+        }
         const embed = new Discord.MessageEmbed();
-        let embedTitle = ":pencil: STATS" + (classname ? " for " + classname.charAt(0).toUpperCase() + classname.slice(1) : "");
+        let embedTitle = ":pencil: STATS"
+            + (classname ? " for " + classname.charAt(0).toUpperCase() + classname.slice(1) : "");
         let embedColor = 3447003;
         embed.setColor(embedColor);
         embed.setTitle(embedTitle);
@@ -273,15 +292,20 @@ module.exports = class PlayerArray extends Array {
 
     /**
      * @param {number} day
+     * @param {string} [origin]
      * @returns discord embed
      */
-    getSignedUpStatsEmbed(players, day) {
+    getSignedUpStatsEmbed(players, day, origin) {
         const embed = new Discord.MessageEmbed();
         let embedTitle = ":pencil: STATS on " + util.findCorrespondingDayName(day);
         let embedColor = 3447003;
         embed.setColor(embedColor);
         embed.setTitle(embedTitle);
 
+        if (origin) {
+            // @ts-ignore
+            players = players.getPlayersWithOrigin(origin);
+        }
         if (players.length > 0) {
             embed.setDescription("Total players : " + players.length + " " + (players.length == players.length ? "" : (" (" + players.length + ")")));
             let avg = this.getAverages(players);
@@ -307,27 +331,36 @@ module.exports = class PlayerArray extends Array {
 
     /**
      * #gear embed
+     * @param {string} [origin]
      * @returns discord embed
      */
-    getEmbed() {
+    getEmbed(origin) {
         const embed = new Discord.MessageEmbed();
-        let embedTitle = ":star: PLAYERS (" + this.length + ")";
+        let players = this;
+        if (origin) {
+            // @ts-ignore
+            players = players.getPlayersWithOrigin(origin);
+        }
+        let embedTitle = ":star: PLAYERS (" + players.length + ")";
         let embedColor = 3447003;
         embed.setColor(embedColor);
         embed.setTitle(embedTitle);
+        /**
+         * @type {{name : string, count : number}[]}
+         */
         let sortedList = [];
         this.classList.forEach(className => {
-            sortedList.push({ name: className, count: this.countClassNames(className) });
+            sortedList.push({ name: className, count: players.countClassNames(className) });
         });
         sortedList.sort((a, b) => {
             return b.count - a.count;
         });
-        if (this.length > 0) {
+        if (players.length > 0) {
             sortedList.forEach(classListElement => {
-                let classcount = this.countClassNames(classListElement.name);
+                let classcount = players.countClassNames(classListElement.name);
                 if (classcount > 0) {
                     let fieldTitle = classListElement.name.charAt(0).toUpperCase() + classListElement.name.slice(1) + " (" + classcount + ")\n";
-                    let fieldContent = this.getEmbedFieldContent(classListElement);
+                    let fieldContent = this.getEmbedFieldContent(classListElement, players);
                     embed.addField(fieldTitle, fieldContent, true);
                 }
             });
@@ -337,10 +370,19 @@ module.exports = class PlayerArray extends Array {
         return embed;
     }
 
-    getEmbedFieldContent(classListElement) {
+    /**
+     * 
+     * @param {{name : string, count : number}} classListElement 
+     * @param {PlayerArray} players 
+     * @returns 
+     */
+    getEmbedFieldContent(classListElement, players) {
         let fieldContent = "";
+        /**
+         * @type {Player[]}
+         */
         let playersToShow = [];
-        this.forEach(player => {
+        players.forEach(player => {
             if (player.getClassName() == classListElement.name) {
                 playersToShow.push(player);
             }
@@ -521,9 +563,13 @@ module.exports = class PlayerArray extends Array {
         });
         let minAxePlayers = players.filter(element => element.axe == minAxe.axe);
         let minAxestring = "";
-        minAxePlayers.forEach(player => {
-            minAxestring += this.displayPartPlayer(player) + "\n";
-        });
+        if (minAxePlayers.length < 10) {
+            minAxePlayers.forEach(player => {
+                minAxestring += this.displayPartPlayer(player) + "\n";
+            });
+        } else {
+            minAxestring = "Way too many :confused:"
+        }
 
         let maxAP = util.compare(players, (max, player) => {
             return player.isDpBuild() ? false : max.ap < player.ap;

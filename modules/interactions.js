@@ -16,6 +16,7 @@ async function wEditMsg(message, content) {
         await message.edit(content);
         logger.log('EDIT: ' + content + " in " + message.channel);
     } catch (e) {
+        console.error(e);
         logger.log("INFO: Couldn't edit the message");
         edit = false;
     }
@@ -35,6 +36,7 @@ async function wSendChannel(channel, content) {
         sent = await channel.send(content);
         logger.log("SENT: `" + content + "` in " + channel);
     } catch (e) {
+        console.error(e);
         logger.log("INFO: Couldn't send a message in " + channel);
     }
     return sent;
@@ -52,6 +54,7 @@ async function wSendAuthor(author, content) {
         sent = await author.send(content);
         logger.log("SENT: DM to [" + author.tag + " - " + author.id + "]");
     } catch (e) {
+        console.error(e);
         logger.log("INFO: Couldn't send a message to [" + author.tag + " - " + author.id + "]");
     }
     return sent;
@@ -66,6 +69,7 @@ async function wDelete(message) {
         await message.delete();
         logger.log("INFO: Deleted `" + message.content + "` from " + message.channel);
     } catch (e) {
+        console.error(e);
         logger.log("INFO: Tried to delete an already deleted message or not enough permissions.");
     }
 }
