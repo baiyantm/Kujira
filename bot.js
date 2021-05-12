@@ -1508,6 +1508,10 @@ async function dumpSignUps(server) {
     });
 }
 
+/**
+ * @param {Server} server 
+ * @returns 
+ */
 function filterPlayersByServer(server) {
     let filteredPlayers;
     if (server.self.id == getMyServerGuildChannel().id) {
