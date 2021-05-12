@@ -1501,20 +1501,12 @@ async function dumpSignUps(server) {
     const csv = parse(signUps);
     files.writeToFile(signuppath, csv);
     let embedToSend = await getSignUpsEmbed(filteredPlayers);
-    server.mySignUpData.send(sheetUpdateCommand, {
-        embed: embedToSend,
+    getMyServer().mySignUpData.send(sheetUpdateCommand, {
         files: [
             signuppath
         ]
     });
-    if(server.self.id != getMyServerGuildChannel().id) {
-        getMyServer().mySignUpData.send(sheetUpdateCommand, {
-            embed: embedToSend,
-            files: [
-                signuppath
-            ]
-        });
-    }
+    server.mySignUpData.send(embedToSend);
 }
 
 /**
@@ -1597,6 +1589,7 @@ async function getSignUpsEmbed(players) {
     embed.setColor(embedColor);
     embed.setTitle(embedTitle);
     let tooManyText = "Too many to show on Discord\nSee sheet for details";
+    let tooMany = 66;
     let yesToSend = "";
     let yes = 0;
     players.forEach(element => {
@@ -1605,7 +1598,7 @@ async function getSignUpsEmbed(players) {
             yes++;
         }
     });
-    if(yes > 40) {
+    if(yes > tooMany) {
         yesToSend = tooManyText;
     }
 
@@ -1617,7 +1610,7 @@ async function getSignUpsEmbed(players) {
             no++;
         }
     });
-    if(no > 40) {
+    if(no > tooMany) {
         noToSend = tooManyText;
     }
 
@@ -1629,7 +1622,7 @@ async function getSignUpsEmbed(players) {
             na++;
         }
     });
-    if(na > 40) {
+    if(na > tooMany) {
         naToSend = tooManyText;
     }
     embed.addField("Attendance per week *(by votes)*", getFormattedAttendanceForWeek(), false);
