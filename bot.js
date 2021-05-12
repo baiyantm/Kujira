@@ -9,22 +9,24 @@ const logger = require("./modules/logger");
 const util = require("./modules/util");
 const Player = require('./classes/Player');
 const PlayerArray = require('./classes/PlayerArray');
+const Server = require('./classes/Server');
 
 ghostScriptGet();
 
 async function initLookout() {
     bot.user.setPresence({ activity: { name: 'commands', type: 'LISTENING' } });
 
-    if (myGuildChat) {
+    /*if (myGuildChat) {
         setupAlarms();
     }
 
-    /*if (myServer) {
+    if (myServer) {
         setupCustomAlarms();
     }*/
 
     var annCache = { reference: null }; //because JavaScript
     await cacheAnnouncements(annCache);
+    await cacheSignUps();
     annCache.reference.forEach(async message => {
         try {
             await downloadFilesFromMessage(message);
@@ -33,29 +35,30 @@ async function initLookout() {
         }
     });
 
-    var botMsg = { reference: null }; //because JavaScript
-    //lookup for a previous message so we keep using it
-    let messages = await fetchAllMessages(myGear);
-    var found = 0;
-    messages.forEach(message => {
-        if (message.author.id == bot.user.id) {
-            if (!found) {
-                botMsg.reference = message;
-                logger.log("INFO: Found an existing message, keeping it and refreshing it.");
-                found++;
-            } else if (found == 1) {
-                botMsg.reference = null;
-                logger.log("INFO: Found multiple existing messages, aborting and generating a new one instead.");
-                found++;
+    for (let i = 0; i < myServers.length; i++) {
+        let server = myServers[i];
+        server.botMsg = { reference: null }; //because JavaScript
+        //lookup for a previous message so we keep using it
+        let messages = await fetchAllMessages(server.myGear);
+        var found = 0;
+        messages.forEach(message => {
+            if (message.author.id == bot.user.id) {
+                if (!found) {
+                    server.botMsg.reference = message;
+                    found++;
+                } else if (found == 1) {
+                    server.botMsg.reference = null;
+                    logger.log("INFO: Found multiple existing messages, aborting and generating a new one instead.");
+                    found++;
+                }
             }
-        }
-    });
-
-    await refreshBotMsg(myGear, botMsg, players);
+        });
+        await refreshBotMsg(server.myGear, server.botMsg, players);
+    }
 
     bot.on("guildMemberRemove", member => onLeaveHandler(member));
 
-    bot.on("message", async message => onMessageHandler(message, botMsg, annCache));
+    bot.on("message", async message => onMessageHandler(message, annCache));
 
     bot.on("messageReactionAdd", async (messageReaction, user) => onReactionAddHandler(messageReaction, user));
 
@@ -130,26 +133,21 @@ async function initLookout() {
         }
     });
 
-    if (myGear.id && myGearData.id) {
-        bot.setInterval(async () => {
-            await savePlayers();
-        }, configjson["saveDelay"]);
-    }
+    bot.setInterval(async () => {
+        savePlayers();
+    }, configjson["saveDelay"]);
 
-    if (mySignUp.id && mySignUpData.id) {
-        setupSignUpSchedule();
-        await collectSignUps();
-        bot.setInterval(async () => {
-            await collectSignUps();
-        }, configjson["signupDelay"]);
-    }
+    setupSignUpSchedule();
+
+    collectAllSignUps();
+    bot.setInterval(() => {
+        collectAllSignUps();
+    }, configjson["signupDelay"]);
 
     process.on('SIGTERM', async function () {
         logger.log("Recieved signal to terminate, saving and shutting down");
-        if (myGear.id && myGearData.id) {
-            await savePlayers();
-        }
-        await bot.destroy();
+        await savePlayers();
+        bot.destroy();
         process.exit(0);
     });
 
@@ -161,8 +159,9 @@ async function initLookout() {
  * @param {Discord.GuildMember | Discord.PartialGuildMember} member 
  */
 async function onLeaveHandler(member) {
-    if (member.guild.id == myServer.id) {
-        interactions.wSendChannel(myWelcome, member.toString() + "(" + member.user.username + ") has left the server.");
+    let server = getServerById(member.guild.id);
+    if (member.guild.id == server.self.id) {
+        interactions.wSendChannel(server.myWelcome, member.toString() + "(" + member.user.username + ") has left the server.");
     } else if (member.guild.id == myTrialServer.id) {
         interactions.wSendChannel(myTrialWelcome, member.toString() + "(" + member.user.username + ") has left the server.");
     }
@@ -174,8 +173,8 @@ async function onLeaveHandler(member) {
  * @param {{reference : any}} annCache 
  */
 async function onEditHandler(newMessage, annCache) {
-    if (newMessage.channel.id == myAnnouncement.id) {
-        await cacheAnnouncements(annCache);
+    if (newMessage.channel.id == getMyServer().myAnnouncement.id) {
+        cacheAnnouncements(annCache);
     }
 }
 
@@ -186,9 +185,9 @@ async function onEditHandler(newMessage, annCache) {
  */
 async function onDeleteHandler(deletedMessage, annCache) {
     try {
-        if (deletedMessage.channel.id == myAnnouncement.id) {
-            await interactions.wSendChannel(myAnnouncementData, await getHistoryEmbed(deletedMessage));
-            await cacheAnnouncements(annCache);
+        if (deletedMessage.channel.id == getMyServer().myAnnouncement.id) {
+            interactions.wSendChannel(getMyServer().myAnnouncementData, await getHistoryEmbed(deletedMessage));
+            cacheAnnouncements(annCache);
         }
     } catch (e) {
         console.error(e);
@@ -203,7 +202,7 @@ async function onDeleteHandler(deletedMessage, annCache) {
  */
 async function onReactionRemoveHandler(messageReaction, user) {
     if (messageReaction.message.channel.id == myTrial.id) {
-        await trialReactionRemoveHandler(messageReaction, user);
+        trialReactionRemoveHandler(messageReaction, user);
     }
 }
 
@@ -213,7 +212,8 @@ async function onReactionRemoveHandler(messageReaction, user) {
  * @param {Discord.User | Discord.PartialUser} user 
  */
 async function onReactionAddHandler(messageReaction, user) {
-    if (messageReaction.message.channel.id == mySignUp.id) {
+    let server = getServerById(messageReaction.message.guild.id);
+    if (messageReaction.message.channel.id == server.mySignUp.id) {
         signUpReactionAddHandler(messageReaction, user);
     } else if (messageReaction.message.channel.id == myTrial.id) {
         trialReactionAddHandler(messageReaction, user);
@@ -413,35 +413,35 @@ function removeUserFromReaction(messageReaction, user) {
 /**
  * listener for message event
  * @param {Discord.Message | Discord.PartialMessage} message the message sent
- * @param {Object} botMsg reference to the bot message
  * @param {{reference : any}} annCache 
  */
-async function onMessageHandler(message, botMsg, annCache) {
+async function onMessageHandler(message, annCache) {
     //if (message.author.bot) return; //bot ignores bots
     var commands;
     let enteredCommand = message.content.toLowerCase();
+    let server = getServerById(message.guild.id);
     try {
-        if (message.channel.id == myAnnouncement.id) {
+        if (message.channel.id == server.myAnnouncement.id) {
             await cacheAnnouncements(annCache);
             if (message.attachments.size > 0) {
-                await downloadFilesFromMessage(message);
+                downloadFilesFromMessage(message);
             }
-        } else if (message.channel.id == myGate.id) {
+        } else if (message.channel.id == server.myGate.id) {
             // === GATE ===
-            await gateChannelHandler(commands, enteredCommand, message);
-        } else if (message.channel.id == mySignUp.id) {
+            gateChannelHandler(commands, enteredCommand, message);
+        } else if (message.channel.id == server.mySignUp.id) {
             // === SIGNUP ===
-            await signupChannelHandler(enteredCommand, message, commands);
-        } else if (message.channel.id == myGear.id) {
+            signupChannelHandler(enteredCommand, message, commands);
+        } else if (message.channel.id == server.myGear.id) {
             // === GEAR ===
-            await gearChannelHandler(enteredCommand, message, commands, botMsg);
-        } else if (message.channel.id == mySignUpData.id) {
+            gearChannelHandler(enteredCommand, message, commands);
+        } else if (message.channel.id == server.mySignUpData.id) {
             // === SIGNUP DATA ===
-            await signupDataChannelHandler(enteredCommand, message, commands);
+            signupDataChannelHandler(enteredCommand, message, commands);
         } else {
             // === ALL CHANNELS ===
             if (enteredCommand.startsWith("?")) {
-                await allChannelsHandler(enteredCommand, commands, message);
+                allChannelsHandler(enteredCommand, commands, message);
             }
         }
     } catch (e) {
@@ -460,7 +460,7 @@ async function signupDataChannelHandler(enteredCommand, message, commands) {
         let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
         enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
         if (enteredCommand == commands["dump"]) {
-            await dumpCommand(message, args);
+            dumpCommand(message, args);
         }
     }
 }
@@ -473,12 +473,12 @@ async function gateChannelHandler(commands, enteredCommand, message) {
         commands = itemsjson["commands"]["gate"]["adv"];
         enteredCommand = enteredCommand.substr(1);
         if (enteredCommand == commands["gate"]) {
-            await gateCommand();
+            gateCommand();
         }
     } else {
         commands = itemsjson["commands"]["gate"]["guest"];
         if (enteredCommand == commands["ok"]) {
-            await okCommand(message);
+            okCommand(message);
         }
     }
     deleteCommand(message);
@@ -501,7 +501,7 @@ async function gateCommand() {
     Failure to respect those rules can lead to warnings or bans.
     
     If you understand type \`ok\` here`;
-    interactions.wSendChannel(myGate, gateEmbed);
+    interactions.wSendChannel(getMyServer().myGate, gateEmbed);
 }
 
 /**
@@ -514,7 +514,7 @@ async function okCommand(message) {
         logger.log("ROLE: " + publicRole + " role added to " + message.author.tag.toString());
         await interactions.wSendAuthor(message.author, itemsjson["urlguildpage"]);
         await interactions.wSendAuthor(message.author, itemsjson["gateguide"] + "\n\nReminder that you agreed to the following rules :\n" + itemsjson["gaterules"]);
-        await interactions.wSendChannel(myWelcome, message.author.toString() + " agreed to the rules and got the public role.");
+        await interactions.wSendChannel(getMyServer().myWelcome, message.author.toString() + " agreed to the rules and got the public role.");
     }
 }
 
@@ -528,20 +528,20 @@ async function signupChannelHandler(enteredCommand, message, commands) {
         let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
         enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
         if (enteredCommand == commands["clear"]) {
-            await clearCommand(message);
+            clearCommand(message);
         }
         else if (enteredCommand == commands["reset"]) {
-            await resetCommand(message, args);
+            resetCommand(message, args);
         }
         else if (enteredCommand == commands["dump"]) {
             //manually dumps data into data channel
-            await dumpCommand(message, args);
+            dumpCommand(message, args);
         }
         else if (enteredCommand == commands["generate"]) {
-            await generateCommand(message, args);
+            generateCommand(message, args);
         }
         else if (enteredCommand == commands["react"]) {
-            await reactCommand(message);
+            reactCommand(message);
         }
     }
 }
@@ -551,19 +551,19 @@ async function signupChannelHandler(enteredCommand, message, commands) {
  */
 async function resetCommand(message, args) {
     await clearChannel(message.channel);
-    await generateSignUpMessages(configjson["defaultCount"]);
+    await generateSignUpMessages(configjson["defaultCount"], getServerById(message.guild.id));
     players.resetPlayersSignUps();
 }
 
 /**
  * 
  * @param {Discord.Message | Discord.PartialMessage} message 
- * @param {*} args 
+ * @param {string} args 
  */
 async function dumpCommand(message, args) {
     startLoading(message);
-    await collectSignUps();
-    await dumpSignUps();
+    await collectAllSignUps();
+    await dumpSignUps(getServerById(message.guild.id));
     endLoading(message, 0);
     deleteCommand(message);
 }
@@ -574,7 +574,7 @@ async function dumpCommand(message, args) {
 async function generateCommand(message, args) {
     deleteCommand(message);
     if (Number(args) <= 14) {
-        await generateSignUpMessages(args ? args : configjson["defaultCount"]);
+        await generateSignUpMessages(args ? args : configjson["defaultCount"], getServerById(message.guild.id));
     }
     else {
         interactions.wSendAuthor(message.author, "I cannot generate that many messages");
@@ -596,30 +596,30 @@ async function reactCommand(message) {
 /**
  * @param {Discord.Message | Discord.PartialMessage} message 
  */
-async function gearChannelHandler(enteredCommand, message, commands, botMsg) {
+async function gearChannelHandler(enteredCommand, message, commands) {
     if (enteredCommand.startsWith("?") && await checkAdvPermission(message)) {
         commands = itemsjson["commands"]["gear"]["adv"];
         enteredCommand = enteredCommand.substr(1); // remove ?
         let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
         enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
         if (enteredCommand == commands["clear"]) {
-            await clearCommand(message);
+            clearCommand(message);
         }
         else if (enteredCommand == commands["removeall"]) {
             removeAllCommand();
         }
         else if (enteredCommand == commands["remove"]) {
-            await removePlayerCommand(message, args);
+            removePlayerCommand(message, args);
         }
         else if (enteredCommand == commands["add"]) {
-            await manualAddCommand(args, message, commands);
+            manualAddCommand(args, message, commands);
         }
     }
     else if (!enteredCommand.startsWith("! ") && !enteredCommand.startsWith("?")) {
         let classToFind = itemsjson["classlist"].find(currentclassname => currentclassname == enteredCommand.split(" ")[0]);
         let firstSplit = enteredCommand.split(" ");
         if (firstSplit.length == 3) {
-            await shortUpdateGearCommand(message, firstSplit);
+            shortUpdateGearCommand(message, firstSplit);
         }
         else {
             let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase(); // all but first word
@@ -627,22 +627,22 @@ async function gearChannelHandler(enteredCommand, message, commands, botMsg) {
             enteredCommand = enteredCommand.split(" ")[0]; // only first word
             commands = itemsjson["commands"]["gear"]["guest"];
             if (enteredCommand == commands["help"]) {
-                await helpCommand(message, true);
+                helpCommand(message, true);
             }
             else if (enteredCommand == commands["succession"]) {
-                await succCommand(message);
+                succCommand(message);
             }
             else if (enteredCommand == commands["awakening"]) {
-                await awakCommand(message);
+                awakCommand(message);
             }
             else if (enteredCommand == commands["axe"]) {
-                await axeCommand(message, args);
+                axeCommand(message, args);
             }
             else if (enteredCommand == commands["horse"]) {
-                await horseCommand(message, args);
+                horseCommand(message, args);
             }
             else if (classToFind) {
-                await updateGearCommand(split, commands, classToFind, message);
+                updateGearCommand(split, commands, classToFind, message);
             }
             else {
                 interactions.wSendAuthor(message.author, enteredCommand + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
@@ -652,10 +652,12 @@ async function gearChannelHandler(enteredCommand, message, commands, botMsg) {
     }
     deleteCommand(message);
 
-    //refresh bot message
-    bot.setTimeout(async () => {
-        await refreshBotMsg(myGear, botMsg, players);
-    }, configjson["refreshDelay"]);
+    myServers.forEach(server => {
+        //refresh bot message
+        bot.setTimeout(async () => {
+            await refreshBotMsg(server.myGear, server.botMsg, players);
+        }, configjson["refreshDelay"]);
+    });
 }
 
 /**
@@ -664,9 +666,9 @@ async function gearChannelHandler(enteredCommand, message, commands, botMsg) {
 async function clearCommand(message) {
     startLoading(message);
     if (message.channel instanceof Discord.TextChannel && message.channel.name.startsWith("trial-") && message.guild == myTrialServer) {
-        await historizeChannel(message.channel, myTrialHistory);
+        historizeChannel(message.channel, myTrialHistory);
     } else {
-        await clearChannel(message.channel);
+        clearChannel(message.channel);
     }
 }
 
@@ -736,12 +738,11 @@ async function manualAddCommand(args, message, commands) {
                 let player;
                 if (!member) {
                     player = new Player(name, classToFind, ap, aap, dp, false);
-                    player.origin = message.guild.id;
                 }
                 else {
                     player = new Player(member, classToFind, ap, aap, dp, true);
-                    player.origin = message.guild.id;
                 }
+                player.origin = message.guild.id;
                 await updatePlayer(players, player, succ, message.author);
             }
             else {
@@ -878,10 +879,10 @@ async function allChannelsHandler(enteredCommand, commands, message) {
         gearCommand(message, args);
     }
     else if (enteredCommand == commands["stats"] && checkIntPermission(message)) {
-        await statsCommand(args, message);
+        statsCommand(args, message);
     }
     else if (enteredCommand == commands["rankings"] && checkIntPermission(message)) {
-        await rankingsCommand(args, message);
+        rankingsCommand(args, message);
     }
     else if (enteredCommand == commands["sub"]) {
         let rolename = args;
@@ -891,16 +892,16 @@ async function allChannelsHandler(enteredCommand, commands, message) {
         }
     }
     else if (enteredCommand == commands["reminder"] && await checkAdvPermission(message)) {
-        await reminderCommand(message);
+        reminderCommand(message);
     }
     else if (enteredCommand == commands["attendance"] && await checkIntPermission(message)) {
-        await attendanceCommand(message);
+        attendanceCommand(message);
     }
     else if (enteredCommand == commands["help"] && await checkIntPermission(message)) {
-        await helpCommand(message, false);
+        helpCommand(message, false);
     }
     else if (enteredCommand == commands["clear"] && await checkAdvPermission(message)) {
-        await clearCommand(message);
+        clearCommand(message);
     }
 }
 
@@ -1089,7 +1090,7 @@ async function reminderCommand(message) {
  */
 async function attendanceCommand(message) {
     startLoading(message);
-    await collectSignUps();
+    await collectAllSignUps();
     interactions.wSendChannel(message.channel, getFormattedAttendanceForWeek());
     endLoading(message, 0);
 }
@@ -1128,13 +1129,24 @@ function getPercentAttendanceForADay(day) {
  * @param {{reference : any}} annCache 
  */
 async function cacheAnnouncements(annCache) {
-    let messages = await fetchAllMessages(myAnnouncement);
+    let messages = await fetchAllMessages(getMyServer().myAnnouncement);
     messages.forEach(async message => {
         message.reactions.cache.forEach(async reaction => {
-            await reaction.users.fetch();
+            reaction.users.fetch();
         });
     });
     annCache.reference = messages;
+}
+
+async function cacheSignUps() {
+    myServers.forEach(async server => {
+        let messages = await fetchAllMessages(server.myAnnouncement);
+        messages.forEach(message => {
+            message.reactions.cache.forEach(async reaction => {
+                reaction.users.fetch();
+            });
+        });
+    });
 }
 
 /**
@@ -1243,32 +1255,15 @@ async function getPlayersWithStatus(day, players, status) {
 
 /**
  * @param {number} num
+ * @param {Server} server
  * generate num singup messages
  */
-async function generateSignUpMessages(num) {
+async function generateSignUpMessages(num, server) {
     for (let i = 0; i < num; i++) {
         let date = new Date();
         date.setDate(date.getDate() + i); // get the next day
         let content = util.findCorrespondingDayName(date.getDay()) + " - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth() + 1) + "." + date.getFullYear();
-        let message = await interactions.wSendChannel(mySignUp, content);
-        await message.react(configjson["yesreaction"]);
-        await message.react(configjson["noreaction"]);
-    }
-}
-
-/**
- * @param {string} day
- * generate singup messages until day (inc today)
- */
-// @ts-ignore
-async function bulkSignUpMessages(day) {
-    let today = new Date();
-    let loops = day == "loop" ? 7 : util.diffDays(today.getDay(), util.findCorrespondingDayNumber(day));
-    for (let i = 0; i <= loops; i++) {
-        let date = new Date();
-        date.setDate(date.getDate() + i); // get the next day
-        let content = util.findCorrespondingDayName(date.getDay()) + " - " + util.zeroString(date.getDate()) + "." + util.zeroString(date.getMonth() + 1) + "." + date.getFullYear();
-        let message = await interactions.wSendChannel(mySignUp, content);
+        let message = await interactions.wSendChannel(server.mySignUp, content);
         await message.react(configjson["yesreaction"]);
         await message.react(configjson["noreaction"]);
     }
@@ -1281,11 +1276,13 @@ function setupSignUpSchedule() {
     let today = new Date();
     let dd = (today.getDay() + Number(util.isNextDay(configjson["hourSignup"]))) % 7;
     let minUntilSave = util.getMinUntil(dd, configjson["hourSignup"], 0);
-    bot.setTimeout(async () => {
-        await dumpSignUps();
-        setupSignUpSchedule();
-    }, minUntilSave * 60 * 1000);
-    logger.log("INFO: Sign ups save schedule set");
+    myServers.forEach(server => {
+        bot.setTimeout(async () => {
+            await dumpSignUps(server);
+            setupSignUpSchedule();
+        }, minUntilSave * 60 * 1000);
+        logger.log("INFO: Sign ups save schedule set for " + server.self.name);
+    });
 }
 
 /**
@@ -1295,35 +1292,37 @@ function setupSignUpSchedule() {
  */
 async function getDaySignUp(day) {
     let signUps = [];
-    let reactionMessage = await getDaySignUpMessage(day, mySignUp);
-    if (reactionMessage) {
-        let yesReaction = reactionMessage.reactions.cache.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
-        let noReaction = reactionMessage.reactions.cache.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
-        if (noReaction) {
-            let users = await noReaction.users.fetch();
-            await Promise.all(users.map(async user => {
-                let member = await myServer.members.fetch(await bot.users.fetch(user.id));
-                if (intPermission(member)) {
-                    addMemberToSignUps(member, signUps, "no");
-                }
-            }));
-        }
-        if (yesReaction) {
-            let users = await yesReaction.users.fetch();
-            await Promise.all(users.map(async user => {
-                let member = await myServer.members.fetch(await bot.users.fetch(user.id));
-                if (intPermission(member)) {
-                    addMemberToSignUps(member, signUps, "yes");
-                }
-            }));
-        }
-        myServer.members.cache.forEach(member => {
-            if (intPermission(member)) {
-                addMemberToSignUps(member, signUps, "N/A");
+    for (let i = 0; i < myServers.length; i++) {
+        let reactionMessage = await getDaySignUpMessage(day, myServers[i].mySignUp);
+        if (reactionMessage) {
+            let yesReaction = reactionMessage.reactions.cache.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
+            let noReaction = reactionMessage.reactions.cache.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
+            if (noReaction) {
+                let users = await noReaction.users.fetch();
+                await Promise.all(users.map(async user => {
+                    let member = await getMyServerGuildChannel().members.fetch(await bot.users.fetch(user.id));
+                    if (intPermission(member)) {
+                        addMemberToSignUps(member, signUps, "no");
+                    }
+                }));
             }
-        });
-        return signUps;
+            if (yesReaction) {
+                let users = await yesReaction.users.fetch();
+                await Promise.all(users.map(async user => {
+                    let member = await getMyServerGuildChannel().members.fetch(await bot.users.fetch(user.id));
+                    if (intPermission(member)) {
+                        addMemberToSignUps(member, signUps, "yes");
+                    }
+                }));
+            }
+            getMyServerGuildChannel().members.cache.forEach(member => {
+                if (intPermission(member)) {
+                    addMemberToSignUps(member, signUps, "N/A");
+                }
+            });
+        }
     }
+    return signUps;
 }
 
 /**
@@ -1402,9 +1401,20 @@ async function fetchAllMessages(channel, limit = 500) {
     return sum_messages;
 }
 
-async function collectSignUps() {
+async function collectAllSignUps() {
+    logger.log("INFO: Collecting signups");
+    for (let i = 0; i < myServers.length; i++) {
+        await collectSignUps(myServers[i]);
+    }
+    logger.log("INFO: Signups collected");
+}
+
+/**
+ * @param {Server} server 
+ */
+async function collectSignUps(server) {
     for (let day = 0; day < 7; day++) {
-        let reactionMessage = await getDaySignUpMessage(day, mySignUp);
+        let reactionMessage = await getDaySignUpMessage(day, server.mySignUp);
         if (reactionMessage) {
             let yesReaction = reactionMessage.reactions.cache.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
             let noReaction = reactionMessage.reactions.cache.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
@@ -1432,15 +1442,26 @@ async function collectSignUps() {
  */
 async function fetchSignUps(reaction, day, emojiName) {
     let users = await reaction.users.fetch();
+    /**
+     * @type {Player[]}
+     */
+    let skippedUsers = [];
     await Promise.all(users.map(async (user) => {
         if (!user.bot) {
             try {
-                let member = await myServer.members.fetch(await bot.users.fetch(user.id));
+                let member = await reaction.message.guild.members.fetch(await bot.users.fetch(user.id));
                 if (member && intPermission(member)) {
+                    /**
+                     * @type {Player}
+                     */
                     let foundPlayer = players.get(member.id);
                     if (foundPlayer) {
-                        foundPlayer.setSignUpDay(day, emojiName);
-                        foundPlayer.voted = true;
+                        if (foundPlayer.origin == reaction.message.guild.id) {
+                            foundPlayer.setSignUpDay(day, emojiName);
+                            foundPlayer.voted = true;
+                        } else {
+                            skippedUsers.push(foundPlayer);
+                        }
                     }
                 }
             }
@@ -1454,15 +1475,29 @@ async function fetchSignUps(reaction, day, emojiName) {
             }
         }
     }));
+
+    skippedUsers.forEach(player => {
+        if (player.voted == false) {
+            player.setSignUpDay(day, emojiName);
+            player.voted = true;
+        }
+    });
 }
 
-async function dumpSignUps() {
+/**
+ * 
+ * @param {Server} [server]
+ */
+async function dumpSignUps(server) {
     let day = new Date();
     let signUps = getFormattedSignUps();
     let signuppath = "./download/signups" + day.getTime() + ".csv";
     const csv = parse(signUps);
     files.writeToFile(signuppath, csv);
-    mySignUpData.send("!sheet update", {
+    if (!server) {
+        server = getMyServer();
+    }
+    server.mySignUpData.send("!sheet update", {
         embed: await getSignUpsEmbed(),
         files: [
             signuppath
@@ -1591,15 +1626,15 @@ function getFormattedAttendanceForWeek() {
  * remove a player from a player list
  * @param {PlayerArray} players 
  * @param {string} playerId 
- * @param {Discord.User | Discord.PartialUser} origin
+ * @param {Discord.User | Discord.PartialUser} issuer
  */
-async function removePlayer(players, playerId, origin) {
+async function removePlayer(players, playerId, issuer) {
     let removed = players.remove(playerId);
-    if (removed) {
+    if (removed && removed instanceof Player) {
         let content = "";
         content += players.displayFullPlayer(removed[0]) + "\nRemoved from gear list.";
-        content += "\n(Command origin: " + origin.toString() + ")";
-        await interactions.wSendChannel(myChangelog, content);
+        content += "\n(Command issuer: " + issuer.toString() + ")";
+        await interactions.wSendChannel(getServerById(removed.origin).myChangelog, content);
     }
 }
 
@@ -1608,9 +1643,9 @@ async function removePlayer(players, playerId, origin) {
  * @param {PlayerArray} players 
  * @param {Player} player 
  * @param {boolean} succ succ was true or not (null if no succ info given)
- * @param {Discord.User | Discord.PartialUser} origin
+ * @param {Discord.User | Discord.PartialUser} issuer
  */
-async function updatePlayer(players, player, succ, origin) {
+async function updatePlayer(players, player, succ, issuer) {
     let content = "";
     let foundPlayer = players.get(player.id);
     let oldPlayer = { ...foundPlayer };
@@ -1629,8 +1664,8 @@ async function updatePlayer(players, player, succ, origin) {
         content += "> New player\n";
         content += players.displayFullPlayer(player) + "\n";
     }
-    content += "(Command origin: " + origin.toString() + ")";
-    await interactions.wSendChannel(myChangelog, content);
+    content += "(Command issuer: " + issuer.toString() + ")";
+    await interactions.wSendChannel(getServerById(player.origin).myChangelog, content);
 }
 
 /**
@@ -1667,7 +1702,7 @@ async function updatePlayerAxe(author, args) {
         let oldAxe = playerFound.getAxe(true);
         playerFound.setAxe(args);
         let content = "> Updated " + playerFound.getNameOrMention() + "'s axe :\n" + oldAxe + " -> " + playerFound.getAxe(true);
-        await interactions.wSendChannel(myChangelog, content);
+        await interactions.wSendChannel(getServerById(playerFound.origin).myChangelog, content);
     } else {
         await interactions.wSendAuthor(author, "You need to be registered to do that.");
     }
@@ -1687,11 +1722,11 @@ async function updatePlayerHorse(author, args) {
         if (horseType && itemsjson['horselist'].includes(horseType) && playerFound.horse != horseType) {
             playerFound.horse = horseType;
             content += players.getHorseEmoji(playerFound);
-            await interactions.wSendChannel(myChangelog, content);
+            await interactions.wSendChannel(getServerById(playerFound.origin).myChangelog, content);
         } else if (horseType && horseType == "none") {
             playerFound.horse = "";
             content += "none";
-            await interactions.wSendChannel(myChangelog, content);
+            await interactions.wSendChannel(getServerById(playerFound.origin).myChangelog, content);
         }
     } else {
         await interactions.wSendAuthor(author, "You need to be registered to do that.");
@@ -1708,7 +1743,7 @@ async function savePlayers() {
  * if the bot message exists, edits it
  * if not, sends a new one
  * @param {Discord.GuildChannel} channel the channel where the original message comes from
- * @param {Object} botMsg the bot message
+ * @param {{reference : Discord.Message}} botMsg the bot message
  * @param {PlayerArray} players
  * @returns the new message
  */
@@ -1731,7 +1766,7 @@ async function refreshBotMsg(channel, botMsg, players) {
  * @returns 
  */
 function filterOriginBotMessage(players, channel) {
-    return channel.guild.id == myServer.id ? players.getEmbed(myServer.id) : players.getEmbed();
+    return channel.guild.id == getMyServerGuildChannel().id ? players.getEmbed(getMyServerGuildChannel().id) : players.getEmbed();
 }
 
 async function newBotMessage(channel, content) {
@@ -1958,7 +1993,7 @@ function setupCustomAlarms() {
 function dailyTimeout(id, time, message) {
     bot.setTimeout(async () => {
         if (time > 0 && players.get(id) && players.get(id).signUps[new Date().getDay()].status == "yes") {
-            interactions.wSendAuthor(myServer.members.cache.find(x => x.id == id).user, message);
+            interactions.wSendAuthor(getMyServerGuildChannel().members.cache.find(x => x.id == id).user, message);
             dailyTimeout(id, 86400000, message);
         } else {
             dailyTimeout(id, time + 86400000, message);
@@ -1966,6 +2001,7 @@ function dailyTimeout(id, time, message) {
     }, time);
 }
 
+/*
 function setupAlarms() {
     let channel = myGuildChat;
     for (const key in alarmsjson) {
@@ -1973,7 +2009,7 @@ function setupAlarms() {
         for (const hour in alarmsjson[dayName]) {
             let minUntilAlarm = mod(util.getMinUntil(util.findCorrespondingDayNumber(dayName.toLowerCase()), hour, 0), 10080);
             let msUntilAlarm = minUntilAlarm * 60 * 1000;
-            let alarmText = myServer.roles.cache.find(x => x.name === "Rem").toString() + "\n";
+            let alarmText = getMyServer().roles.cache.find(x => x.name === "Rem").toString() + "\n";
             alarmsjson[dayName][hour].forEach(alarm => {
                 alarmText += alarm + "\n";
             });
@@ -1983,7 +2019,7 @@ function setupAlarms() {
         }
     }
     logger.log("INFO: Alarms set");
-}
+}*/
 
 /**
  * The fundamental problem is in JS % is not the modulo operator. It's the remainder operator. There is no modulo operator in JavaScript.
@@ -2063,9 +2099,9 @@ function advPermission(member) {
  * @param {string} origin
  * @returns a player object with the given data
  */
-async function revivePlayer(id, classname, ap, aap, dp, axe = 0, horse = undefined, signUps, real, origin = myServer.id) {
+async function revivePlayer(id, classname, ap, aap, dp, axe = 0, horse = undefined, signUps, real, origin = getMyServerGuildChannel().id) {
     try {
-        let playerId = real ? await myServer.members.fetch(await bot.users.fetch(id)) : id;
+        let playerId = real ? await getMyServerGuildChannel().members.fetch(await bot.users.fetch(id)) : id;
         let newPlayer = new Player(playerId, classname, ap, aap, dp, real);
 
         newPlayer.origin = origin;
@@ -2114,6 +2150,32 @@ function fetchEmoji(name) {
     return myDevServer.emojis.cache.find(emoji => emoji.name == name);
 }
 
+/**
+ * @param {number} index 
+ */
+function getConfigOrFirst(key, index) {
+    return (configjson[key + index] ? configjson[key + index] : configjson[key]);
+}
+
+/**
+ * @param {string} id
+ * @returns the server if found, a new empty server if not
+ */
+function getServerById(id) {
+    let serverFound = myServers.filter(server => {
+        return server.self.id == id;
+    });
+    return serverFound ? serverFound[0] : new Server();
+}
+
+function getMyServer() {
+    return myServers[0];
+}
+
+function getMyServerGuildChannel() {
+    return myServers[0].self;
+}
+
 // ------ bot general behavior ------
 
 //globals
@@ -2121,21 +2183,29 @@ const bot = new Discord.Client();
 var configjsonfile = files.openJsonFile("./resources/config.json", "utf8");
 var configjson = process.env.TOKEN ? configjsonfile["prod"] : configjsonfile["dev"];
 var itemsjson = files.openJsonFile("./resources/items.json", "utf8");
-var alarmsjson = files.openJsonFile("./resources/alarms.json", "utf8");
+/*var alarmsjson = files.openJsonFile("./resources/alarms.json", "utf8");*/
 var init = false;
 
-if (configjson && itemsjson && alarmsjson) {
+if (configjson && itemsjson) {
     // Initialize Discord Bot
     var token = process.env.TOKEN ? process.env.TOKEN : configjson["token"];
     bot.login(token);
 
     var playersjson;
 
+    /**
+     * @type Server[]
+     */
+    var myServers = [];
     //more globals
     /**
-     * @type Discord.Guild
+     * @type Server
      */
-    var myServer;
+    var myServer = new Server();
+    /**
+     * @type Server
+     */
+    var myServer2 = new Server();
     /**
      * @type Discord.Guild
      */
@@ -2144,26 +2214,12 @@ if (configjson && itemsjson && alarmsjson) {
      * @type Discord.Guild
      */
     var myDevServer;
-    /**
-     * @type Discord.TextChannel
-     */
-    var myGate;
-    /**
-     * @type Discord.TextChannel
-     */
-    var myGear;
+
     /**
      * @type Discord.TextChannel
      */
     var myGearData;
-    /**
-     * @type Discord.TextChannel
-     */
-    var mySignUp;
-    /**
-     * @type Discord.TextChannel
-     */
-    var mySignUpData;
+
     /**
      * @type Discord.TextChannel
      */
@@ -2175,27 +2231,11 @@ if (configjson && itemsjson && alarmsjson) {
     /**
      * @type Discord.TextChannel
      */
-    var myAnnouncement;
-    /**
-     * @type Discord.TextChannel
-     */
-    var myAnnouncementData;
-    /**
-     * @type Discord.TextChannel
-     */
-    var myWelcome;
-    /**
-     * @type Discord.TextChannel
-     */
     var myTrialWelcome;
-    /**
-     * @type Discord.TextChannel
-     */
-    var myChangelog;
-    /**
-     * @type Discord.TextChannel
-     */
-    var myGuildChat;
+
+    myServers.push(myServer);
+    myServers.push(myServer2);
+
     var players = new PlayerArray(itemsjson["classlist"], itemsjson["horselist"]);
     var classEmojis = [];
     var horseEmojis = [];
@@ -2206,28 +2246,44 @@ if (configjson && itemsjson && alarmsjson) {
         bot.user.setPresence({ activity: { name: "booting up..." } });
 
         try {
-            myServer = bot.guilds.cache.get(configjson["botServerID"]);
             myTrialServer = bot.guilds.cache.get(configjson["botTrialServerID"]);
             myDevServer = bot.guilds.cache.get(configjsonfile["dev"]["botServerID"]);
             // @ts-ignore
-            myGate = await bot.channels.fetch(configjson["gateID"]);// @ts-ignore
-            myGear = await bot.channels.fetch(configjson["gearID"]);// @ts-ignore
-            myGearData = await bot.channels.fetch(configjson["gearDataID"]);// @ts-ignore
-            mySignUp = await bot.channels.fetch(configjson["signUpID"]);// @ts-ignore
-            mySignUpData = await bot.channels.fetch(configjson["signUpDataID"]);// @ts-ignore
-            myTrial = await bot.channels.fetch(configjson["trialreactionID"]);// @ts-ignore
-            myTrialHistory = await bot.channels.fetch(configjson["trialhistoryID"]);// @ts-ignore
-            myAnnouncement = await bot.channels.fetch(configjson["announcementID"]);// @ts-ignore
-            myAnnouncementData = await bot.channels.fetch(configjson["announcementDataID"]);// @ts-ignore
-            myWelcome = await bot.channels.fetch(configjson["welcomeID"]);// @ts-ignore
-            myTrialWelcome = await bot.channels.fetch(configjson["trialwelcomeID"]);// @ts-ignore
-            myChangelog = await bot.channels.fetch(configjson["changelogID"]);// @ts-ignore
-            myGuildChat = await bot.channels.fetch(configjson["guildchatID"]);
+            myGearData = await bot.channels.fetch(configjson["gearDataID"]);
+            // @ts-ignore
+            myTrial = await bot.channels.fetch(configjson["trialreactionID"]);
+            // @ts-ignore
+            myTrialHistory = await bot.channels.fetch(configjson["trialhistoryID"]);
+            // @ts-ignore
+            myTrialWelcome = await bot.channels.fetch(configjson["trialwelcomeID"]);
+
+            let index = 0;
+            for (let i = 0; i < myServers.length; i++) {
+                let server = myServers[i];
+                index++;
+                server.self = bot.guilds.cache.get(getConfigOrFirst("botServerID", index));
+                // @ts-ignore
+                server.myGate = await bot.channels.fetch(getConfigOrFirst("gateID", index));
+                // @ts-ignore
+                server.myGear = await bot.channels.fetch(getConfigOrFirst("gearID", index));
+                // @ts-ignore
+                server.mySignUp = await bot.channels.fetch(getConfigOrFirst("signUpID", index));
+                // @ts-ignore
+                server.mySignUpData = await bot.channels.fetch(getConfigOrFirst("signUpDataID", index));
+                // @ts-ignore
+                server.myAnnouncement = await bot.channels.fetch(getConfigOrFirst("announcementID", index));
+                // @ts-ignore
+                server.myAnnouncementData = await bot.channels.fetch(getConfigOrFirst("announcementDataID", index));
+                // @ts-ignore
+                server.myWelcome = await bot.channels.fetch(getConfigOrFirst("welcomeID", index));
+                // @ts-ignore
+                server.myChangelog = await bot.channels.fetch(getConfigOrFirst("changelogID", index));
+                // @ts-ignore
+                server.myGuildChat = await bot.channels.fetch(getConfigOrFirst("guildchatID", index));
+            }
 
             logger.log("INFO: Booting up attempt...");
-            if (myServer && myDevServer && myGate && myGear && myGearData && mySignUp
-                && mySignUpData && myAnnouncement && myAnnouncementData && myWelcome && myChangelog && myGuildChat) {
-
+            if (myServers) {
                 initEmojis();
 
                 //attempt to load a previously saved state

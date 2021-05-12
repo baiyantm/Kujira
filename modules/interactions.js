@@ -14,7 +14,11 @@ async function wEditMsg(message, content) {
     var edit = true;
     try {
         await message.edit(content);
-        logger.log('EDIT: ' + content + " in " + message.channel);
+        let name = message.channel.toString();
+        if(message.channel instanceof Discord.GuildChannel) {
+            name = message.channel.name;
+        }
+        logger.log('EDIT: ' + content + " in " + name);
     } catch (e) {
         console.error(e);
         logger.log("INFO: Couldn't edit the message");
@@ -34,7 +38,11 @@ async function wSendChannel(channel, content) {
     var sent;
     try {
         sent = await channel.send(content);
-        logger.log("SENT: `" + content + "` in " + channel);
+        let name = channel.toString();
+        if(channel instanceof Discord.GuildChannel) {
+            name = channel.name;
+        }
+        logger.log("SENT: `" + content + "` in " + name);
     } catch (e) {
         console.error(e);
         logger.log("INFO: Couldn't send a message in " + channel);
@@ -67,7 +75,11 @@ async function wSendAuthor(author, content) {
 async function wDelete(message) {
     try {
         await message.delete();
-        logger.log("INFO: Deleted `" + message.content + "` from " + message.channel);
+        let name = message.channel.toString();
+        if(message.channel instanceof Discord.GuildChannel) {
+            name = message.channel.name;
+        }
+        logger.log("INFO: Deleted `" + message.content + "` from " + name);
     } catch (e) {
         console.error(e);
         logger.log("INFO: Tried to delete an already deleted message or not enough permissions.");

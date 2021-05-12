@@ -31,6 +31,10 @@ module.exports = class Player {
         this.horse = undefined;
         this.signUps = new SignUpArray();
         this.origin = "";
+        /**
+         * @type {Boolean}
+         */
+        this.voted = undefined;
 
         /**
          * @param {string} name
