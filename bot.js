@@ -1402,7 +1402,6 @@ async function fetchAllMessages(channel, limit = 500) {
 }
 
 async function collectAllSignUps() {
-    logger.log("INFO: Collecting signups");
     for (let i = 0; i < myServers.length; i++) {
         await collectSignUps(myServers[i]);
     }
@@ -1490,7 +1489,11 @@ async function fetchSignUps(reaction, day, emojiName) {
  */
 async function dumpSignUps(server) {
     let day = new Date();
-    let signUps = getFormattedSignUps();
+    /**
+     * @type {PlayerArray}
+     */
+    let filteredPlayers = filterPlayersByServer(server);
+    let signUps = getFormattedSignUps(filteredPlayers);
     let signuppath = "./download/signups" + day.getTime() + ".csv";
     const csv = parse(signUps);
     files.writeToFile(signuppath, csv);
@@ -1498,14 +1501,36 @@ async function dumpSignUps(server) {
         server = getMyServer();
     }
     server.mySignUpData.send("!sheet update", {
-        embed: await getSignUpsEmbed(),
+        embed: await getSignUpsEmbed(filteredPlayers),
         files: [
             signuppath
         ]
     });
 }
 
-function getFormattedSignUps() {
+function filterPlayersByServer(server) {
+    let filteredPlayers;
+    if (server.self.id == getMyServerGuildChannel().id) {
+        let filter = players.filter(player => {
+            return player.origin == getMyServerGuildChannel().id;
+        });
+        if (filter instanceof PlayerArray) {
+            filteredPlayers = filter;
+        }
+    } else {
+        filteredPlayers = players;
+    }
+    return filteredPlayers;
+}
+
+/**
+ * @param {PlayerArray} players 
+ * @returns 
+ */
+function getFormattedSignUps(players) {
+    /**
+     * @type {{id, name, class, ap, aap, dp, gs, succession, axe, horse}[]}
+     */
     let signUps = [];
     players.forEach(player => {
         if (player instanceof Player && player.isReal()) {
@@ -1546,7 +1571,12 @@ function addSignUpInfo(playerInfo, player) {
     }
 }
 
-async function getSignUpsEmbed() {
+/**
+ * 
+ * @param {PlayerArray} players 
+ * @returns 
+ */
+async function getSignUpsEmbed(players) {
     let day = new Date();
     const embed = new Discord.MessageEmbed();
     let embedTitle = ":bookmark_tabs: SIGN UPS";
@@ -1574,7 +1604,7 @@ async function getSignUpsEmbed() {
     let naToSend = "";
     let na = 0;
     players.forEach(element => {
-        if (element.isReal() && element.signUps[day.getDay()].status == "N/A") {
+        if (element.real && element.signUps[day.getDay()].status == "N/A") {
             naToSend += "<@" + element.id + ">" + "\n";
             na++;
         }
