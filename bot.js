@@ -1071,7 +1071,8 @@ function getPlayerByIdOrMention(message, id) {
 async function reminderCommand(message) {
     let today = new Date();
     let day = today.getDay();
-    let naPlayers = await getPlayersWithStatus(day, players, "N/A");
+    let filteredPlayers = filterPlayersByServer(getServerById(message.guild.id));
+    let naPlayers = await getPlayersWithStatus(day, filteredPlayers, "N/A");
     let reminderMessage = "";
     if (naPlayers.length > 0) {
         naPlayers.forEach(player => {
