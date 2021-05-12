@@ -1587,6 +1587,7 @@ async function getSignUpsEmbed(players) {
     let embedColor = 3447003;
     embed.setColor(embedColor);
     embed.setTitle(embedTitle);
+    let tooManyText = "Too many to show on Discord\nSee sheet for details";
     let yesToSend = "";
     let yes = 0;
     players.forEach(element => {
@@ -1595,6 +1596,9 @@ async function getSignUpsEmbed(players) {
             yes++;
         }
     });
+    if(yes > 40) {
+        yesToSend = tooManyText;
+    }
 
     let noToSend = "";
     let no = 0;
@@ -1604,6 +1608,9 @@ async function getSignUpsEmbed(players) {
             no++;
         }
     });
+    if(no > 40) {
+        noToSend = tooManyText;
+    }
 
     let naToSend = "";
     let na = 0;
@@ -1613,6 +1620,9 @@ async function getSignUpsEmbed(players) {
             na++;
         }
     });
+    if(na > 40) {
+        naToSend = tooManyText;
+    }
     embed.addField("Attendance per week *(by votes)*", getFormattedAttendanceForWeek(), false);
     if (yesToSend) {
         embed.addField(configjson["yesreaction"] + " YES for today (" + yes + ")", yesToSend, true);
