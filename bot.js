@@ -1277,11 +1277,13 @@ function setupSignUpSchedule() {
     let dd = (today.getDay() + Number(util.isNextDay(configjson["hourSignup"]))) % 7;
     let minUntilSave = util.getMinUntil(dd, configjson["hourSignup"], 0);
     myServers.forEach(server => {
-        bot.setTimeout(async () => {
-            await dumpSignUps(server);
-            setupSignUpSchedule();
-        }, minUntilSave * 60 * 1000);
-        logger.log("INFO: Sign ups save schedule set for " + server.self.name);
+        if(server.self.id != getMyServerGuildChannel().id) {
+            bot.setTimeout(async () => {
+                await dumpSignUps(server);
+                setupSignUpSchedule();
+            }, minUntilSave * 60 * 1000);
+            logger.log("INFO: Sign ups save schedule set for " + server.self.name);
+        }
     });
 }
 
@@ -1488,6 +1490,7 @@ async function fetchSignUps(reaction, day, emojiName) {
  * @param {Server} [server]
  */
 async function dumpSignUps(server) {
+    let sheetUpdateCommand = "!sheet update";
     let day = new Date();
     /**
      * @type {PlayerArray}
@@ -1497,15 +1500,21 @@ async function dumpSignUps(server) {
     let signuppath = "./download/signups" + day.getTime() + ".csv";
     const csv = parse(signUps);
     files.writeToFile(signuppath, csv);
-    if (!server) {
-        server = getMyServer();
-    }
-    server.mySignUpData.send("!sheet update", {
-        embed: await getSignUpsEmbed(filteredPlayers),
+    let embedToSend = await getSignUpsEmbed(filteredPlayers);
+    server.mySignUpData.send(sheetUpdateCommand, {
+        embed: embedToSend,
         files: [
             signuppath
         ]
     });
+    if(server.self.id != getMyServerGuildChannel().id) {
+        getMyServer().mySignUpData.send(sheetUpdateCommand, {
+            embed: embedToSend,
+            files: [
+                signuppath
+            ]
+        });
+    }
 }
 
 /**
