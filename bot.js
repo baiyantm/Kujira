@@ -27,6 +27,7 @@ async function initLookout() {
     var annCache = { reference: null }; //because JavaScript
     await cacheAnnouncements(annCache);
     await cacheSignUps();
+    await cacheTrialMessage();
     annCache.reference.forEach(async message => {
         try {
             await downloadFilesFromMessage(message);
@@ -1148,6 +1149,15 @@ async function cacheSignUps() {
             message.reactions.cache.forEach(async reaction => {
                 reaction.users.fetch();
             });
+        });
+    });
+}
+
+async function cacheTrialMessage() {
+    let messages = await fetchAllMessages(myTrial);
+    messages.forEach(message => {
+        message.reactions.cache.forEach(async reaction => {
+            reaction.users.fetch();
         });
     });
 }
