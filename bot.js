@@ -161,7 +161,7 @@ async function initLookout() {
  */
 async function onLeaveHandler(member) {
     let server = getServerById(member.guild.id);
-    if (member.guild.id == server.self.id) {
+    if (server && member.guild.id == server.self.id) {
         interactions.wSendChannel(server.myWelcome, member.toString() + "(" + member.user.username + ") has left the server.");
     } else if (member.guild.id == myTrialServer.id) {
         interactions.wSendChannel(myTrialWelcome, member.toString() + "(" + member.user.username + ") has left the server.");
@@ -214,7 +214,7 @@ async function onReactionRemoveHandler(messageReaction, user) {
  */
 async function onReactionAddHandler(messageReaction, user) {
     let server = getServerById(messageReaction.message.guild.id);
-    if (messageReaction.message.channel.id == server.mySignUp.id) {
+    if (server && messageReaction.message.channel.id == server.mySignUp.id) {
         signUpReactionAddHandler(messageReaction, user);
     } else if (messageReaction.message.channel.id == myTrial.id) {
         trialReactionAddHandler(messageReaction, user);
