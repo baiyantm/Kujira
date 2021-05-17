@@ -421,23 +421,25 @@ async function onMessageHandler(message, annCache) {
     let enteredCommand = message.content.toLowerCase();
     let server = getServerById(message.guild.id);
     try {
-        if (message.channel.id == server.myAnnouncement.id) {
-            await cacheAnnouncements(annCache);
-            if (message.attachments.size > 0) {
-                downloadFilesFromMessage(message);
+        if(server) {
+            if (message.channel.id == server.myAnnouncement.id) {
+                await cacheAnnouncements(annCache);
+                if (message.attachments.size > 0) {
+                    downloadFilesFromMessage(message);
+                }
+            } else if (message.channel.id == server.myGate.id) {
+                // === GATE ===
+                gateChannelHandler(commands, enteredCommand, message);
+            } else if (message.channel.id == server.mySignUp.id) {
+                // === SIGNUP ===
+                signupChannelHandler(enteredCommand, message, commands);
+            } else if (message.channel.id == server.myGear.id) {
+                // === GEAR ===
+                gearChannelHandler(enteredCommand, message, commands);
+            } else if (message.channel.id == server.mySignUpData.id) {
+                // === SIGNUP DATA ===
+                signupDataChannelHandler(enteredCommand, message, commands);
             }
-        } else if (message.channel.id == server.myGate.id) {
-            // === GATE ===
-            gateChannelHandler(commands, enteredCommand, message);
-        } else if (message.channel.id == server.mySignUp.id) {
-            // === SIGNUP ===
-            signupChannelHandler(enteredCommand, message, commands);
-        } else if (message.channel.id == server.myGear.id) {
-            // === GEAR ===
-            gearChannelHandler(enteredCommand, message, commands);
-        } else if (message.channel.id == server.mySignUpData.id) {
-            // === SIGNUP DATA ===
-            signupDataChannelHandler(enteredCommand, message, commands);
         } else {
             // === ALL CHANNELS ===
             if (enteredCommand.startsWith("?")) {
