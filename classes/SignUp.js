@@ -23,7 +23,11 @@ module.exports = class SignUp {
         }
 
         this.toString = function () {
-            return this.display();
+            if (!this.date) {
+                return 'N/A';
+            } else {
+                return this.display();
+            }
         }
     }
 }
