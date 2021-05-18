@@ -61,4 +61,4 @@ typings/
 .next
 
 # (local/dev) Google API credentials
-creds.json
+resources/creds.json
