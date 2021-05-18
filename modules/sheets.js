@@ -1,23 +1,29 @@
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 
 const mode = process.env.TOKEN ? 'prod' : 'dev';
-const config = require('../resources/config.json')[mode];
-const creds = require('../resources/creds.json');
+const loglevel = require('../resources/config.json')[mode].loglevel;
 const Logger = require('../classes/rerelog');
+const log = new Logger(loglevel);
 
-const log = new Logger(config.loglevel);
-const spreadsheetid = config.NWSpreadsheetID;
-const sheetid = config.NWSheetID;
-
+const creds = require('../resources/creds.json');
+const config = require('../resources/config.json').sheets;
 
 /**
  * Upload data to google sheets.
  * 
  * @param {{id, name, class, ap, aap, dp, gs, succession, axe, horse}[]}
+ * @param {string} serverid
  * actually the paramter is missing status and the days, but line too long anyway...
  */
-async function run (data) {
+async function run (data, serverid) {
     log.info('Google Sheet sync START');
+
+    if (config[serverid] === undefined) {
+        log.error('unsuported server!');
+        return;
+    }
+    const spreadsheetid = config[serverid].NWSpreadsheetID;
+    const sheetid = config[serverid].NWSheetID;
 
     let doc = new GoogleSpreadsheet(spreadsheetid);
     await doc.useServiceAccountAuth(creds);

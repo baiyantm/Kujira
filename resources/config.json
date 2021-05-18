@@ -31,9 +31,7 @@
         "defaultCount": 7,
         "yesreaction": "✅",
         "noreaction": "❌",
-        "loglevel": 5,
-        "NWSpreadsheetID": "1vG4wBLovRAaLqimX4twHhwhhnFTTS4aUcFrRVatxiS0",
-        "NWSheetID": "392630128"
+        "loglevel": 5
     },
     "prod": {
         "botServerID": "594824222099111937",
@@ -66,8 +64,20 @@
         "defaultCount": 7,
         "yesreaction": "✅",
         "noreaction": "❌",
-        "loglevel": 3,
-        "NWSpreadsheetID": "1vG4wBLovRAaLqimX4twHhwhhnFTTS4aUcFrRVatxiS0",
-        "NWSheetID": "811826100"
+        "loglevel": 3
+    },
+    "sheets": {
+        "594824222099111937": {
+            "NWSpreadsheetID": "1vG4wBLovRAaLqimX4twHhwhhnFTTS4aUcFrRVatxiS0",
+            "NWSheetID": "811826100"
+        },
+        "233897365679898624": {
+            "NWSpreadsheetID": "1vG4wBLovRAaLqimX4twHhwhhnFTTS4aUcFrRVatxiS0",
+            "NWSheetID": "392630128"
+        },
+        "824677531642232872": {
+            "NWSpreadsheetID": "1MubKtwwBIHeH3-YFt9bZYj8qJlWKqpFw61PwjmS3JYw",
+            "NWSheetID": "811826100"
+        }
     }
 }
