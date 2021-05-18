@@ -440,9 +440,12 @@ async function onMessageHandler(message, annCache) {
             } else if (message.channel.id == server.mySignUpData.id) {
                 // === SIGNUP DATA ===
                 signupDataChannelHandler(enteredCommand, message, commands);
+            } else (enteredCommand.startsWith("?")) {
+                // === ALL CHANNELS ===
+                allChannelsHandler(enteredCommand, commands, message);
             }
         } else {
-            // === ALL CHANNELS ===
+            // === ALL CHANNELS (any server) ===
             if (enteredCommand.startsWith("?")) {
                 allChannelsHandler(enteredCommand, commands, message);
             }

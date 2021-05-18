@@ -59,7 +59,7 @@
         "deleteDelay": 2000,
         "refreshDelay": 500,
         "saveDelay": 900000,
-        "signupDelay": 150000,
+        "signupDelay": 300000,
         "hourSignup": 17,
         "defaultCount": 7,
         "yesreaction": "✅",
