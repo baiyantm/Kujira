@@ -447,7 +447,7 @@ async function onMessageHandler(message, annCache) {
         } else {
             // === ALL CHANNELS (any server) ===
             if (enteredCommand.startsWith("?")) {
-                allChannelsHandler(enteredCommand, commands, message);
+                allAnyChannelsHandler(enteredCommand, commands, message);
             }
         }
     } catch (e) {
@@ -870,6 +870,19 @@ async function horseCommand(message, args) {
     else {
         // too many arguments !
         interactions.wSendAuthor(message.author, "Invalid horse command.");
+    }
+}
+
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
+ async function allAnyChannelsHandler(enteredCommand, commands, message) {
+    commands = itemsjson["commands"]["any"]["guest"];
+    enteredCommand = enteredCommand.substr(1);
+    let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
+    enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
+    if (enteredCommand == commands["clear"] && await checkAdvPermission(message)) {
+        clearCommand(message);
     }
 }
 
