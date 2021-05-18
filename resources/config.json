@@ -30,7 +30,10 @@
         "hourSignup": 17,
         "defaultCount": 7,
         "yesreaction": "✅",
-        "noreaction": "❌"
+        "noreaction": "❌",
+        "loglevel": 5,
+        "NWSpreadsheetID": "1vG4wBLovRAaLqimX4twHhwhhnFTTS4aUcFrRVatxiS0",
+        "NWSheetID": "392630128"
     },
     "prod": {
         "botServerID": "594824222099111937",
@@ -62,6 +65,9 @@
         "hourSignup": 17,
         "defaultCount": 7,
         "yesreaction": "✅",
-        "noreaction": "❌"
+        "noreaction": "❌",
+        "loglevel": 3,
+        "NWSpreadsheetID": "1vG4wBLovRAaLqimX4twHhwhhnFTTS4aUcFrRVatxiS0",
+        "NWSheetID": "811826100"
     }
 }
