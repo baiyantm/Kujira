@@ -27,7 +27,7 @@ async function run (data) {
     log(`DEBUG: data length: ${data.length}`);
     log(`DEBUG: rows length: ${rows.length}`);
     
-    for (i = 0; i <= max; i++) {
+    for (i = 0; i < max; i++) {
         log(`TRACE: i:${i}`);
         // both are defined => overwrite
         if (rows[i] !== undefined && data[i] !== undefined) {
