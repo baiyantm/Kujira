@@ -43,8 +43,7 @@
                 "reset": "reset",
                 "dump": "dump",
                 "generate": "generate",
-                "react": "react",
-                "test": "test"
+                "react": "react"
             }
         }
     },
