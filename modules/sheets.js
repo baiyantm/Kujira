@@ -5,7 +5,7 @@ const loglevel = require('../resources/config.json')[mode].loglevel;
 const Logger = require('../classes/rerelog');
 const log = new Logger(loglevel);
 
-const creds = require('../resources/creds.json');
+const creds = mode == "prod" ? process.env.CREDS : require('../resources/creds.json');
 const config = require('../resources/config.json').sheets;
 
 /**
