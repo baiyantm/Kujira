@@ -1,5 +1,6 @@
 const { GoogleSpreadsheet } = require('google-spreadsheet');
-const { log } = require('./logger');
+const Logger = require('../classes/rerelog');
+const log = new Logger(5);
 const creds = require('/Users/Zephyro/Downloads/quickstart-1599814377442-5ec02b6819bb.json');
 
 const spreadsheetid = '1vG4wBLovRAaLqimX4twHhwhhnFTTS4aUcFrRVatxiS0';
@@ -17,49 +18,51 @@ async function run (data) {
     await doc.useServiceAccountAuth(creds);
 
     await doc.loadInfo(); // loads document properties and worksheets
-    log(`INFO: Uploading attendance data -> ${doc.title}`);
+    log.info('Google Sheet sync START');
+    log.info(`Target sheet -> ${doc.title}`);
 
     const sheet = doc.sheetsByTitle[sheetname];
     let rows = await sheet.getRows({'limit': 101}); // 100 + header
     
     let i;
     const max = data.length > rows.length ? data.length : rows.length;
-    log(`DEBUG: data length: ${data.length}`);
-    log(`DEBUG: rows length: ${rows.length}`);
+    log.debug(`data length: ${data.length}`);
+    log.debug(`rows length: ${rows.length}`);
+    log.trace(`iteration count: ${max}`);
     
     for (i = 0; i < max; i++) {
-        log(`TRACE: i:${i}`);
+        log.trace(`i:${i}`);
         // both are defined => overwrite
         if (rows[i] !== undefined && data[i] !== undefined) {
-            log(`TRACE: data: ${data[i].name}`);
-            log(`TRACE: row: ${rows[i].name}`)
+            log.trace(`data: ${data[i].name}`);
+            log.trace(`row: ${rows[i].name}`)
             rows[i].name = data[i].name;
             Object.keys(data[i]).map((key, j) => {
-                log(`> TRACE: i: ${i}`);
-                log(`> TRACE: key: ${key}`);
-                log(`> TRACE: data[i][key]: ${data[i][key]}`);
+                // log(`> TRACE: i: ${i}`);
+                log.trace(`key: ${key}, value: ${data[i][key]}`);
                 rows[i][key] = data[i][key];
             })
-            log('TRACE: saving...');
+            log.trace('saving...');
             await rows[i].save();
-            log('TRACE: Done');
+            log.trace('Done');
         }
         // sheet > members => delete
         else if (rows[i] !== undefined) {
+            log.debug(`Old member removed from nw sheet: ${JSON.stringify(rows[i].name)}`)
             await rows[i].delete(); // VERIFY will this impact the length or rows?
         }
         // members > sheet => add new row
         else if (data[i] !== undefined) {
             let t1 = await sheet.addRow(data[i]); // VERIFY
-            log(`DEBUG: new row: ${JSON.stringify(t1)}`);
+            log.debug(`New member added to nw sheet: ${JSON.stringify(t1)}`);
         }
         // SHOULD be unreachable
         else {
-            log("WARNING: unreachable branch-condition in ./modules/sheets.js - run)");
+            log.warn("Unreachable branch-condition in ./modules/sheets.js - run)");
         }
-        log('TRACE: ================');
+        log.trace('================');
     }
-    await sheet.saveUpdatedCells();
+    log.info('Google Sheet sync END');
 };
 
 
