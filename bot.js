@@ -1503,23 +1503,22 @@ async function fetchSignUps(reaction, day, emojiName) {
  * @param {Server} [server]
  */
 async function dumpSignUps(server) {
-    let sheetUpdateCommand = "!sheet update";
-    let day = new Date();
     /**
      * @type {PlayerArray}
      */
-    let filteredPlayers = filterPlayersByServer(server);
-    let signUps = getFormattedSignUps(filteredPlayers);
+    let players = filterPlayersByServer(server);
+    let signupdata = getFormattedSignUps(players);
+
+    let day = new Date();
     let signuppath = "./download/signups" + day.getTime() + ".csv";
-    const csv = parse(signUps);
+    const csv = parse(signupdata);
     files.writeToFile(signuppath, csv);
-    let embedToSend = await getSignUpsEmbed(filteredPlayers);
-    getMyServer().mySignUpData.send(sheetUpdateCommand, {
-        files: [
-            signuppath
-        ]
-    });
+    
+    let embedToSend = await getSignUpsEmbed(players);
     server.mySignUpData.send(embedToSend);
+
+    const sheet = require('./modules/sheets');
+    await sheet.doSheetUpload(signupdata, server.self.id);
 }
 
 /**
@@ -2142,7 +2141,7 @@ async function checkAdvPermission(message) {
  * @returns 
  */
 function advPermission(member) {
-    return member.roles.cache.find(x => x.name == "Officers") || member.roles.cache.find(x => x.name == "Officer");
+    return member.roles.cache.find(x => x.name.includes("Officer"));
 }
 
 /**
