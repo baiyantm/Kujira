@@ -464,33 +464,8 @@ async function signupDataChannelHandler(enteredCommand, message, commands) {
         enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
         if (enteredCommand == commands["dump"]) {
             dumpCommand(message, args);
-        } else if (enteredCommand == commands["test"]) {
-            await uploadAttendanceToNWSheet(message);
         }
     }
-}
-
-/**
- * Call sheets module to upload attendance data to google sheets
- * 
- * @param {Discord.Message | Discord.PartialMessage} message
- */
-async function uploadAttendanceToNWSheet(message) {
-    startLoading(message);
-    let server = getMyServer();
-    let players = filterPlayersByServer(server);
-    let fplayers = getFormattedSignUps(players);
-    
-
-    // TODO don't try to send the data to discord, it's already handled
-    //      by another function and also it's gonna crash if there's too many
-    //      signups.
-    await message.channel.send(JSON.stringify(fplayers));
-    const sheet = require('./modules/sheets');
-    await sheet.doSheetUpload(fplayers);
-
-    // require('./modules/sheets').doSheetUpload(getFormattedSignUps(filterPlayersByServer(getMyServer())));
-    endLoading(message, 0);
 }
 
 /**
@@ -1528,23 +1503,22 @@ async function fetchSignUps(reaction, day, emojiName) {
  * @param {Server} [server]
  */
 async function dumpSignUps(server) {
-    let sheetUpdateCommand = "!sheet update";
-    let day = new Date();
     /**
      * @type {PlayerArray}
      */
-    let filteredPlayers = filterPlayersByServer(server);
-    let signUps = getFormattedSignUps(filteredPlayers);
+    let players = filterPlayersByServer(server);
+    let signupdata = getFormattedSignUps(players);
+
+    let day = new Date();
     let signuppath = "./download/signups" + day.getTime() + ".csv";
-    const csv = parse(signUps);
+    const csv = parse(signupdata);
     files.writeToFile(signuppath, csv);
-    let embedToSend = await getSignUpsEmbed(filteredPlayers);
-    getMyServer().mySignUpData.send(sheetUpdateCommand, {
-        files: [
-            signuppath
-        ]
-    });
+    
+    let embedToSend = await getSignUpsEmbed(players);
     server.mySignUpData.send(embedToSend);
+
+    const sheet = require('./modules/sheets');
+    await sheet.doSheetUpload(signupdata, server.self.id);
 }
 
 /**
