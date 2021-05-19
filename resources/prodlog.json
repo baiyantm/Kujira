@@ -15,11 +15,7 @@
     },
     "categories": {
         "default": {
-            "appenders": ["file"],
-            "level": "info"
-        },
-        "sheets": {
-            "appenders": ["file"],
+            "appenders": ["out"],
             "level": "info"
         }
     }
