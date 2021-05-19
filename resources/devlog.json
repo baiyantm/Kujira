@@ -3,7 +3,8 @@
         "out": {
             "type": "stdout",
             "layout": {
-                "type": "colored"
+                "type": "pattern",
+                "pattern": "%[%d{yyyy-MM-dd hh:mm}  %-8.8p %-17.17c %m%]"
             }
         },
         "file": {
