@@ -31,7 +31,7 @@
         "defaultCount": 7,
         "yesreaction": "✅",
         "noreaction": "❌",
-        "loglevel": 5
+        "logconfigpath": "./resources/devlog.json"
     },
     "prod": {
         "botServerID": "594824222099111937",
@@ -64,7 +64,7 @@
         "defaultCount": 7,
         "yesreaction": "✅",
         "noreaction": "❌",
-        "loglevel": 3
+        "logconfigpath": "./resources/prodlog.json"
     },
     "sheets": {
         "594824222099111937": {

@@ -149,6 +149,7 @@ async function initLookout() {
         logger.log("Recieved signal to terminate, saving and shutting down");
         await savePlayers();
         bot.destroy();
+        log4js.shutdown(); // application exit!
         process.exit(0);
     });
 
@@ -2241,6 +2242,11 @@ const bot = new Discord.Client();
 var configjsonfile = files.openJsonFile("./resources/config.json", "utf8");
 var configjson = process.env.TOKEN ? configjsonfile["prod"] : configjsonfile["dev"];
 var itemsjson = files.openJsonFile("./resources/items.json", "utf8");
+
+// Setup Logging
+const log4js = require('log4js');
+log4js.configure(configjson['logconfigpath']);
+
 /*var alarmsjson = files.openJsonFile("./resources/alarms.json", "utf8");*/
 var init = false;
 
@@ -2360,10 +2366,12 @@ if (configjson && itemsjson) {
             }
         } catch (e) {
             console.error(e);
+            log4js.shutdown(); // application exit?
         }
     });
 } else {
     logger.log("INFO: Couldn't find config.json and items.json files, aborting.");
+    log4js.shutdown(); // application exit?
 }
 async function initPlayers(players) {
     try {
