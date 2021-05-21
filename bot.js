@@ -59,7 +59,7 @@ async function initLookout() {
 
     bot.on("guildMemberRemove", member => onLeaveHandler(member));
 
-    bot.on("message", async message => onMessageHandler(message, annCache));
+    // bot.on("message", async message => onMessageHandler(message, annCache));
 
     bot.on("messageReactionAdd", async (messageReaction, user) => onReactionAddHandler(messageReaction, user));
 
@@ -888,13 +888,14 @@ async function allChannelsHandler(enteredCommand, commands, message) {
     else if (enteredCommand == commands["rankings"] && checkIntPermission(message)) {
         rankingsCommand(args, message);
     }
-    else if (enteredCommand == commands["sub"]) {
+    // Replaced by commands/sub.js
+/*     else if (enteredCommand == commands["sub"]) {
         let rolename = args;
         //add roles here
         if (rolename == "rem" || rolename == "reminder" || rolename == "dnd") {
             await changeRole(message, rolename, args);
         }
-    }
+    } */
     else if (enteredCommand == commands["reminder"] && await checkAdvPermission(message)) {
         reminderCommand(message);
     }
@@ -910,9 +911,10 @@ async function allChannelsHandler(enteredCommand, commands, message) {
 }
 
 /**
+ * Replaced by commands/sub.js
  * @param {Discord.Message | Discord.PartialMessage} message 
  */
-async function changeRole(message, rolename, args) {
+/* async function changeRole(message, rolename, args) {
     let role = message.guild.roles.cache.find(x => x.name == rolename.charAt(0).toUpperCase() + rolename.slice(1));
     if (role) {
         if (message.member.roles.cache.has(role.id)) {
@@ -924,15 +926,15 @@ async function changeRole(message, rolename, args) {
     } else {
         logger.log("ERROR: No role " + rolename + " found");
     }
-}
+} */
 
 /**
- * 
+ * Replaced by commands/sub.js
  * @param {Discord.Message | Discord.PartialMessage} message 
  * @param {Discord.Role} role 
  * @param {string} args 
  */
-async function addRole(message, role, args) {
+/* async function addRole(message, role, args) {
     try {
         await message.member.roles.add(role);
         interactions.wSendAuthor(message.author, role.name + ' role added.');
@@ -943,24 +945,25 @@ async function addRole(message, role, args) {
         console.error(e);
         interactions.wSendAuthor(message.author, args + ' role not found or not self-assignable.');
     }
-}
+} */
 
 /**
+ * Replaced by commands/sub.js
  * @param {Discord.Message | Discord.PartialMessage} message 
  * @param {Discord.Role} role
  */
-async function removeRole(message, role, args) {
-    try {
-        await message.member.roles.remove(role);
-        interactions.wSendAuthor(message.author, role.name + ' role removed.');
-        logger.log('ROLE: ' + role.name + ' role removed from ' + message.author.tag);
-        interactions.wDelete(message);
-    }
-    catch (e) {
-        console.error(e);
-        interactions.wSendAuthor(message.author, args + ' role not found or not self-assignable.');
-    }
-}
+// async function removeRole(message, role, args) {
+//     try {
+//         await message.member.roles.remove(role);
+//         interactions.wSendAuthor(message.author, role.name + ' role removed.');
+//         logger.log('ROLE: ' + role.name + ' role removed from ' + message.author.tag);
+//         interactions.wDelete(message);
+//     }
+//     catch (e) {
+//         console.error(e);
+//         interactions.wSendAuthor(message.author, args + ' role not found or not self-assignable.');
+//     }
+// }
 
 /**
  * @param {Discord.Message | Discord.PartialMessage} message 
@@ -2243,9 +2246,50 @@ var configjsonfile = files.openJsonFile("./resources/config.json", "utf8");
 var configjson = process.env.TOKEN ? configjsonfile["prod"] : configjsonfile["dev"];
 var itemsjson = files.openJsonFile("./resources/items.json", "utf8");
 
+
 // Setup Logging
 const log4js = require('log4js');
 log4js.configure(configjson['logconfigpath']);
+const log = log4js.getLogger('bot');
+// ALL < TRACE < DEBUG < INFO < WARN < ERROR < FATAL < MARK < OFF 
+log.mark('Logger Initialized');
+
+
+// Setup Commands
+const eventFiles = fs.readdirSync('./events').filter(file => file.endsWith('.js'));
+// @ts-ignore
+bot.commands = new Discord.Collection();
+
+const commandFolders = fs.readdirSync('./commands');
+for (const folder of commandFolders) {
+    const commandFiles = fs.readdirSync(`./commands/${folder}`).filter(file => file.endsWith('.js'));
+    for (const file of commandFiles) {
+        const command = require(`./commands/${folder}/${file}`);
+        // @ts-ignore
+        bot.commands.set(command.name, command);
+    }
+}
+
+for (const file of eventFiles) {
+    const event = require(`./events/${file}`);
+    if (event.once) {
+        bot.once(event.name, (...args) => event.execute(...args, bot));
+    } else {
+        bot.on(event.name, (...args) => event.execute(...args, bot));
+    }
+}
+
+
+
+// debug
+// @ts-ignore
+bot.commands.forEach((key, value) => {
+    log.trace(`key ${key} type ${typeof key}`);
+    log.trace(`value ${value} type ${typeof value}`);
+});
+
+
+
 
 /*var alarmsjson = files.openJsonFile("./resources/alarms.json", "utf8");*/
 var init = false;
