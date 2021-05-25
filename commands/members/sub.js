@@ -1,6 +1,6 @@
 const log = require('log4js').getLogger('commands/sub');
 const interactions = require('../../modules/interactions');
-const { Remedy } = require('../../constants');
+const { WhitelistedMemberChannels, Members } = require('../../constants').Guilds.Remedy;
 
 /**
  * Returns the input string with a Capitalized first letter
@@ -17,7 +17,8 @@ module.exports = {
     name: 'sub',
     description: 'subscribe to a ping-role ?',
     whitelist: {
-        roles: [Remedy.Members],
+        roles: [Members],
+        channels: WhitelistedMemberChannels,
     },
     execute(message, rolename) {
         log.trace(`checking role: ${rolename}`);
