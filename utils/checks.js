@@ -37,7 +37,7 @@ const inChannelCheck = function (message, commandName, channels) {
     for (channel of channels) {
         if (message.channel.id == channel) return true;
     }
-    log.trace(`${message.author.tag} tried to use the \'${command}\' in the blacklisted ` +
+    log.trace(`${message.author.tag} tried to use the \'${commandName}\' in the blacklisted ` +
               `channel ${message.channel.name}. Rejecting.`
     );
 }
@@ -65,5 +65,7 @@ module.exports = {
             }
         }
         return true;
-    }
+    },
+    withRoleCheck,
+    inChannelCheck
 }
