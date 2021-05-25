@@ -1,5 +1,11 @@
-import SignUp from '../classes/SignUp';
-import SignUpArray from '../classes/SignUpArray';
+const SignUp = require('../classes/SignUp');
+const SignUpArray = require('../classes/SignUpArray');
+
+const log = require('log4js').getLogger('modules/player');
+
+const constants = require('../constants');
+const ClassEmojis = constants.Emojis.Class;
+const HorseEmojis = constants.Emojis.Horse;
 
 const int = function (str) {
     return parseInt(str);
@@ -31,7 +37,7 @@ module.exports = class Player {
      * @param {String|Number} dp The players DP
      */
     constructor(id, name, cls, ap, aap, dp) {
-        // No, id cannot be null
+        // id can never be null!
         this.id = id;
         this.name = this.applyNamePolicy(name);
         this.cls = cls;
@@ -64,9 +70,9 @@ module.exports = class Player {
     setCls(cls) { this.cls = cls; }
     setAxe(axe) { this.axe = axe; }
     setSuccession(succession) { this.succession = succession; }
-    setAP(ap) { this.ap = ap; }
-    setAAP(aap) { this.aap = aap; }
-    setDP(dp) { this.dp = dp; }
+    setAP(ap) { this.ap = ap instanceof Number ? ap : int(ap); }
+    setAAP(aap) { this.aap = aap instanceof Number ? aap : int(aap);; }
+    setDP(dp) { this.dp = dp instanceof Number ? dp : int(dp);; }
     setHorse(horse) { this.horse = horse; }
     setOrigin(origin) { this.origin = origin; }
 
@@ -88,7 +94,7 @@ module.exports = class Player {
 
     avgAP() { return this.succession ? this.ap : Math.round((this.ap + this.aap)/2); }
 
-    gs() { return this.avgAP + this.dp; }
+    gs() { return this.avgAP() + this.dp; }
 
     isDPBuild() { return this.dp >= 425; } // TODO priority: none
 
@@ -119,14 +125,21 @@ module.exports = class Player {
 
     // Strings
 
+    fmtCls() {
+        if (!this.cls) log.warn(`Player ${this.id} does not have a class identifier!`);
+        return ClassEmojis[this.classEmojiKey()]
+    }
+
+    fmtHorse() { return this.horse ? HorseEmojis[this.horse] : ""; }
+
     mention() { return `<@${this.id}>`; }
 
     toString() { return this.display(); }
 
-    classEmojiKey() { return `${this.classname}${this.succession ? "succ" : ""}`; }
+    classEmojiKey() { return `${this.cls}${this.succession ? "succ" : ""}`; }
 
     fmtGear() {
-        return `${this.fmtInt(this.ap)} / ${this.fmtInt(this.aap)} / ${this.fmtInt(this.dp)}`;
+        return `${String(this.ap).padStart(3)} / ${String(this.aap).padStart(3)} / ${String(this.dp).padStart(3)}`;
     }
 
     // For the time being?
@@ -141,7 +154,7 @@ module.exports = class Player {
     display(showClass=false, showAxe=false, showHorse=false, showName=false, showGs=false) {
         // wtf is `\xa0` ?
         let text = '';
-        text += showClass ? `${this.classEmoji()}\xa0` : '';
+        text += showClass ? `${this.fmtCls()}\xa0` : '';
         text += showName ? `${this.name}\xa0` : '';
         text += (showHorse && this.horse && showAxe && this.axe) ? '\xa0-\xa0' : '';
         text += (showHorse && this.horse) ? `${this.horse}\xa0` : '';
@@ -169,17 +182,5 @@ module.exports = class Player {
                 }
                 return '';
         }
-    }
-
-    fmtInt(int) {
-        switch (int) {
-            case int < -9: break;
-            case int < 0: return ` ${int}`
-            case int < 10: return `  ${int}`;
-            case int < 100: return ` ${int}`;
-            default: break;
-        }
-        log.warn(`player ${player.name} (${player.id}) has invalid gear stats!`);
-        return 'err';
     }
 }
