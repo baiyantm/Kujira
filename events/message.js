@@ -1,25 +1,41 @@
-const { whitelistCheck } = require('../modules/checks');
-
 const log = require('log4js').getLogger('events/message');
 
-// TODO priority: low
-// hook prefix to configfile
-const prefix = '?';
+const { readdirSync } = require('fs');
 
-// log.info(__filename); // /Users/Zephyro/Documents/code/kujira/events/message.js
-// log.info(__dirname); // /Users/Zephyro/Documents/code/kujira/events
+const { whitelistCheck } = require('../checks');
+const { prefix } = require('../constants');
+
+const handlers = new Map();
+
+for (let f of readdirSync('./channels')) {
+    let h = require(`./channels/${f}`);
+    for (let c of h.channels) {
+        handlers.set(c, h.handler);
+    }
+}
 
 module.exports = {
     name: 'message',
     execute(message) {
-        if (!message.content.startsWith(prefix) || message.author.bot) return;
-        log.debug(`${message.author.tag} in #${message.channel.name} sent: ${message.content}`);
+
+        // Channel handlers
+        if (message.channel && handlers.has(message.channel.id)) {
+            return handlers.get(message.channel.id)(message);
+        }
+
+        // Do not handle other bot messages;
+        if (message.author.bot) return;
+
+        // Do not handle normal messages;
+        if (!message.content.startsWith(prefix)) return;
+
+        log.debug(`${message.author.tag} in ${message.channel.name} sent: ${message.content}`);
 
         let args = message.content.slice(prefix.length).trim().split(/ +/);
         let commandName = args.shift().toLowerCase();
-        let client = message.client // aka bot
+        let client = message.client
 
-        // is Command ?
+        // get command
         const command = client.commands.get(commandName)
             || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
 
@@ -30,7 +46,7 @@ module.exports = {
             if (!whitelistCheck(message, command)) return;
         }
 
-        // check Arguments
+        // also check Arguments
         if (command.args && !args.length) {
             if (command.silent) return; // fail silently
             let reply = `You didn't provide any arguments, ${message.author}!`;
@@ -47,4 +63,3 @@ module.exports = {
         }
     },
 };
-
