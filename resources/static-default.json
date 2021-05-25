@@ -1,9 +1,146 @@
 {
-    "Remedy": {
-        "id": "",
+    "Guilds": {
+        "Remedy": {
+            "name": "Remedy",
+            "id": "594824222099111937",
 
-        "Officers": "594826730590437398",
-        "Technician": "755105835839127582",
-        "Members": "594826907476819969"
+            "Officers": "594826730590437398",
+            "Technician": "755105835839127582",
+            "Members": "594826907476819969",
+
+            "changelog": "605137470530519089",
+            "gear": "594829519953723395"
+        }
+    },
+    "classlist": [
+        "warrior",
+        "sorceress",
+        "ranger",
+        "berserker",
+        "tamer",
+        "musa",
+        "maehwa",
+        "valkyrie",
+        "wizard",
+        "witch",
+        "ninja",
+        "kunoichi",
+        "darkknight",
+        "striker",
+        "mystic",
+        "lahn",
+        "archer",
+        "shai",
+        "guardian",
+        "hashashin",
+        "nova",
+        "sage"
+    ],
+    "classlistSucc": [
+        "warrior",
+        "sorceress",
+        "ranger",
+        "berserker",
+        "tamer",
+        "musa",
+        "maehwa",
+        "valkyrie",
+        "wizard",
+        "witch",
+        "ninja",
+        "kunoichi",
+        "darkknight",
+        "striker",
+        "mystic",
+        "lahn",
+        "guardian",
+        "hashashin",
+        "nova",
+        "sage"
+    ],
+    "horselist": [
+        "pegasus",
+        "unicorn",
+        "doom",
+        "normal",
+        "none"
+    ],
+    "Emojis": {
+        "Class": {
+            "warrior": "<:warrior:706494410032152598>",
+            "sorceress": "<:sorceress:706494410371760179>",
+            "ranger": "<:ranger:706494410325622804>",
+            "berserker": "<:berserker:706494410011050026>",
+            "tamer": "<:tamer:706494410078290002>",
+            "musa": "<:musa:706494410208313395>",
+            "maehwa": "<:maehwa:706494409923100735>",
+            "valkyrie": "<:valkyrie:706494410551984168>",
+            "wizard": "<:wizard:706494410338074644>",
+            "witch": "<:witch:706494410439000064>",
+            "ninja": "<:ninja:706494410308845630>",
+            "kunoichi": "<:kunoichi:706494410132553738>",
+            "darkknight": "<:darkknight:706494410078027837>",
+            "striker": "<:striker:706494409956392992>",
+            "mystic": "<:mystic:706494410174758973>",
+            "lahn": "<:lahn:706494410141073428>",
+            "archer": "<:archer:706494410166370416>",
+            "shai": "<:shai:706494409847603272>",
+            "guardian": "<:guardian:706494410103455744>",
+            "hashashin": "<:hashashin:747196218102251858>",
+            "nova": "<:nova:796403939783868457>",
+            "sage": "<:sage:821743693823213618>",
+            "warriorSucc": "<:warriorSucc:706502254953365534>",
+            "sorceressSucc": "<:sorceressSucc:706502254898708480>",
+            "rangerSucc": "<:rangerSucc:706502254877736970>",
+            "berserkerSucc": "<:berserkerSucc:706502255016280104>",
+            "tamerSucc": "<:tamerSucc:706502254756233228>",
+            "musaSucc": "<:musaSucc:706502254445985833>",
+            "maehwaSucc": "<:maehwaSucc:706502254839988256>",
+            "valkyrieSucc": "<:valkyrieSucc:706502255024799804>",
+            "wizardSucc": "<:wizardSucc:706502254764752896>",
+            "witchSucc": "<:witchSucc:706502254936588388>",
+            "ninjaSucc": "<:ninjaSucc:706502254999502978>",
+            "kunoichiSucc": "<:kunoichiSucc:706502254550712391>",
+            "darkknightSucc": "<:darkknightSucc:706502254827667476>",
+            "strikerSucc": "<:strikerSucc:706502254852833281>",
+            "mysticSucc": "<:mysticSucc:706502254651375657>",
+            "lahnSucc": "<:lahnSucc:706502254915747910>",
+            "guardianSucc": "<:guardianSucc:706502254412300341>",
+            "hashashinSucc": "<:hashashinSucc:747198090158669877>",
+            "novaSucc": "<:novaSucc:796403867179810876>",
+            "sageSucc": "<:sageSucc:821743693928595546>"
+        },
+        "Horse" :{
+            "pegasus": "<:pegasus:809524557655310346>",
+            "unicorn": "<:unicorn:809524557760167956>",
+            "doom": "<:doom:809524559811838045>",
+            "normal": "<:normal:809561130938662962>"
+        }
+    },
+    "Timeouts": {
+        "gear": 2000,
+        "help": 60000
+    },
+    "Logging": {
+        "appenders": {
+            "out": {
+                "type": "stdout",
+                "layout": {
+                    "type": "basic"
+                }
+            },
+            "file": {
+                "type": "multiFile",
+                "base": "logs/",
+                "property": "categoryName",
+                "extension": ".log"
+            }
+        },
+        "categories": {
+            "default": {
+                "appenders": ["out"],
+                "level": "info"
+            }
+        }
     }
 }
