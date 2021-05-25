@@ -1,8 +1,21 @@
 // @ts-check
 const Discord = require('discord.js');
 const logger = require('./logger');
+const log = require('log4js').getLogger('modules/interactions');
+const { startLoading, endLoading } = require('../utils/messages');
 
 // ------ discord interactions ------
+
+/**
+ * Wrapper for start/end loading
+ * @param {Function} fn 
+ * @returns 
+ */
+async function wrapLoading(message, fn, ...args) {
+    startLoading(message);
+    fn(...args);
+    endLoading(message, 0);
+}
 
 /**
  * wrapper to edit a bot message
@@ -60,10 +73,9 @@ async function wSendAuthor(author, content) {
     var sent;
     try {
         sent = await author.send(content);
-        logger.log("SENT: DM to [" + author.tag + " - " + author.id + "]");
+        log.info("SENT: DM to [" + author.tag + " - " + author.id + "]");
     } catch (e) {
-        console.error(e);
-        logger.log("INFO: Couldn't send a message to [" + author.tag + " - " + author.id + "]");
+        log.error("INFO: Couldn't send a message to [" + author.tag + " - " + author.id + `]\n${e}`);
     }
     return sent;
 }
@@ -72,17 +84,16 @@ async function wSendAuthor(author, content) {
  * wrapper to delete a message
  * @param {Discord.Message | Discord.PartialMessage} message the message to delete
  */
-async function wDelete(message) {
+async function wDelete(message, timeout=0) {
     try {
-        await message.delete();
+        await message.delete({timeout: timeout});
         let name = message.channel.toString();
         if(message.channel instanceof Discord.GuildChannel) {
             name = message.channel.name;
         }
-        logger.log("INFO: Deleted `" + message.content + "` from " + name);
+        log.info("Deleted `" + message.content + "` from " + name);
     } catch (e) {
-        console.error(e);
-        logger.log("INFO: Tried to delete an already deleted message or not enough permissions.");
+        log.error(`Tried to delete an already deleted message or not enough permissions. \n${e}`);
     }
 }
 
@@ -90,3 +101,4 @@ module.exports.wEditMsg = wEditMsg;
 module.exports.wSendChannel = wSendChannel;
 module.exports.wSendAuthor = wSendAuthor;
 module.exports.wDelete = wDelete;
+module.exports.wrapLoading = wrapLoading;
