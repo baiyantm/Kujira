@@ -2,15 +2,15 @@ const log = require('log4js').getLogger('commands/sub');
 const interactions = require('../../modules/interactions');
 const { WhitelistedMemberChannels, Members } = require('../../constants').Guilds.Remedy;
 
-/**
- * Returns the input string with a Capitalized first letter
- * (no changes if it's already the case)
- * 
- * @param {String} text - the string you want to format
- * @returns {String} The same string, formatted
- */
-const title = function (text) {
-    return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+const AssignableRoles = ['rem', 'reminder', 'dnd']
+
+const titleCase = (str) => String(str).replace(/\b\S/g, t => t.toUpperCase());
+
+const matchRole = function (test) {
+    for (let role of AssignableRoles) {
+        if (role == test) return true;
+    }
+    return false;
 }
 
 module.exports = {
@@ -21,14 +21,13 @@ module.exports = {
         channels: WhitelistedMemberChannels,
     },
     execute(message, rolename) {
-        log.trace(`checking role: ${rolename}`);
-        let check = rolename in ['rem', 'reminder', 'dnd'] ? true : false;
-        log.trace(`match: ${check}`);
+        let check = matchRole(rolename);
+        log.trace(`checking role: ${rolename} ... ${check}`);
         if (!check) {
             return; // TODO priority: low
         }
 
-        role = message.guild.roles.cache.find(x => x.name == title(rolename))
+        role = message.guild.roles.cache.find(x => x.name == titleCase(rolename))
         if (!role) {
             log.error(`Role ${rolename} not found`);
             return;
