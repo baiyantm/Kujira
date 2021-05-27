@@ -1,13 +1,13 @@
 const log = require('log4js').getLogger('commands/gear');
 const interactions = require('../../modules/interactions');
-const { WhitelistedMemberChannels, Members } = require('../../constants').Guilds.Remedy;
+const { Remedy } = require('../../constants').Guilds;
 
 module.exports = {
     name: 'gear',
     description: '',
     whitelist: {
-        roles: [Members],
-        channels: WhitelistedMemberChannels,
+        roles: [Remedy.Members],
+        channels: Remedy.WhitelistedMemberChannels,
     },
     execute(message, member) {
         log.mark('gear command');
