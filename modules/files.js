@@ -1,11 +1,13 @@
 // @ts-check
-const http = require('https');
+const https = require('https');
 const fs = require('fs');
 const logger = require('./logger');
 const Discord = require('discord.js');
 
 // ------ file interactions ------
 
+
+// DEPRECATED
 /**
  * get a file from an url and write it in dest
  * @param {string} url the file's url
@@ -15,7 +17,7 @@ const Discord = require('discord.js');
 async function download(url, dest, cb) {
     return new Promise((resolve, reject) => {
         var file = fs.createWriteStream(dest);
-        http.get(url, function (response) {
+        https.get(url, function (response) {
             response.pipe(file);
             file.on('finish', function () {
                 file.close();  // close() is async, call cb after close completes.
