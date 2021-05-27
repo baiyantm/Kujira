@@ -1,5 +1,7 @@
-const Discord = require('discord.js');
 const log = require('log4js').getLogger('modules/interactions');
+
+const Discord = require('discord.js');
+
 const { startLoading, endLoading } = require('../utils/messages');
 
 // ------ discord interactions ------
