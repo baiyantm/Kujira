@@ -1,6 +1,4 @@
-// @ts-check
 const Discord = require('discord.js');
-const logger = require('./logger');
 const log = require('log4js').getLogger('modules/interactions');
 const { startLoading, endLoading } = require('../utils/messages');
 
@@ -31,10 +29,9 @@ async function wEditMsg(message, content) {
         if(message.channel instanceof Discord.GuildChannel) {
             name = message.channel.name;
         }
-        logger.log('EDIT: ' + content + " in " + name);
+        log.info('EDIT: ' + content + " in " + name);
     } catch (e) {
-        console.error(e);
-        logger.log("INFO: Couldn't edit the message");
+        log.error(`Couldn't edit the message ${e}`);
         edit = false;
     }
     return edit;
@@ -43,9 +40,9 @@ async function wEditMsg(message, content) {
 
 /**
  * wrapper to send a bot message to a channel
- * @param {Discord.TextChannel | Discord.DMChannel | Discord.NewsChannel} channel the discord channel
- * @param {string | Discord.MessageEmbed} content the content to send
- * @returns the message sent
+ * @param {Discord.TextChannel | Discord.DMChannel | Discord.NewsChannel} channel The discord channel
+ * @param {Discord.APIMessage | Discord.StringResolvable} content The content to send
+ * @returns {?Discord.Message}the message sent
  */
 async function wSendChannel(channel, content) {
     var sent;
@@ -58,13 +55,13 @@ async function wSendChannel(channel, content) {
         logger.log("SENT: `" + content + "` in " + name);
     } catch (e) {
         console.error(e);
-        logger.log("INFO: Couldn't send a message in " + channel);
+        log.info("Couldn't send a message in " + channel);
     }
     return sent;
 }
 
 /**
- * wrapper to send a bot message to the author
+ * Wrapper to send a bot message to the author
  * @param {Discord.User} author the discord author
  * @param {string | Discord.MessageEmbed} content the content to send
  * @returns the message sent
@@ -75,13 +72,13 @@ async function wSendAuthor(author, content) {
         sent = await author.send(content);
         log.info("SENT: DM to [" + author.tag + " - " + author.id + "]");
     } catch (e) {
-        log.error("INFO: Couldn't send a message to [" + author.tag + " - " + author.id + `]\n${e}`);
+        log.error("Couldn't send a message to [" + author.tag + " - " + author.id + `]\n${e}`);
     }
     return sent;
 }
 
 /**
- * wrapper to delete a message
+ * Wrapper to delete a message
  * @param {Discord.Message | Discord.PartialMessage} message the message to delete
  */
 async function wDelete(message, timeout=0) {
