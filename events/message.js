@@ -1,7 +1,6 @@
 const log = require('log4js').getLogger('events/message');
 
 const { readdirSync } = require('fs');
-
 const { whitelistCheck } = require('../utils/checks');
 const { prefix } = require('../constants');
 
@@ -16,7 +15,7 @@ for (let f of readdirSync('./channels')) {
 
 module.exports = {
     name: 'message',
-    execute(message) {
+    execute(message, client) {
 
         // Channel handlers
         if (message.channel && handlers.has(message.channel.id)) {
@@ -33,7 +32,6 @@ module.exports = {
 
         let args = message.content.slice(prefix.length).trim().split(/ +/);
         let commandName = args.shift().toLowerCase();
-        let client = message.client
 
         // get command
         const command = client.commands.get(commandName)
