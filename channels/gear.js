@@ -1,7 +1,7 @@
 const log = require('log4js').getLogger('channels/gear');
 
 const { Collection } = require('discord.js');
-const rolecheck = require('../utils/checks').withRoleCheck;
+const { withRoleCheck } = require('../utils/checks');
 const {
     wDelete,
     wSendAuthor,
@@ -11,73 +11,88 @@ const {
 
 const { logToChangelog, fmtdiff } = require('../modules/changelog');
 
-const constants = require('../constants')
-const { classlist, horselist, Guilds, gearhelp, classlistSucc, prefix } = constants;
-const { gearDeleteTimeout } = constants.Timeouts.gear;
-const { helpDeleteTimeout } = constants.Timeouts.gear;
+const {
+    classlist,
+    classlistSucc,
+    horselist,
+    gearhelp,
+    Timeouts,
+    Guilds,
+    prefix
+} = require('../constants');
 
-const commands;
+const { gearDeleteTimeout, helpDeleteTimeout } = Timeouts.gear;
 const channels = [Guilds.Remedy.gear];
-const PrivRoles = [Guilds.Remedy.Officers]
+const Roles = [Guilds.Remedy.Officers]
 
 /*
 COMMANDS
-    !                           DONE
-        - DeleteCommand()       DONE
-        - wDelete()             DONE
+    !                               DONE
+        - DeleteCommand()           DONE
+        - wDelete()                 DONE
     clearCommand
     RemoveAllCommand
     RemovePlayerCommand
     ManualAddCommand
 ACTIONS
-    shortUpdateGearCommand      DONE
-    help(true) - helpCommand    DONE
-    succession - succCommand    DONE
-    awakening - awakCommand     DONE
-    axe - axeCommand            DONE
-    horse - HorseCommand        DONE
-    updateGear - updateGearCommand
+    shortUpdateGearCommand          DONE
+    help(true) - helpCommand        DONE
+    succession - succCommand        DONE
+    awakening - awakCommand         DONE
+    axe - axeCommand                DONE
+    horse - HorseCommand            DONE
+    updateGear - updateGearCommand  DONE
 HANDLER
-    - refreshBotMsg             DONE
+    - refreshBotMsg                 DONE
+    - sendBotMsg                    DONE
+    - PlayerEmbed
+    - PlayerEmbed (Alliance)
 ETC
-    - log to changelog          DONE
-    - get changelog             DONE
+    - log to changelog              DONE
+    - get changelog                 DONE
 */
 
+// const commands = new Collection([
+//     [
+//         'gear', {
+//             args: 1,
+//             execute(m, a) { }
+//         }
+//     ],
+// ])
 
-
-const actions = new Collection({
-    'horse': {
+const actions = new Collection([
+    ['horse', {
         args: 1,
         execute(m, a) { horseAction(m, a); }
-    },
-    'gear': {
-        execute(m, a) { gear(m, a); } 
-    },
-    'short': {
+    }],
+    ['gear', {
+        execute(m, a) { gearAction(m, a); } 
+    }],
+    ['short', {
         args: 3,
         execute(m, a) { shortAction(m, a) }
-    },
-    'help': {
+    }],
+    ['help', {
         args: 0,
         execute(m, a) { wrapLoading(m, helpAction, m) }
-    },
-    'axe': {
+    }],
+    ['axe', {
         args: 1,
         execute(m, a) { axeAction(m, a) }
-    },
-    'succ': {
+    }],
+    ['succ', {
         args: 1,
         execute(m, a) { succAction(m, a) }
-    },
-    'awak': {
+    }],
+    ['awak', {
         args: 1,
         execute(m, a) { awakAction(m, a) }
-    }
-});
+    }]
+]);
 
 function getPlayers(message) {
-    return message.client.servers.get(message.guild.id).players;
+    return message.client.getPlayers();
 }
 
 async function foo(message, info, allowNew=false) {
@@ -104,7 +119,10 @@ async function foo(message, info, allowNew=false) {
  */
 function shortAction(message, args) {
     let [ ap, aap, dp ] = args.map(arg => parseInt(arg));
-    if (!(ap && aap && dp)) {
+    if (!(ap && aap && dp) ||
+        !(Number.isInteger(ap) && ap >= 0 && ap < 400 &&
+          Number.isInteger(aap) && aap >= 0 && aap < 400 &&
+          Number.isInteger(dp) && dp >= 0 && dp < 600)) {
         return 'Invalid Command'
     } else {
         return foo(message, {ap: ap, aap: aap, dp: dp})
@@ -148,7 +166,7 @@ async function succAction(message, args) {
     if (classlistSucc.includes(getPlayers().get(message.author).cls)) return foo(message, {succ: true});
     else if (!getPlayers.get(message.author)) return 'You must be registered to use this command';
     else if (!getPlayers.get(message.author).cls) return 'You must register a class before using this command.';
-    return 'Your class cannot use succession';
+    else return 'Your class cannot use succession';
 }
 
 async function awakAction(message, args) {
@@ -158,16 +176,29 @@ async function awakAction(message, args) {
     else return 'Your class cannot use awakening... ?'
 }
 
-
-// async function clearAction(params) {
-    
-// }
-
-// async function removeAction(params) {
-    
-// }
-
-
+async function gearAction(message, args) {
+    let cls = args.shift();
+    let succ = undefined;
+    // syntax: class [succ/awak] ap aap dp
+    switch (args.length) {
+        case 4:
+            succ = args.shift().startsWith('succ') ? true : false;
+            // fall through
+        case 3: break;
+        default:
+            return 'invalid argument format';
+    }
+    let [ ap, aap, dp ] = args.map(arg => parseInt(arg));
+    if (ap && aap && dp &&
+        Number.isInteger(ap) && ap >= 0 && ap < 400 &&
+        Number.isInteger(aap) && aap >= 0 && aap < 400 &&
+        Number.isInteger(dp) && dp >= 0 && dp < 600) {
+        if (succ === undefined) return foo(message, {cls: cls, ap: ap, aap: aap, dp: dp});
+        else return foo(message, {cls: cls, succ: succ, ap: ap, aap: aap, dp: dp});
+    } else {
+        return 'invalid argument format';
+    }
+}
 
 
 /**
@@ -176,11 +207,12 @@ async function awakAction(message, args) {
 const gearChannelHandler = async function (message) {
     let text = message.content;
     let response = '';
-    // special case
-    if (text.startsWith("! ") && withRoleCheck(message, PrivRoles)) {
+
+    // Officers can leave comments in the channel by prefixing the message with !
+    if (text.startsWith("! ") && withRoleCheck(message, Roles)) {
         return;
-    // command
-    } else if (text.startsWith(prefix)) {
+    // Officers can use commands to manage players by prefixing the message with ?
+    } else if (text.startsWith(prefix) && withRoleCheck(message, Roles)) {
         let args = text.slice(prefix.length).trim().split(/ +/);
         let cmd = args.shift().toLowerCase();
         log.mark('gear channel command');
@@ -194,20 +226,27 @@ const gearChannelHandler = async function (message) {
         else {
             log.debug('invalid command');
         }
-    // action
+    // All other messages are parsed for potential actions
     } else {
         let args = text.trim().split(/ +/);
-        let target = args.length == 3 ? 'short' : args.shift().toLowerCase();
+        let target;
+        switch (args.length()) {
+            case 3: target = 'short'; break;
+            case 4: // fall through
+            case 5: target = 'gear'; break;
+            default:
+                target = args.shift().toLowerCase();
+                break;
+        }
         let action = actions.get(target);
-        if (!(target == 'gear') && action) {
-            if (action.args == args.length) {
+        if (action) {
+            // no arg requirement or match arg requirement
+            if (!action.args || action.args && action.args == args.length) {
                 response = action.execute(message, args)
             } else {
                 response = 'invalid argument format';
                 if (action.usage) response += usage;
             }
-        } else if (classlist.find(c => c == target)) {
-            response = actions.get('gear').execute(args)
         } else {
             response = 'invalid command';
         }
@@ -215,7 +254,7 @@ const gearChannelHandler = async function (message) {
     if (response) wSendAuthor(message.author, response);
     await wDelete(message, gearDeleteTimeout);
     //refresh bot message
-    message.servers.forEach(server => {
+    message.servers.forEach(async server => {
         await refreshBotMsg(server.myGear, server.botMsg, players);
     });
 }
