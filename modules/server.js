@@ -1,9 +1,12 @@
-const PlayerCollection = require('./playerCollection');
+const Discord = require('discord.js');
 
-module.exports = class Server {
+/**
+ * 
+ */
+module.exports = class Server extends Discord.Guild{
     constructor(args) {
+        super();
         Object.assign(this, args);
-        this.players = new PlayerCollection();
     }
     toString() {
         return `Server: ${this.name} (${this.id})`
