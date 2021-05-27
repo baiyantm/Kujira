@@ -2,13 +2,13 @@ const log = require('log4js').getLogger('events/message');
 
 const { readdirSync } = require('fs');
 
-const { whitelistCheck } = require('../checks');
+const { whitelistCheck } = require('../utils/checks');
 const { prefix } = require('../constants');
 
 const handlers = new Map();
 
 for (let f of readdirSync('./channels')) {
-    let h = require(`./channels/${f}`);
+    let h = require(`../channels/${f}`);
     for (let c of h.channels) {
         handlers.set(c, h.handler);
     }
