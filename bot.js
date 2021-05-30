@@ -10,6 +10,9 @@ const util = require("./modules/util");
 const Player = require('./classes/Player');
 const PlayerArray = require('./classes/PlayerArray');
 const Server = require('./classes/Server');
+const GuildWars = require('./modules/wars');
+
+const wars = new GuildWars();
 
 ghostScriptGet();
 
@@ -440,6 +443,9 @@ async function onMessageHandler(message, annCache) {
             } else if (message.channel.id == server.mySignUpData.id) {
                 // === SIGNUP DATA ===
                 signupDataChannelHandler(enteredCommand, message, commands);
+            } else if (GuildWars.channels.find(c => c == message.channel.id)) {
+                // === GUILD WARS ===
+                wars.handler(message, bot);
             } else if (enteredCommand.startsWith("?")) {
                 // === ALL CHANNELS ===
                 allChannelsHandler(enteredCommand, commands, message);
