@@ -10,6 +10,7 @@ const util = require("./modules/util");
 const Player = require('./classes/Player');
 const PlayerArray = require('./classes/PlayerArray');
 const Server = require('./classes/Server');
+const SignUp = require('./classes/SignUp');
 
 ghostScriptGet();
 
@@ -386,16 +387,19 @@ async function signUpReactionAddHandler(messageReaction, user) {
     let dateName = util.findCorrespondingDayName(today.getDay()).toLowerCase();
     let lockedSignUps = today.getHours() >= 19 && today.getHours() <= 20 && message.content.toLowerCase().startsWith(dateName);
     let yesReaction = message.reactions.cache.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
+    yesReaction = await yesReaction.fetch();
     let noReaction = message.reactions.cache.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
+    noReaction = await noReaction.fetch();
     if (user.id != bot.user.id) {
-        if (messageReaction.emoji.name == configjson["noreaction"] && (await yesReaction.fetch()).users.cache.get(user.id)) {
+        if (messageReaction.emoji.name == configjson["noreaction"] && yesReaction.users.cache.get(user.id)) {
             removeUserFromReaction(yesReaction, user);
         } else if (messageReaction.emoji.name == configjson["yesreaction"]) {
             if (lockedSignUps) {
                 removeUserFromReaction(yesReaction, user);
+                players.get(user.id).signUps[today.getDay()].status = "no";
                 // @ts-ignore
                 interactions.wSendAuthor(user, configjson["yesreaction"] + " locked after 19:00, please contact an Officer");
-            } else if ((await noReaction.fetch()).users.cache.get(user.id)) {
+            } else if (noReaction.users.cache.get(user.id)) {
                 removeUserFromReaction(noReaction, user);
             }
         }
@@ -417,7 +421,7 @@ function removeUserFromReaction(messageReaction, user) {
  * @param {{reference : any}} annCache 
  */
 async function onMessageHandler(message, annCache) {
-    //if (message.author.bot) return; //bot ignores bots
+    if (message.author.bot || !message.guild) return; //bot ignores bots
     var commands;
     let enteredCommand = message.content.toLowerCase();
     let server = getServerById(message.guild.id);
@@ -1445,6 +1449,7 @@ async function collectAllSignUps() {
 async function collectSignUps(server) {
     for (let day = 0; day < 7; day++) {
         let reactionMessage = await getDaySignUpMessage(day, server.mySignUp);
+        reactionMessage = await reactionMessage.fetch();
         if (reactionMessage) {
             let yesReaction = reactionMessage.reactions.cache.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
             let noReaction = reactionMessage.reactions.cache.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
