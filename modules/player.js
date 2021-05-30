@@ -149,8 +149,7 @@ module.exports = class Player {
         return half.length > 1 ? half[0].trim() : name;
     }
 
-    // TODO priority: medium
-    // test display
+
     display(showClass=false, showAxe=false, showHorse=false, showName=false, showGs=false) {
         // wtf is `\xa0` ?
         let text = '';

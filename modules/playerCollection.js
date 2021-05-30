@@ -1,14 +1,11 @@
-// TODO: priority: high
-
-
-const log = require('log4js').getLogger('modules/playerArray');
+const log = require('log4js').getLogger('modules/playerCollection');
 
 // Types
 const Player = require('./player');
 const Discord = require('discord.js');
 
 /**
- * @typedef {String|Discord.Message|Discord.GuildMember} key
+ * @typedef {String | Discord.Message | Discord.GuildMember} key
  * @typedef {key[]} keys
  */
 
