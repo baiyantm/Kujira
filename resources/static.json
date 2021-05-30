@@ -1,4 +1,5 @@
 {
+    "geardata": "594924458033020938",
     "Guilds": {
         "Remedy": {
             "name": "Remedy",
@@ -6,10 +7,32 @@
 
             "Officers": "595367195551465476",
             "Technician": "",
-            "Members": "596755677905551361",
-
+            "Members": "704985835921211393", 
+            
+            "welcome": "605143113840984115",
             "changelog": "611509213516136448",
-            "gear": "594900581357977620"
+            "announcements": "598840850390319125",
+            "gear": "594900581357977620",
+            "guild_chat": "746418618006503495"
+        },
+        "Alliance": {
+            "name": "Remedy Template",
+            "id": "695207578489192448",
+
+            "Members": "695207578489192453",
+
+            "changelog": "695207578493517853",
+            "announcements": "695207578787119126",
+            "gear": "695207578787119129"
+        },
+        "Trial": {
+            "name": "Remedy",
+            "id": "233897365679898624",
+
+            "Officers": "595367195551465476",
+            "Members": "704985835921211393",
+
+            "trialreactionID": "765968056035835926"
         }
     },
     "classlist": [
@@ -135,11 +158,6 @@
                 "base": "logs/",
                 "property": "categoryName",
                 "extension": ".log"
-            },
-            "tracefilter": {
-                "type": "logLevelFilter",
-                "level": "debug",
-                "appender": "out"
             }
         },
         "categories": {
@@ -147,8 +165,8 @@
                 "appenders": ["out", "file"],
                 "level": "trace"
             },
-            "sheets": {
-                "appenders": ["file", "tracefilter"],
+            "modules/sheets": {
+                "appenders": ["file"],
                 "level": "trace"
             }
         }
