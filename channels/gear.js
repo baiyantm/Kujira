@@ -200,7 +200,38 @@ async function gearAction(message, args) {
     }
 }
 
+/**
+ * #gear embed
+ * @param {?string} origin Discord.Guild.id
+ * @returns discord embed
+ */
+function gearEmbed(client, serverID) {
+    // postponed implementation of player filtering by server
+    const embed = new Discord.MessageEmbed();
+    let players = client.getPlayers();
 
+    embed.setTitle(":star: PLAYERS (" + players.size + ")");
+    embed.setColor(3447003);
+
+    let clsmap = new Collection(classlist.map(cls => {
+        let clsplayers = players.filter(p => p.cls == cls);
+        return [{name: cls, count: clsplayers.size}, {clsplayers}];
+    }));
+
+    if (clsmap.size > 0) {
+        clsmap.forEach((pls, cls) => {
+            if (cls.count > 0) {
+                embed.addField(
+                    cls.name.charAt(0).toUpperCase() + cls.name.slice(1) + " (" + cls.count + ")\n", 
+                    pls.sort().map(p => p.display(true, true, true, true, false)).join('\n'),
+                    true);
+            }
+        });
+    } else {
+        embed.setDescription("Player list is empty :(");
+    }
+    return embed;
+}
 /**
  * @param {Discord.Message | Discord.PartialMessage} message 
  */
@@ -230,7 +261,7 @@ const gearChannelHandler = async function (message) {
     } else {
         let args = text.trim().split(/ +/);
         let target;
-        switch (args.length()) {
+        switch (args.length) {
             case 3: target = 'short'; break;
             case 4: // fall through
             case 5: target = 'gear'; break;
@@ -254,8 +285,8 @@ const gearChannelHandler = async function (message) {
     if (response) wSendAuthor(message.author, response);
     await wDelete(message, gearDeleteTimeout);
     //refresh bot message
-    message.servers.forEach(async server => {
-        await refreshBotMsg(server.myGear, server.botMsg, players);
+    message.client.servers.forEach(async server => {
+        await client.refreshBotMsg(message.channel, gearEmbed(message.client, server.id));
     });
 }
 
