@@ -62,3 +62,7 @@ typings/
 
 # (local/dev) Google API credentials
 resources/creds.json
+
+# vscode project files
+*.vscode
+*.code-workspace
