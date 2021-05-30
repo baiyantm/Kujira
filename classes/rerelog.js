@@ -14,10 +14,11 @@ module.exports = class Logger {
         } else {
             this._loglevel = loglevel;
         }
+        this._log(3, `Logger initialized to ${this._level(loglevel)} mode`);
     }
 
     _isEnabled (loglevel) {
-        if (loglevel > this.loglevel) {
+        if (loglevel > this._loglevel) {
             return false;
         } else {
             return true;
