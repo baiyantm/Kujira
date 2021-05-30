@@ -134,8 +134,8 @@ module.exports = class PlayerArray extends Array {
     }
 
     /**
-     * @param {string} origin 
-     * @returns array of players having this classname
+     * @param {string} origin Discord.Guild.id
+     * @returns array of players from the `origin` guild
      */
     getPlayersWithOrigin(origin) {
         return this.filter(currentPlayer => currentPlayer.origin == origin);
@@ -331,7 +331,7 @@ module.exports = class PlayerArray extends Array {
 
     /**
      * #gear embed
-     * @param {string} [origin]
+     * @param {?string} origin Discord.Guild.id
      * @returns discord embed
      */
     getEmbed(origin) {
