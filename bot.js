@@ -11,6 +11,7 @@ const util = require("./modules/util");
 // new
 const PlayerCollection = require('./modules/playerCollection');
 const Server = require('./modules/Server');
+const Client = require('./client');
 // old
 const PlayerArray = require('./classes/PlayerArray');
 const Player = require('./classes/Player');
@@ -22,32 +23,13 @@ log4js.configure(constants.Logging);
 const log = log4js.getLogger('bot');
 // ALL < TRACE < DEBUG < INFO < WARN < ERROR < FATAL < MARK < OFF 
 log.mark('Logger Initialized');
+log.info(log.level);
 
 
 var configjsonfile = files.openJsonFile("./resources/config.json", "utf8");
 var configjson = process.env.TOKEN ? configjsonfile["prod"] : configjsonfile["dev"];
 var itemsjson = files.openJsonFile("./resources/items.json", "utf8");
 
-
-
-class Client extends Discord.Client {
-    constructor(...args) {
-        super(...args)
-        this.commands = new Discord.Collection();
-        this.events = new Discord.Collection();
-        this.servers = new Discord.Collection();
-        Object.entries(Guilds).map((obj) => {
-            let {key, server} = [...obj];
-            this.servers.set(server.id, new Server(server));
-            log.info(`Client init server ${key}`);
-            log.debug(`Client init server ${server.toString()}`);
-        });
-    }
-
-    getPlayers(id) {
-        return this.servers.get(id).players;
-    }
-}
 
 ghostScriptGet();
 
@@ -62,40 +44,40 @@ async function initLookout() {
         setupCustomAlarms();
     }*/
 
-    var annCache = { reference: null }; //because JavaScript
-    await cacheAnnouncements(annCache);
-    await cacheSignUps();
-    await cacheTrialMessage();
-    annCache.reference.forEach(async message => {
-        try {
-            await downloadFilesFromMessage(message);
-        } catch (e) {
-            //nothing to dl
-        }
-    });
+    // var annCache = { reference: null }; //because JavaScript
+    // await cacheAnnouncements(annCache);
+    // await cacheSignUps();
+    // await cacheTrialMessage();
+    // annCache.reference.forEach(async message => {
+    //     try {
+    //         await downloadFilesFromMessage(message);
+    //     } catch (e) {
+    //         //nothing to dl
+    //     }
+    // });
 
-    for (let i = 0; i < myServers.length; i++) {
-        let server = myServers[i];
-        server.botMsg = { reference: null }; //because JavaScript
-        //lookup for a previous message so we keep using it
-        let messages = await fetchAllMessages(server.myGear);
-        var found = 0;
-        messages.forEach(message => {
-            if (message.author.id == bot.user.id) {
-                if (!found) {
-                    server.botMsg.reference = message;
-                    found++;
-                } else if (found == 1) {
-                    server.botMsg.reference = null;
-                    log.info("Found multiple existing messages, aborting and generating a new one instead.");
-                    found++;
-                }
-            }
-        });
-        await refreshBotMsg(server.myGear, server.botMsg, players);
-    }
+    // for (let i = 0; i < myServers.length; i++) {
+    //     let server = myServers[i];
+    //     server.botMsg = { reference: null }; //because JavaScript
+    //     //lookup for a previous message so we keep using it
+    //     let messages = await fetchAllMessages(server.myGear);
+    //     var found = 0;
+    //     messages.forEach(message => {
+    //         if (message.author.id == bot.user.id) {
+    //             if (!found) {
+    //                 server.botMsg.reference = message;
+    //                 found++;
+    //             } else if (found == 1) {
+    //                 server.botMsg.reference = null;
+    //                 log.info("Found multiple existing messages, aborting and generating a new one instead.");
+    //                 found++;
+    //             }
+    //         }
+    //     });
+    //     await refreshBotMsg(server.myGear, server.botMsg, players);
+    // }
 
-    bot.on("guildMemberRemove", member => onLeaveHandler(member));
+    // bot.on("guildMemberRemove", member => onLeaveHandler(member));
 
     // bot.on("message", async message => onMessageHandler(message, annCache));
 
@@ -192,19 +174,6 @@ async function initLookout() {
     });
 
     log.info("Initialization done");
-}
-
-/**
- * listener for member leaving guild
- * @param {Discord.GuildMember | Discord.PartialGuildMember} member 
- */
-async function onLeaveHandler(member) {
-    let server = getServerById(member.guild.id);
-    if (server && member.guild.id == server.self.id) {
-        interactions.wSendChannel(server.myWelcome, member.toString() + "(" + member.user.username + ") has left the server.");
-    } else if (member.guild.id == myTrialServer.id) {
-        interactions.wSendChannel(myTrialWelcome, member.toString() + "(" + member.user.username + ") has left the server.");
-    }
 }
 
 /**
@@ -657,41 +626,8 @@ async function gearChannelHandler(enteredCommand, message, commands) {
             manualAddCommand(args, message, commands);
         }
     }
-    else if (!enteredCommand.startsWith("! ") && !enteredCommand.startsWith("?")) {
-        let classToFind = itemsjson["classlist"].find(currentclassname => currentclassname == enteredCommand.split(" ")[0]);
-        let firstSplit = enteredCommand.split(" ");
-        if (firstSplit.length == 3) {
-            shortUpdateGearCommand(message, firstSplit);
-        }
-        else {
-            let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase(); // all but first word
-            let split = args.split(" ");
-            enteredCommand = enteredCommand.split(" ")[0]; // only first word
-            commands = itemsjson["commands"]["gear"]["guest"];
-            if (enteredCommand == commands["help"]) {
-                helpCommand(message, true);
-            }
-            else if (enteredCommand == commands["succession"]) {
-                succCommand(message);
-            }
-            else if (enteredCommand == commands["awakening"]) {
-                awakCommand(message);
-            }
-            else if (enteredCommand == commands["axe"]) {
-                axeCommand(message, args);
-            }
-            else if (enteredCommand == commands["horse"]) {
-                horseCommand(message, args);
-            }
-            else if (classToFind) {
-                updateGearCommand(split, commands, classToFind, message);
-            }
-            else {
-                interactions.wSendAuthor(message.author, enteredCommand + " class not found.\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
-            }
+    // code parts removed
 
-        }
-    }
     deleteCommand(message);
 
     myServers.forEach(server => {
@@ -779,67 +715,6 @@ async function manualAddCommand(args, message, commands) {
     }
     else {
         interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `<name> <classname> [succession|awakening] <ap> <aap> <dp>`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
-    }
-}
-
-
-/**
- * @param {Discord.Message | Discord.PartialMessage} message 
- */
-async function updateGearCommand(split, commands, classToFind, message) {
-    let succ = null;
-    if (split.length == 4) {
-        if (split[0].startsWith(commands["succession"]) &&
-            itemsjson["classlistSucc"].find(currentclassname => currentclassname == classToFind)) {
-            succ = true;
-        }
-        else if (split[0].startsWith(commands["awakening"])) {
-            succ = false;
-        }
-        split.splice(0, 1); // remove succ
-    }
-    if (split.length == 3) {
-        let ap = parseInt(split[0]);
-        let aap = parseInt(split[1]);
-        let dp = parseInt(split[2]);
-        if (Number.isInteger(ap) && ap >= 0 && ap < 400 && Number.isInteger(aap) && aap >= 0 && aap < 400 && Number.isInteger(dp) && dp >= 0 && dp < 600) {
-            let player = new Player(message.member, classToFind, ap, aap, dp, true);
-            player.origin = message.guild.id;
-            await updatePlayer(players, player, succ, message.author);
-        }
-        else {
-            interactions.wSendAuthor(message.author, "Some stats are too high or not numbers.");
-        }
-    }
-    else {
-        interactions.wSendAuthor(message.author, "Incorrect format. Correct format is `<classname> [succession|awakening] <ap> <aap> <dp>`\n\nClass list :\n```" + itemsjson["classlist"].join("\n") + "```");
-    }
-}
-
-/**
- * @param {Discord.Message | Discord.PartialMessage} message 
- */
-async function succCommand(message) {
-    let playerFound = players.get(message.author.id);
-    if (playerFound && playerFound instanceof Player
-        && itemsjson["classlistSucc"].find(currentclassname => currentclassname == playerFound.classname)) {
-        await updatePlayer(players, playerFound, true, message.author);
-    }
-    else {
-        interactions.wSendAuthor(message.author, "Invalid command. Not registered to update to succession or not a succession class.");
-    }
-}
-
-/**
- * @param {Discord.Message | Discord.PartialMessage} message 
- */
-async function awakCommand(message) {
-    let playerFound = players.get(message.author.id);
-    if (playerFound && playerFound instanceof Player) {
-        await updatePlayer(players, playerFound, false, message.author);
-    }
-    else {
-        interactions.wSendAuthor(message.author, "Invalid command. Not registered to update to awakening.");
     }
 }
 
@@ -973,16 +848,6 @@ async function statsCommand(args, message) {
     }
 }
 
-function getPlayerByIdOrMention(message, id) {
-    let idToFind;
-    if (message.mentions.members.size > 0 && message.mentions.members.size < 2) {
-        idToFind = message.mentions.members.first().id;
-    } else {
-        idToFind = id;
-    }
-    return idToFind;
-}
-
 /**
  * @param {Discord.Message | Discord.PartialMessage} message 
  */
@@ -1044,38 +909,7 @@ function getPercentAttendanceForADay(day) {
 --------------------------------------- HISTORY section ---------------------------------------
 */
 
-/**
- * @param {{reference : any}} annCache 
- */
-async function cacheAnnouncements(annCache) {
-    let messages = await fetchAllMessages(getMyServer().myAnnouncement);
-    messages.forEach(async message => {
-        message.reactions.cache.forEach(async reaction => {
-            reaction.users.fetch();
-        });
-    });
-    annCache.reference = messages;
-}
 
-async function cacheSignUps() {
-    myServers.forEach(async server => {
-        let messages = await fetchAllMessages(server.myAnnouncement);
-        messages.forEach(message => {
-            message.reactions.cache.forEach(async reaction => {
-                reaction.users.fetch();
-            });
-        });
-    });
-}
-
-async function cacheTrialMessage() {
-    let messages = await fetchAllMessages(myTrial);
-    messages.forEach(message => {
-        message.reactions.cache.forEach(async reaction => {
-            reaction.users.fetch();
-        });
-    });
-}
 
 /**
  * @param {Discord.Message | Discord.PartialMessage} message 
@@ -1109,27 +943,6 @@ async function getHistoryEmbed(message) {
         }
     });
     return embed;
-}
-
-/**
- * downloads files attached to the message and put it in download/messageid
- * @param {Discord.Message | Discord.PartialMessage} message
- */
-async function downloadFilesFromMessage(message) {
-    if (message.attachments.size > 0) {
-        for (const iattachment of message.attachments) {
-            let element = iattachment[1];
-            try {
-                if (!fs.existsSync("./download/" + message.id + "/")) {
-                    fs.mkdirSync("./download/" + message.id + "/");
-                }
-                await files.download(element.url, "./download/" + message.id + "/" + element.name, () => { });
-            } catch (e) {
-                console.error(e);
-                logger.logError("Could not download " + element.name + " file", e);
-            }
-        }
-    }
 }
 
 /**
@@ -1303,33 +1116,7 @@ async function getDaySignUpMessage(day, channel) {
     return message;
 }
 
-/**
- * @param {Discord.TextChannel} channel 
- * @param {number} limit
- * @return array containing all messages of the channel
- */
-async function fetchAllMessages(channel, limit = 500) {
-    const sum_messages = [];
-    let last_id;
 
-    while (true) {
-        const options = { limit: 100 };
-        if (last_id) {
-            options.before = last_id;
-        }
-
-        const messages = await channel.messages.fetch(options);
-        sum_messages.push(...messages.array());
-        if (messages.last()) {
-            last_id = messages.last().id;
-        }
-
-        if (messages.size != 100 || sum_messages.length >= limit) {
-            break;
-        }
-    }
-    return sum_messages;
-}
 
 async function collectAllSignUps() {
     for (let i = 0; i < myServers.length; i++) {
@@ -1618,42 +1405,6 @@ async function savePlayers() {
 }
 
 /**
- * if the bot message exists, edits it
- * if not, sends a new one
- * @param {Discord.GuildChannel} channel the channel where the original message comes from
- * @param {{reference : Discord.Message}} botMsg the bot message
- * @param {PlayerArray} players
- * @returns the new message
- */
-async function refreshBotMsg(channel, botMsg, players) {
-    if (!botMsg.reference) {
-        //no bot message to begin with, create a new one
-        botMsg.reference = await newBotMessage(channel, filterOriginBotMessage(players, channel));
-    } else {
-        if (!await interactions.wEditMsg(botMsg.reference, filterOriginBotMessage(players, channel))) {
-            //message probably got deleted or something, either way creating a new one
-            log.info("Couldn't find the existing bot message to edit, creating a new one");
-            botMsg.reference = await newBotMessage(channel, filterOriginBotMessage(players, channel));
-        }
-    }
-}
-
-/**
- * @param {PlayerArray} players
- * @param {Discord.GuildChannel} channel 
- * @returns 
- */
-function filterOriginBotMessage(players, channel) {
-    return channel.guild.id == getMyServerGuildChannel().id ? players.getEmbed(getMyServerGuildChannel().id) : players.getEmbed();
-}
-
-async function newBotMessage(channel, content) {
-    let sentMessage;
-    sentMessage = await interactions.wSendChannel(channel, content);
-    return sentMessage;
-}
-
-/**
  * @param {Discord.TextChannel} channelSource
  * @param {Discord.TextChannel} channelDestination
  */
@@ -1918,29 +1669,6 @@ async function revivePlayer(id, classname, ap, aap, dp, axe = 0, horse = undefin
     }
 }
 
-/**
- * downloads a file attached to the last message of the channel and put it in download/
- * @param {string} filename the file's name
- * @param {Discord.TextChannel} channel the channel to download from
- */
-async function downloadGearFileFromChannel(filename, channel) {
-    try {
-        let message = (await (await channel.messages.fetch({ limit: 1 })).first());
-        if (message.content == configjson["gearDataMessage"] && message.attachments) {
-            for (const iattachment of message.attachments) {
-                let element = iattachment[1];
-                if (element.name == filename) {
-                    await files.download(element.url, "./download/" + filename, () => { });
-                    logger.log("HTTP: " + filename + " downloaded");
-                }
-            }
-
-        }
-    } catch (e) {
-        console.error(e);
-        logger.logError("Could not download the file " + filename, e);
-    }
-}
 
 
 /**
@@ -1953,138 +1681,84 @@ function getConfigOrFirst(key, index) {
 
 const bot = new Client();
 
-
-// Setup Commands
-const eventFiles = fs.readdirSync('./events').filter(file => file.endsWith('.js'));
-const commandFolders = fs.readdirSync('./commands');
-for (const folder of commandFolders) {
-    const commandFiles = fs.readdirSync(`./commands/${folder}`).filter(file => file.endsWith('.js'));
-    for (const file of commandFiles) {
-        const command = require(`./commands/${folder}/${file}`);
-        // @ts-ignore
-        bot.commands.set(command.name, command);
-    }
-}
-
-for (const file of eventFiles) {
-    const event = require(`./events/${file}`);
-    if (event.once) {
-        bot.once(event.name, (...args) => event.execute(...args, bot));
-    } else {
-        bot.on(event.name, (...args) => event.execute(...args, bot));
-    }
-}
-
-bot.commands.forEach((key, value) => {
-    log.trace(`key ${key} type ${typeof key}`);
-    log.trace(`value ${value} type ${typeof value}`);
-});
-
+var token = process.env.TOKEN ? process.env.TOKEN : configjson["token"];
+bot.login(token);
 
 
 /*var alarmsjson = files.openJsonFile("./resources/alarms.json", "utf8");*/
-var init = false;
+// var init = false;
 
-if (configjson && itemsjson) {
-    // Initialize Discord Bot
-    var token = process.env.TOKEN ? process.env.TOKEN : configjson["token"];
-    bot.login(token);
-    var playersjson;
-    var loading = 2000;
+// if (configjson && itemsjson) {
+//     // Initialize Discord Bot
 
-    bot.once("ready", async () => {
-        log.info("Logged in as " + bot.user.tag);
-        bot.user.setPresence({ activity: { name: "booting up..." } });
+//     var playersjson;
+//     var loading = 2000;
 
-        try {
-            myTrialServer = bot.guilds.cache.get(configjson["botTrialServerID"]);
-            myDevServer = bot.guilds.cache.get(configjsonfile["dev"]["botServerID"]);
-            // @ts-ignore
-            myGearData = await bot.channels.fetch(configjson["gearDataID"]);
-            // @ts-ignore
-            myTrial = await bot.channels.fetch(configjson["trialreactionID"]);
-            // @ts-ignore
-            myTrialHistory = await bot.channels.fetch(configjson["trialhistoryID"]);
-            // @ts-ignore
-            myTrialWelcome = await bot.channels.fetch(configjson["trialwelcomeID"]);
+//     bot.once("ready", async () => {
+//         log.info("Logged in as " + bot.user.tag);
+//         bot.user.setPresence({ activity: { name: "booting up..." } });
 
-            let index = 0;
-            for (let i = 0; i < myServers.length; i++) {
-                let server = myServers[i];
-                index++;
-                server.self = bot.guilds.cache.get(getConfigOrFirst("botServerID", index));
-                // @ts-ignore
-                server.myGate = await bot.channels.fetch(getConfigOrFirst("gateID", index));
-                // @ts-ignore
-                server.myGear = await bot.channels.fetch(getConfigOrFirst("gearID", index));
-                // @ts-ignore
-                server.mySignUp = await bot.channels.fetch(getConfigOrFirst("signUpID", index));
-                // @ts-ignore
-                server.mySignUpData = await bot.channels.fetch(getConfigOrFirst("signUpDataID", index));
-                // @ts-ignore
-                server.myAnnouncement = await bot.channels.fetch(getConfigOrFirst("announcementID", index));
-                // @ts-ignore
-                server.myAnnouncementData = await bot.channels.fetch(getConfigOrFirst("announcementDataID", index));
-                // @ts-ignore
-                server.myWelcome = await bot.channels.fetch(getConfigOrFirst("welcomeID", index));
-                // @ts-ignore
-                server.myChangelog = await bot.channels.fetch(getConfigOrFirst("changelogID", index));
-                // @ts-ignore
-                server.myGuildChat = await bot.channels.fetch(getConfigOrFirst("guildchatID", index));
-            }
+//         try {
+//             myTrialServer = bot.guilds.cache.get(configjson["botTrialServerID"]);
+//             myDevServer = bot.guilds.cache.get(configjsonfile["dev"]["botServerID"]);
+//             // @ts-ignore
+//             myGearData = await bot.channels.fetch(configjson["gearDataID"]);
+//             // @ts-ignore
+//             myTrial = await bot.channels.fetch(configjson["trialreactionID"]);
+//             // @ts-ignore
+//             myTrialHistory = await bot.channels.fetch(configjson["trialhistoryID"]);
+//             // @ts-ignore
+//             myTrialWelcome = await bot.channels.fetch(configjson["trialwelcomeID"]);
 
-            log.info("Booting up attempt...");
-            if (myServers) {
+//             let index = 0;
+//             for (let i = 0; i < myServers.length; i++) {
+//                 let server = myServers[i];
+//                 index++;
+//                 server.self = bot.guilds.cache.get(getConfigOrFirst("botServerID", index));
+//                 // @ts-ignore
+//                 server.myGate = await bot.channels.fetch(getConfigOrFirst("gateID", index));
+//                 // @ts-ignore
+//                 server.myGear = await bot.channels.fetch(getConfigOrFirst("gearID", index));
+//                 // @ts-ignore
+//                 server.mySignUp = await bot.channels.fetch(getConfigOrFirst("signUpID", index));
+//                 // @ts-ignore
+//                 server.mySignUpData = await bot.channels.fetch(getConfigOrFirst("signUpDataID", index));
+//                 // @ts-ignore
+//                 server.myAnnouncement = await bot.channels.fetch(getConfigOrFirst("announcementID", index));
+//                 // @ts-ignore
+//                 server.myAnnouncementData = await bot.channels.fetch(getConfigOrFirst("announcementDataID", index));
+//                 // @ts-ignore
+//                 server.myWelcome = await bot.channels.fetch(getConfigOrFirst("welcomeID", index));
+//                 // @ts-ignore
+//                 server.myChangelog = await bot.channels.fetch(getConfigOrFirst("changelogID", index));
+//                 // @ts-ignore
+//                 server.myGuildChat = await bot.channels.fetch(getConfigOrFirst("guildchatID", index));
+//             }
 
-                //attempt to load a previously saved state
-                players = await initPlayers(players);
+//             log.info("Booting up attempt...");
+//             if (myServers) {
 
-                log.info("... success !");
+//                 //attempt to load a previously saved state
+//                 players = await initPlayers(players);
 
-                if (!init) {
-                    initLookout();
-                    init = true;
-                } else {
-                    log.info("Lookout already started");
-                }
-            } else {
-                logger.log("...failed, retrying in " + loading + "ms");
-            }
-        } catch (e) {
-            console.error(e);
-            log4js.shutdown(); // application exit?
-        }
-    });
-} else {
-    log.info("Couldn't find config.json and items.json files, aborting.");
-    log4js.shutdown(); // application exit?
-}
-async function initPlayers(players) {
-    try {
-        await downloadGearFileFromChannel("players.json", myGearData);
-        playersjson = files.openJsonFile("./download/players.json", "utf8");
-        if (playersjson) {
-            for (const currentPlayer of playersjson) {
-                let revivedPlayer = await revivePlayer(
-                    currentPlayer["id"],
-                    currentPlayer["classname"],
-                    currentPlayer["ap"],
-                    currentPlayer["aap"],
-                    currentPlayer["dp"],
-                    currentPlayer["axe"],
-                    currentPlayer["horse"],
-                    currentPlayer["signUps"],
-                    currentPlayer["real"],
-                    currentPlayer["origin"]
-                );
-                if (revivedPlayer) {
-                    players.add(revivedPlayer);
-                }
-            }
-        }
-        return players;
-    } catch (e) {
-        console.error(e);
-        log.info("Players file not found");
-    }
-}
+//                 log.info("... success !");
+
+//                 if (!init) {
+//                     initLookout();
+//                     init = true;
+//                 } else {
+//                     log.info("Lookout already started");
+//                 }
+//             } else {
+//                 logger.log("...failed, retrying in " + loading + "ms");
+//             }
+//         } catch (e) {
+//             console.error(e);
+//             log4js.shutdown(); // application exit?
+//         }
+//     });
+// } else {
+//     log.info("Couldn't find config.json and items.json files, aborting.");
+//     log4js.shutdown(); // application exit?
+// }
+
