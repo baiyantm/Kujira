@@ -128,12 +128,6 @@
                 "layout": {
                     "type": "basic"
                 }
-            },
-            "file": {
-                "type": "multiFile",
-                "base": "logs/",
-                "property": "categoryName",
-                "extension": ".log"
             }
         },
         "categories": {
