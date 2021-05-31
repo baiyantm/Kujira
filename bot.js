@@ -1449,8 +1449,8 @@ async function collectAllSignUps() {
 async function collectSignUps(server) {
     for (let day = 0; day < 7; day++) {
         let reactionMessage = await getDaySignUpMessage(day, server.mySignUp);
-        reactionMessage = await reactionMessage.fetch();
         if (reactionMessage) {
+            reactionMessage = await reactionMessage.fetch();
             let yesReaction = reactionMessage.reactions.cache.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
             let noReaction = reactionMessage.reactions.cache.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
             if (noReaction) {
