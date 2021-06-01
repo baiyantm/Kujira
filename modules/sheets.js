@@ -1,7 +1,7 @@
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 
 const mode = process.env.TOKEN ? 'prod' : 'dev';
-const log = require('log4js').getLogger('sheets');
+const log = require('log4js').getLogger('modules/sheets');
 
 const creds = mode == "prod" ? JSON.parse(process.env.CREDS) : require('../resources/creds.json');
 const config = require('../resources/config.json').sheets;
