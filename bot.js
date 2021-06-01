@@ -10,6 +10,8 @@ const util = require("./modules/util");
 const Player = require('./classes/Player');
 const PlayerArray = require('./classes/PlayerArray');
 const Server = require('./classes/Server');
+const SignUp = require('./classes/SignUp');
+
 const GuildWars = require('./modules/wars');
 
 // Planned global logging replacemr on branch reredevcommands
@@ -182,6 +184,7 @@ async function initLookout() {
         logger.log("Recieved signal to terminate, saving and shutting down");
         await savePlayers();
         bot.destroy();
+        log4js.shutdown(); // application exit!
         process.exit(0);
     });
 
@@ -419,16 +422,19 @@ async function signUpReactionAddHandler(messageReaction, user) {
     let dateName = util.findCorrespondingDayName(today.getDay()).toLowerCase();
     let lockedSignUps = today.getHours() >= 19 && today.getHours() <= 20 && message.content.toLowerCase().startsWith(dateName);
     let yesReaction = message.reactions.cache.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
+    yesReaction = await yesReaction.fetch();
     let noReaction = message.reactions.cache.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
+    noReaction = await noReaction.fetch();
     if (user.id != bot.user.id) {
-        if (messageReaction.emoji.name == configjson["noreaction"] && (await yesReaction.fetch()).users.cache.get(user.id)) {
+        if (messageReaction.emoji.name == configjson["noreaction"] && yesReaction.users.cache.get(user.id)) {
             removeUserFromReaction(yesReaction, user);
         } else if (messageReaction.emoji.name == configjson["yesreaction"]) {
             if (lockedSignUps) {
                 removeUserFromReaction(yesReaction, user);
+                players.get(user.id).signUps[today.getDay()].status = "no";
                 // @ts-ignore
                 interactions.wSendAuthor(user, configjson["yesreaction"] + " locked after 19:00, please contact an Officer");
-            } else if ((await noReaction.fetch()).users.cache.get(user.id)) {
+            } else if (noReaction.users.cache.get(user.id)) {
                 removeUserFromReaction(noReaction, user);
             }
         }
@@ -450,7 +456,7 @@ function removeUserFromReaction(messageReaction, user) {
  * @param {{reference : any}} annCache 
  */
 async function onMessageHandler(message, annCache) {
-    //if (message.author.bot) return; //bot ignores bots
+    if (message.author.bot || !message.guild) return; //bot ignores bots
     var commands;
     let enteredCommand = message.content.toLowerCase();
     if (!message.guild) return;                     // ignore dm channels
@@ -1484,6 +1490,7 @@ async function collectSignUps(server) {
     for (let day = 0; day < 7; day++) {
         let reactionMessage = await getDaySignUpMessage(day, server.mySignUp);
         if (reactionMessage) {
+            reactionMessage = await reactionMessage.fetch();
             let yesReaction = reactionMessage.reactions.cache.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
             let noReaction = reactionMessage.reactions.cache.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
             if (noReaction) {
@@ -2295,6 +2302,11 @@ const bot = new Discord.Client();
 var configjsonfile = files.openJsonFile("./resources/config.json", "utf8");
 var configjson = process.env.TOKEN ? configjsonfile["prod"] : configjsonfile["dev"];
 var itemsjson = files.openJsonFile("./resources/items.json", "utf8");
+
+// Setup Logging
+const log4js = require('log4js');
+log4js.configure(configjson['logconfigpath']);
+
 /*var alarmsjson = files.openJsonFile("./resources/alarms.json", "utf8");*/
 var init = false;
 
@@ -2418,10 +2430,12 @@ if (configjson && itemsjson) {
             }
         } catch (e) {
             console.error(e);
+            log4js.shutdown(); // application exit?
         }
     });
 } else {
     logger.log("INFO: Couldn't find config.json and items.json files, aborting.");
+    log4js.shutdown(); // application exit?
 }
 async function initPlayers(players) {
     try {
