@@ -32,7 +32,22 @@ class GuildWars {
         this.warlog = [];
         this.botmsg;
         this.recovering = false;
+        this.channel = null;
         log.mark('GuildWars - Instanciated');
+    }
+
+    // it's late right now, I'll make a better solution another day...
+    // ... famous last words
+    selfRefreshWrapper() {
+        if (this.botmsg) {
+            this.refreshEmbed(this.botmsg);
+        } else if (this.channel) {
+            this.channel.messages.fetch({ limit: 1 })
+                .then(m => this.refreshEmbed(m))
+                .catch(e => log.error(`failed to fetch a single message... so useless`, e));
+        } else {
+            log.error('cannot self-refresh due to missing references');
+        }
     }
 
     dec(origin, guild, ...reason) {
@@ -92,16 +107,9 @@ class GuildWars {
     async handler(msg) {
         let text = msg.content;
 
-        // ignore self
-        if (msg.member.id == msg.client.user.id && text != '__init__') {
+        // ignore self - technically speaking redundant...
+        if (msg.member.id == msg.client.user.id) {
             return;
-        
-        // excepts if it's a dirty refresh trick.
-        } else if (msg.member.id == msg.client.user.id && text == '__init__') {
-            msg.delete()
-                .then(m => this.refreshEmbed(m))
-                .catch(e => log.error('(handler) failed to delete trigger message', e));
-            return; // no `normal` refresh
 
         // Officers can leave comments in the channel by prefixing the message with !
         } else if (text.startsWith("! ") && msg.member.roles.cache.find(x => x.name.includes("Officer"))) {
