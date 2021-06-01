@@ -1,151 +1,172 @@
-const { Collection, MessageEmbed, Message} = require('discord.js');
-const { wSendChannel } = require('./interactions');
-const { wDelete, wEditMsg } = require('./interactions.js');
-
-// replaces all other logging on branch reredevcommands
-// until then...
-const log4js = require('log4js')
-log4js.configure({
-    "appenders": {
-        "out": {
-            "type": "stdout",
-            "layout": {
-                "type": "pattern",
-                "pattern": "%[%d{yyyy-MM-dd hh:mm}  %-8.8p %-17.17c %m%]"
-            }
-        },
-        "file": {
-            "type": "multiFile",
-            "base": "logs/",
-            "property": "categoryName",
-            "extension": ".log"
-        }
-    },
-    "categories": {
-        "default": {
-            "appenders": ["out", "file"],
-            "level": "trace"
-        },
-        "modules/sheets": {
-            "appenders": ["file"],
-            "level": "trace"
-        }
-    }
-});
-const log = log4js.getLogger('modules/wars');
-
-// Action Map
-const actions = new Collection([
-    ['dec', {
-        minargs: 2,
-        execute(m, a) { decAction(m, a); }
-    }],
-    ['undec', {
-        minargs: 1,
-        execute(m, a) { undecAction(m, a); } 
-    }],
-]);
+const { Collection, MessageEmbed, Message } = require('discord.js');
+const log = require('log4js').getLogger('modules/wars');
 
 // For easier management and formatting
 class War {
-    constructor(origin, guildname, reason, logonly=false) {
-        this.origin = origin;
+    constructor(origin, guildname, reason) {
+        this.origin = origin ? origin : 'unknown';
         this.guildname = guildname;
+        this.guildkey = guildname.toLowerCase();
         this.reason = reason ? ' ' + reason : '';
-        this.logonly = logonly;
     }
+
+    // line in embed
     toString() {
-        return `${this.guildname} (\`${this.guildname.toLowerCase()}\`) ~ ${this.reason}`;
+        return `${this.guildname} (\`${this.guildkey}\`) ${this.reason ? '~ ' + this.reason : ''}`;
     }
-    log() {
-        return `${this.origin.username}: ${this.logonly ? 'undec' : 'dec'} ${this.guildname}${this.reason}`
+
+    // line in warlog
+    log(action) {
+        let tx = ''
+        tx += this.origin ? `${this.origin}: ` : ''
+        tx += `${action} `
+        tx += `${this.guildname} ${this.reason}`;
+        return tx;
     }
 }
 
-module.exports = class GuildWars {
+class GuildWars {
     static channels = ["849210902589997056"];
     constructor() {
         this.data = new Collection();
         this.warlog = [];
         this.botmsg;
-        log.info('initialized');
+        this.recovering = false;
+        log.mark('GuildWars - Instanciated');
     }
 
-    // hacks for now. TODO: js static/classmethod ??
-    logWar(war) { this.warlog.push(war.log()); };
+    dec(origin, guild, ...reason) {
+        let war = new War(origin, guild, reason.join(' '));
+        log.debug(`set [${war.guildkey}] -> [${war.log('dec')}]`);
+        this.data.set(war.guildkey, war);
+        this.warlog.push(war.log('dec'));
+    }
 
-    // internal use only
-    _invalidate() { this.data = new Collection(); this.warlog = []; };
+    undec(origin, guild, ...reason) {
+        let war = new War(origin, guild, reason.join(' '));
+        log.debug(`unset [${war.guildkey}] -> [${war.log('undec')}]`);
+        if (!this.data.delete(guild.toLowerCase())) {
+            log.debug(`Unable to undec ${guild}, not at war.`);
+        } else {
+            this.warlog.push(war.log('undec'));
+        }
+    }
 
-    async handler(msg, client) {
-        if (msg.author.id == client.user.id) return; // ignore self
+    clear() {
+        this.warlog = [];
+        this.data = new Collection();
+        if (this.botmsg) {
+            this.botmsg.delete()
+                .then(m => this.sendNewEmbed(m))
+                .catch(e => log.error(e));
+        } else {
+            log.warn('Cannot do ?clear before botmsg');
+        }
+    }
+
+    /** @param {Message} msg @param {String} text */
+    doAction(msg, text) {
+        let args = text.trim().split(/ +/);
+        let cmd = args.shift();
+        let res = '';
+        // dec https://regex101.com/r/
+        if (cmd.match(/^d(e?c{0,2}l?|ec)[a-z]{0,4}$/i)) {
+            if (args.length > 1) this.dec(msg.member.displayName.split('|')[0], args.shift(), args);
+            else if (args.length > 0) res = 'Invalid arguments! missing: `reason`'
+            else res = 'Invalid arguments! missing: `guild` `reason`';
+        // undec https://regex101.com/r/
+        } else if (cmd.match(/^[un](?<=u?)n?de?c{0,2}[a-z]{0,4}$/i)) {
+            if (args.length > 0) this.undec(msg.member.displayName.split('|')[0], args.shift(), args);
+            else res = 'Invalid arguments! missing: `guild`';
+        } else {
+            res = 'Invalid command! usage: `[dec|undec] [guildname] [reason]`\nNote that `reason` is obligatory for `dec`, but not for `undec`';
+        }
+        if (res) {
+            msg.member.send(res)
+                .then(() => {})
+                .catch(e => log.error(e));
+        }
+    }
+
+    /** @param {Message} msg */
+    async handler(msg) {
         let text = msg.content;
 
-        // Officers can leave comments in the channel by prefixing the message with !
-        if (text.startsWith("! ") && msg.member.roles.cache.find(x => x.name.includes("Officer"))) {
-            log.trace('ignoring note');
+        // ignore self
+        if (msg.member.id == msg.client.user.id && text != '__init__') {
             return;
-
-        // utility hack due to lack of permissions on testserver
-        } else if (text.startsWith('?rm') && msg.member.roles.cache.find(x => x.name.includes("Officer"))) {
-            msg.channel.messages.fetch(text.trim().split(/ +/)[1])
-                .then(async (m) => await wDelete(m))
-                .catch(e => log.error(e));
         
-        // Officers can specify an old embed to load data from by providing the id.
-        } else if (text.startsWith("?load") && msg.member.roles.cache.find(x => x.name.includes("Officer"))) {
+        // excepts if it's a dirty refresh trick.
+        } else if (msg.member.id == msg.client.user.id && text == '__init__') {
+            msg.delete()
+                .then(m => this.refreshEmbed(m))
+                .catch(e => log.error('(handler) failed to delete trigger message', e));
+            return; // no `normal` refresh
 
-            log.trace('load start');
+        // Officers can leave comments in the channel by prefixing the message with !
+        } else if (text.startsWith("! ") && msg.member.roles.cache.find(x => x.name.includes("Officer"))) {
+            log.trace('ignoring note');
+            return; // no refresh
+
+        // remove message by id { utility hack due to lack of permissions on testserver }
+        } else if (text.startsWith('?rm') && msg.member.roles.cache.find(x => x.name.includes("Officer"))) {
+            msg.delete()
+                .then(msg => {
+                    let id = text.trim().split(/ +/)[1];
+                    msg.channel.messages.fetch(id)
+                        .then(m => {
+                            m.delete().then().catch(e => log.warn(`(?rm) failed to remove target ${m.id}`, e)); 
+                        })
+                        .catch(e => log.debug(`(?rm) failed to fetch message [${id}] (most likely already deleted)`, e));
+                }).catch(e => log.error(`(?rm) failed to remove trigger ${m.id}`, e));
+            return; // no refresh
+
+        // Officers can mark messages from before the bot was active to be parsed
+        } else if (text.startsWith('?parse') && msg.member.roles.cache.find(x => x.name.includes("Officer"))) {
+            text.trim().split(/ +/).slice(1).forEach(id => {
+                log.debug(`?parse: fetching ${id}`);
+                msg.channel.messages.fetch(id)
+                    .then(m => {
+                        log.trace(`?parse: handling ${m.member.displayName.split('|')[0]}: ${m.content}`);
+                        this.handler(m, msg.client);
+                    }).catch(e => log.warn(`(?parse) failed to fetch ${id}`, e));
+            });
+
+        // Officers can clear all entries
+        // THIS WILL CLEAR BOTH WARS AND THE WARLOG
+        } else if (text.startsWith('?clear') && msg.member.roles.cache.find(x => x.name.includes("Officer"))) {
+            this.clear();
+            msg.delete().then().catch(e => log.error(`(?clear) failed to remove trigger message`, e));
+            return; // no refresh.
+
+        // Officers can specify an old embed to load data from by providing the id.
+        // THIS WILL RESET THE CURRENT DATA
+        } else if (text.startsWith("?load") && msg.member.roles.cache.find(x => x.name.includes("Officer"))) {
+            log.debug('load start');
             let id = text.trim().split(/ +/)[1];
 
             msg.channel.messages.fetch(id)
-                .then(async (m) => {
-                    await this.loadFromEmbed(m);
-                })
-                .catch(e => log.error(e));
-            log.trace('load completed');
+                .then(m => {
+                    this.loadFromEmbed(m.embeds[0]);
+                    log.debug('load completed');
+                }).catch(e => log.error(`(?load) failed to fetch ${id}`, e));
+            
 
         } else {
-            let args = text.trim().split(/ +/);
-            let target = args.shift().toLowerCase();
-            let action = actions.get(target);
-            if (action) {
-                if (action.minargs && !(action.minargs >= args.length)) {
-                    log.debug(`Invalid command! cmd:${target} args:${args.join(' ')}`);
-                } else {
-                    action.execute(msg, args);
-                }
-            }
+            this.doAction(msg, text);
         }
-        await this.refreshEmbed(msg, client);
-        // client.setTimeout(async () => await wDelete(msg), 10000); // 10 seconds (?)
-        await wDelete(msg);
+        // TODO priority: low require: reredevcommands
+        // add repeat timer for refresh hook botmsg to client.botMessages
+        msg.delete()
+            .then(m => this.refreshEmbed(m))
+            .catch(e => log.error('(handler) failed to delete trigger message', e));
     }
 
-    decAction(msg, args) {
-        let guild = args.shift();
-        let reason = args ? args.join(' ') : false;
-        if (this.data.has(guild.toLowerCase()) && !reason) {
-            log.debug(`Refusing to overwrite dec ${guild}, no reason provided.`);
-            return;
-        }
-        let war = new War(msg.author, guild, reason)
-        this.data.set(guild.toLowerCase(), war);
-        this.logWar(war);
-    }
+    /** Embed Stuff */
 
-    undecAction(msg, args) {
-        let guild = args.shift();
-        let reason = args ? args.join(' ') : false;
-        if (this.data.delete(guild.toLowerCase())) {
-            this.logWar(new War(msg.author, guild, reason, true));
-        } else {
-            log.debug(`Unable to undec ${guild}, not at war.`)
-        }
-    }
-
+    /** @returns {MessageEmbed} */
     makeEmbed() {
-        if (this.warlog.length == 0) this.warlog.push('== warlog init ==');
+        if (this.warlog.length == 0) this.warlog.push('- no entries -');
 
         let text = '';
         this.data.forEach(war => text += war.toString() + '\n');
@@ -161,64 +182,82 @@ module.exports = class GuildWars {
         return embed;
     }
 
-    async refreshEmbed(msg, client) {
-        let embed = this.makeEmbed();
-        // after startup or refresh error
-        if (!this.botmsg) {
-            this.botmsg = await wSendChannel(msg.channel, '**Parsing History, please wait...**');
+    /** @param {Message} msg */
+    refreshEmbed(msg) {
+        if (this.botmsg) {
+            this.botmsg.edit(this.makeEmbed())
+                .catch(e => {
+                    log.warn();
+                    log.error(`(refresh) failed to edit the botmessage ${this.botmsg}`, e);
+                });
 
-            msg.channel.messages.fetch({limit: 2})
-                .then(history => {
-                    // search for last known state
-                    let lastData = history.filter(m => m.author.id === client.user.id && m.id !== this.botmsg.id).first();
-                    // TODO make more safe
-                    if (lastData && lastData.embeds.length == 1 && lastData.embeds[0].description) {
-                        this._invalidate();             // invalidate current state
-                        this.loadFromEmbed(lastData);   // load last valid state
-                        history                         // re-parse from there
-                            .filter(m => m.createdTimestamp > lastData.createdTimestamp)
-                            .sorted((m1, m2) => m1.createdTimestamp - m2.createdTimestamp)
-                            .forEach(m => this.handler(m, client));
-                    }
-                    // if no last state is found, don't parse any history just start fresh.
-                })
-                .catch(e => log.error(e));
-        }
-        else {
-            if (!wEditMsg(this.botmsg, embed)) {
-                log.warn('failed to refresh botmsg!');
-                this.botmsg = undefined;
-            }
+        // after startup or refresh error
+        } else if (!this.botmsg && !this.recovering) {
+            this.recovering = true;
+            this.lookForOldData(msg);
+        } else {
+            log.trace(`recovery in progres ignoring message ${msg.id}`);
         }
     }
 
     /** @param {Message} msg */
-    async loadFromEmbed(msg) {
-        if (msg.embeds.length == 1) {
-
-            msg.embeds[0].description.split('\n').forEach(line => {
-                log.trace(`load warlog line: ${line}`)
-                this.warlog.push(line);
-            });
-
-            msg.embeds[0].fields[0].value.split('\n').forEach(line => {
-                log.trace(`load warfield line: ${line}`)
-
-                let [guild, skip, ...reason] = line.split(/ +/);
-                log.debug(`guild: ${guild}, skip: ${skip}, reason: ${reason}`);
-                
-                let search = this.warlog.find(s => s.endsWith(`dec ${guild} ${reason.join(' ')}`));
-
-                let origin = 'unknown'; // if war entry is older than 10 log entries
-                if (search) {
-                    origin = search.pop().split(': ')[0];
-                    log.trace(`origin: ${origin}`); 
+    lookForOldData(msg) {
+        log.info('Searching for last known state...');
+        msg.channel.messages.fetch({ limit: 10 }) // TODO increase quantity
+            .then(history => {
+                log.debug(`filtering ${history.size} messages`);
+                // last known state
+                let past = history.filter(m => m.author.bot && m.embeds.length == 1).first()
+                log.debug(`found last data: ${past.id}`);
+                if (past) {
+                    this.loadFromEmbed(past.embeds[0]);
+                    this.sendNewEmbed(msg);
+                    past.delete().catch(e => log.error(`(lookForOldData) failed to delete previous state message`, e));
+                } else {
+                    log.warn('could not find previous state');
+                    this.sendNewEmbed(msg);
                 }
-                let war = new War(origin, guild, reason.join(' '));
-                log.info(`load war: ${war.toString()}`);
+            }).catch(e => log.error(`(lookForOldData) failed to fetch channel history`, e));
+    }
+
+    /** @param {Message} msg */
+    sendNewEmbed(msg) {
+        msg.channel.send(this.makeEmbed())
+            .then(m => {
+                this.botmsg = m;
+                log.info(`set botmsg id: ${this.botmsg.id}`);
+            }).catch(e => log.error(`(sendNewEmbed) failed to send a new embed`, e));
+        this.recovering = false;
+    }
+
+    /** @param {MessageEmbed} embed */
+    loadFromEmbed(embed) {
+        this.warlog = [];
+        this.data = new Collection();
+
+        embed.description.split('\n').forEach(line => {
+            log.trace(`load warlog line: ${line}`);
+            this.warlog.push(line);
+        });
+
+        embed.fields[0].value.split('\n')
+            .filter(l => !l.startsWith('No active wars...'))
+            .forEach(line => {
+                log.trace(`parsing warfield line: ${line}`);
+
+                let [guild, ...reason] = line.split(/ +/);
+                // log.trace(`guild: ${guild}, skip: ${skip}, skip2: ${skip2}, reason: ${reason}`);
+                if (reason) reason.shift(); // get rid of `~`
+                if (reason) reason.shift(); // get rid of guildkey
+
+                let war = new War(null, guild, reason.join(' '));
+                let search = this.warlog.find(l => l.endsWith(war.log('dec')));
+                if (search) war.origin = search.split(': ')[0];
+                // log.trace(`origin: ${search ? war.origin : 'not found'}`);
+                log.trace(`added warfield line: [${war}]`);
                 this.data.set(guild.toLowerCase(), war);
             })
-        }
     }
 }
 
+module.exports = GuildWars;
