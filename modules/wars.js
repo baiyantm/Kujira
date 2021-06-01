@@ -63,7 +63,7 @@ class War {
 }
 
 module.exports = class GuildWars {
-    static channels = ["646472790555361310"];
+    static channels = ["849210902589997056"];
     constructor() {
         this.data = new Collection();
         this.warlog = [];
