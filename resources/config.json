@@ -32,8 +32,7 @@
         "hourSignup": 17,
         "defaultCount": 7,
         "yesreaction": "✅",
-        "noreaction": "❌",
-        "logconfigpath": "./resources/devlog.json"
+        "noreaction": "❌"
     },
     "prod": {
         "botServerID": "594824222099111937",
@@ -66,8 +65,7 @@
         "hourSignup": 17,
         "defaultCount": 7,
         "yesreaction": "✅",
-        "noreaction": "❌",
-        "logconfigpath": "./resources/prodlog.json"
+        "noreaction": "❌"
     },
     "sheets": {
         "594824222099111937": {
