@@ -14,10 +14,9 @@ const SignUp = require('./classes/SignUp');
 
 const GuildWars = require('./modules/wars');
 
-// Planned global logging replacemr on branch reredevcommands
-// atm only used in modules/wars.js but has no conflicts
+// Planned global logging replacer on branch reredevcommands
+// has to be `configured` in the main file.
 const log4js = require('log4js');
-// it has to be `configured` in the main file.
 log4js.configure({
     "appenders": {
         "out": {
@@ -33,6 +32,7 @@ log4js.configure({
             "appenders": ["out"],
             "level": "trace" // fiddle with this if you want less logs
             // mark > fatal > error > warning > info > debug > trace
+            // yes yes, i'll fix so it doesn't trace on prod... tomorrow...
         }
     }
 });
@@ -175,9 +175,9 @@ async function initLookout() {
 
     // @ts-ignore - returns instanceof TextChannel
     GuildWarChannel = await bot.channels.fetch(configjson['guildwarID']);
-    await GuildWarChannel.send('__init__');     // dirty refresh trick
-    bot.setInterval(async () => {               // to trigger the initial data-checkup
-        await GuildWarChannel.send('__init__'); // as well as to refresh periodically
+    wars.channel = GuildWarChannel
+    bot.setInterval(() => {
+        wars.selfRefreshWrapper()
     }, 20*60*1000);
 
     process.on('SIGTERM', async function () {
@@ -459,8 +459,7 @@ async function onMessageHandler(message, annCache) {
     if (message.author.bot || !message.guild) return; //bot ignores bots
     var commands;
     let enteredCommand = message.content.toLowerCase();
-    if (!message.guild) return;                     // ignore dm channels
-    let server = getServerById(message.guild.id);   // otherwise this line crashes
+    let server = getServerById(message.guild.id);
     try {
         if(server) {
             if (message.channel.id == server.myAnnouncement.id) {
@@ -2302,10 +2301,6 @@ const bot = new Discord.Client();
 var configjsonfile = files.openJsonFile("./resources/config.json", "utf8");
 var configjson = process.env.TOKEN ? configjsonfile["prod"] : configjsonfile["dev"];
 var itemsjson = files.openJsonFile("./resources/items.json", "utf8");
-
-// Setup Logging
-const log4js = require('log4js');
-log4js.configure(configjson['logconfigpath']);
 
 /*var alarmsjson = files.openJsonFile("./resources/alarms.json", "utf8");*/
 var init = false;
