@@ -12,6 +12,33 @@ const PlayerArray = require('./classes/PlayerArray');
 const Server = require('./classes/Server');
 const SignUp = require('./classes/SignUp');
 
+const GuildWars = require('./modules/wars');
+
+// Planned global logging replacemr on branch reredevcommands
+// atm only used in modules/wars.js but has no conflicts
+const log4js = require('log4js');
+// it has to be `configured` in the main file.
+log4js.configure({
+    "appenders": {
+        "out": {
+            "type": "stdout",
+            "layout": {
+                "type": "pattern",
+                "pattern": "%[%d{yyyy-MM-dd hh:mm}  %-8.8p %-17.17c %m%]"
+            }
+        },
+    },
+    "categories": {
+        "default": {
+            "appenders": ["out"],
+            "level": "trace" // fiddle with this if you want less logs
+            // mark > fatal > error > warning > info > debug > trace
+        }
+    }
+});
+
+const wars = new GuildWars();
+
 ghostScriptGet();
 
 async function initLookout() {
@@ -145,6 +172,13 @@ async function initLookout() {
     bot.setInterval(() => {
         collectAllSignUps();
     }, configjson["signupDelay"]);
+
+    // @ts-ignore - returns instanceof TextChannel
+    GuildWarChannel = await bot.channels.fetch(configjson['guildwarID']);
+    await GuildWarChannel.send('__init__');     // dirty refresh trick
+    bot.setInterval(async () => {               // to trigger the initial data-checkup
+        await GuildWarChannel.send('__init__'); // as well as to refresh periodically
+    }, 20*60*1000);
 
     process.on('SIGTERM', async function () {
         logger.log("Recieved signal to terminate, saving and shutting down");
@@ -425,7 +459,8 @@ async function onMessageHandler(message, annCache) {
     if (message.author.bot || !message.guild) return; //bot ignores bots
     var commands;
     let enteredCommand = message.content.toLowerCase();
-    let server = getServerById(message.guild.id);
+    if (!message.guild) return;                     // ignore dm channels
+    let server = getServerById(message.guild.id);   // otherwise this line crashes
     try {
         if(server) {
             if (message.channel.id == server.myAnnouncement.id) {
@@ -445,6 +480,10 @@ async function onMessageHandler(message, annCache) {
             } else if (message.channel.id == server.mySignUpData.id) {
                 // === SIGNUP DATA ===
                 signupDataChannelHandler(enteredCommand, message, commands);
+            } else if (GuildWars.channels.find(c => c == message.channel.id)) {
+                // === GUILD WARS ===
+                // @ts-ignore
+                wars.handler(message);
             } else if (enteredCommand.startsWith("?")) {
                 // === ALL CHANNELS ===
                 allChannelsHandler(enteredCommand, commands, message);
@@ -2317,6 +2356,10 @@ if (configjson && itemsjson) {
      * @type Discord.TextChannel
      */
     var myTrialWelcome;
+    /**
+     * @type Discord.TextChannel
+     */
+    var GuildWarChannel;
 
     myServers.push(myServer);
     myServers.push(myServer2);
