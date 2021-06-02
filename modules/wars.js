@@ -175,6 +175,8 @@ class GuildWars {
     /** @returns {MessageEmbed} */
     makeEmbed() {
         if (this.warlog.length == 0) this.warlog.push('- no entries -');
+        // Will work as long as it doesn't grow past 20, but it should never grow past 11 in the first place
+        else if (this.warlog.length > 10) this.warlog.slice((this.warlog.length - 10));
 
         let text = '';
         this.data.forEach(war => text += war.toString() + '\n');
