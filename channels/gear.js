@@ -139,7 +139,7 @@ async function horseAction(message, args) {
 }
 
 async function helpAction(message) {
-    let help = await wSendChannel(message.channel, gearhelp);
+    let help = wSendChannel(message.channel, gearhelp);
     bot.setTimeout(() => {
         wDelete(help);
     }, helpDeleteTimeout);
@@ -246,9 +246,7 @@ const gearChannelHandler = async function (message) {
     } else if (text.startsWith(prefix) && withRoleCheck(message, Roles)) {
         let args = text.slice(prefix.length).trim().split(/ +/);
         let cmd = args.shift().toLowerCase();
-        log.mark('gear channel command');
-        log.debug(`cmd: ${cmd}`);
-        log.debug(`args: ${args}`);
+        log.debug(`gear channel command: ${text}`);
 
         if (commands.has(cmd)) {
             // clear, removeall, remove, add
