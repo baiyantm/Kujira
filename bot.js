@@ -32,7 +32,7 @@ var configjson = process.env.TOKEN ? configjsonfile["prod"] : configjsonfile["de
 var itemsjson = files.openJsonFile("./resources/items.json", "utf8");
 
 
-const GuildWars = require('./modules/wars');
+const GuildWars = require('./channels/guild-wars');
 const wars = new GuildWars();
 
 ghostScriptGet();
