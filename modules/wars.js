@@ -216,8 +216,8 @@ class GuildWars {
                 log.debug(`filtering ${history.size} messages`);
                 // last known state
                 let past = history.filter(m => m.author.bot && m.embeds.length == 1).first()
-                log.debug(`found last data: ${past.id}`);
                 if (past) {
+                    log.debug(`found last data: ${past.id}`);
                     this.loadFromEmbed(past.embeds[0]);
                     this.sendNewEmbed(msg);
                     past.delete().catch(e => log.error(`(lookForOldData) failed to delete previous state message`, e));
