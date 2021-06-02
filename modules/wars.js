@@ -26,7 +26,7 @@ class War {
 }
 
 class GuildWars {
-    static channels = ["849210902589997056"];
+    static channels = ["849750163588907018"];
     constructor() {
         this.data = new Collection();
         this.warlog = [];
