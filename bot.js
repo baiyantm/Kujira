@@ -37,8 +37,6 @@ log4js.configure({
     }
 });
 
-const wars = new GuildWars();
-
 ghostScriptGet();
 
 async function initLookout() {
@@ -175,7 +173,7 @@ async function initLookout() {
 
     // @ts-ignore - returns instanceof TextChannel
     GuildWarChannel = await bot.channels.fetch(configjson['guildwarID']);
-    wars.channel = GuildWarChannel
+    wars.channel = GuildWarChannel;
     bot.setInterval(() => {
         wars.selfRefreshWrapper()
     }, 20*60*1000);
@@ -703,7 +701,7 @@ async function gearChannelHandler(enteredCommand, message, commands) {
 
     myServers.forEach(server => {
         //refresh bot message
-        bot.setTimeout(async () => {
+        bot.setInterval(async () => {
             await refreshBotMsg(server.myGear, server.botMsg, players);
         }, configjson["refreshDelay"]);
     });
@@ -2301,6 +2299,8 @@ const bot = new Discord.Client();
 var configjsonfile = files.openJsonFile("./resources/config.json", "utf8");
 var configjson = process.env.TOKEN ? configjsonfile["prod"] : configjsonfile["dev"];
 var itemsjson = files.openJsonFile("./resources/items.json", "utf8");
+const wars = new GuildWars();
+GuildWars.channels = [configjson["guildwarID"]];
 
 /*var alarmsjson = files.openJsonFile("./resources/alarms.json", "utf8");*/
 var init = false;

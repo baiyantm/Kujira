@@ -26,7 +26,7 @@ class War {
 }
 
 class GuildWars {
-    static channels = ["849750163588907018"];
+    static channels = ["849210902589997056"];
     constructor() {
         this.data = new Collection();
         this.warlog = [];
@@ -35,7 +35,7 @@ class GuildWars {
         this.channel = null;
         log.mark('GuildWars - Instanciated');
     }
-
+    
     // it's late right now, I'll make a better solution another day...
     // ... famous last words
     selfRefreshWrapper() {
@@ -86,12 +86,12 @@ class GuildWars {
         let res = '';
         // dec https://regex101.com/r/
         if (cmd.match(/^d(e?c{0,2}l?|ec)[a-z]{0,4}$/i)) {
-            if (args.length > 1) this.dec(msg.member.displayName.split('|')[0], args.shift(), args);
+            if (args.length > 1) this.dec(msg.member.displayName.split('|')[0], args.shift(), ...args);
             else if (args.length > 0) res = 'Invalid arguments! missing: `reason`'
             else res = 'Invalid arguments! missing: `guild` `reason`';
         // undec https://regex101.com/r/
         } else if (cmd.match(/^[un](?<=u?)n?de?c{0,2}[a-z]{0,4}$/i)) {
-            if (args.length > 0) this.undec(msg.member.displayName.split('|')[0], args.shift(), args);
+            if (args.length > 0) this.undec(msg.member.displayName.split('|')[0], args.shift(), ...args);
             else res = 'Invalid arguments! missing: `guild`';
         } else {
             res = 'Invalid command! usage: `[dec|undec] [guildname] [reason]`\nNote that `reason` is obligatory for `dec`, but not for `undec`';
@@ -206,7 +206,7 @@ class GuildWars {
             this.recovering = true;
             this.lookForOldData(msg);
         } else {
-            log.trace(`recovery in progres ignoring message ${msg.id}`);
+            log.trace(`recovery in progress ignoring message ${msg.id}`);
         }
     }
 
