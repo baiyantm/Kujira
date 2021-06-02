@@ -15,6 +15,7 @@ const Client = require('./client');
 // old
 const PlayerArray = require('./classes/PlayerArray');
 const Player = require('./classes/Player');
+const SignUp = require('./classes/SignUp');
 
 const constants = require('./constants');
 
@@ -30,6 +31,9 @@ var configjsonfile = files.openJsonFile("./resources/config.json", "utf8");
 var configjson = process.env.TOKEN ? configjsonfile["prod"] : configjsonfile["dev"];
 var itemsjson = files.openJsonFile("./resources/items.json", "utf8");
 
+
+const GuildWars = require('./modules/wars');
+const wars = new GuildWars();
 
 ghostScriptGet();
 
@@ -164,6 +168,13 @@ async function initLookout() {
     bot.setInterval(() => {
         collectAllSignUps();
     }, configjson["signupDelay"]);
+
+    // @ts-ignore - returns instanceof TextChannel
+    GuildWarChannel = await bot.channels.fetch(configjson['guildwarID']);
+    wars.channel = GuildWarChannel
+    bot.setInterval(() => {
+        wars.selfRefreshWrapper()
+    }, 20*60*1000);
 
     process.on('SIGTERM', async function () {
         logger.log("Recieved signal to terminate, saving and shutting down");
@@ -394,16 +405,19 @@ async function signUpReactionAddHandler(messageReaction, user) {
     let dateName = util.findCorrespondingDayName(today.getDay()).toLowerCase();
     let lockedSignUps = today.getHours() >= 19 && today.getHours() <= 20 && message.content.toLowerCase().startsWith(dateName);
     let yesReaction = message.reactions.cache.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
+    yesReaction = await yesReaction.fetch();
     let noReaction = message.reactions.cache.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
+    noReaction = await noReaction.fetch();
     if (user.id != bot.user.id) {
-        if (messageReaction.emoji.name == configjson["noreaction"] && (await yesReaction.fetch()).users.cache.get(user.id)) {
+        if (messageReaction.emoji.name == configjson["noreaction"] && yesReaction.users.cache.get(user.id)) {
             removeUserFromReaction(yesReaction, user);
         } else if (messageReaction.emoji.name == configjson["yesreaction"]) {
             if (lockedSignUps) {
                 removeUserFromReaction(yesReaction, user);
+                players.get(user.id).signUps[today.getDay()].status = "no";
                 // @ts-ignore
                 interactions.wSendAuthor(user, configjson["yesreaction"] + " locked after 19:00, please contact an Officer");
-            } else if ((await noReaction.fetch()).users.cache.get(user.id)) {
+            } else if (noReaction.users.cache.get(user.id)) {
                 removeUserFromReaction(noReaction, user);
             }
         }
@@ -425,7 +439,7 @@ function removeUserFromReaction(messageReaction, user) {
  * @param {{reference : any}} annCache 
  */
 async function onMessageHandler(message, annCache) {
-    //if (message.author.bot) return; //bot ignores bots
+    if (message.author.bot || !message.guild) return; //bot ignores bots
     var commands;
     let enteredCommand = message.content.toLowerCase();
     let server = getServerById(message.guild.id);
@@ -448,11 +462,18 @@ async function onMessageHandler(message, annCache) {
             } else if (message.channel.id == server.mySignUpData.id) {
                 // === SIGNUP DATA ===
                 signupDataChannelHandler(enteredCommand, message, commands);
+            } else if (GuildWars.channels.find(c => c == message.channel.id)) {
+                // === GUILD WARS ===
+                // @ts-ignore
+                wars.handler(message);
+            } else if (enteredCommand.startsWith("?")) {
+                // === ALL CHANNELS ===
+                allChannelsHandler(enteredCommand, commands, message);
             }
         } else {
-            // === ALL CHANNELS ===
+            // === ALL CHANNELS (any server) ===
             if (enteredCommand.startsWith("?")) {
-                allChannelsHandler(enteredCommand, commands, message);
+                allAnyChannelsHandler(enteredCommand, commands, message);
             }
         }
     } catch (e) {
@@ -718,6 +739,19 @@ async function manualAddCommand(args, message, commands) {
     }
 }
 
+
+/**
+ * @param {Discord.Message | Discord.PartialMessage} message 
+ */
+ async function allAnyChannelsHandler(enteredCommand, commands, message) {
+    commands = itemsjson["commands"]["any"]["guest"];
+    enteredCommand = enteredCommand.substr(1);
+    let args = enteredCommand.split(" ").splice(1).join(" ").toLowerCase();
+    enteredCommand = enteredCommand.split(" ").splice(0, 1).join(" ");
+    if (enteredCommand == commands["clear"] && await checkAdvPermission(message)) {
+        clearCommand(message);
+    }
+}
 
 /**
  * @param {Discord.Message | Discord.PartialMessage} message 
@@ -1132,6 +1166,7 @@ async function collectSignUps(server) {
     for (let day = 0; day < 7; day++) {
         let reactionMessage = await getDaySignUpMessage(day, server.mySignUp);
         if (reactionMessage) {
+            reactionMessage = await reactionMessage.fetch();
             let yesReaction = reactionMessage.reactions.cache.filter(reaction => reaction.emoji.name == configjson["yesreaction"]).first();
             let noReaction = reactionMessage.reactions.cache.filter(reaction => reaction.emoji.name == configjson["noreaction"]).first();
             if (noReaction) {
