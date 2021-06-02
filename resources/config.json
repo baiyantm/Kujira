@@ -3,32 +3,31 @@
         "gearDataMessage": "geardata",
         "gearDataID": "594924458033020938",
 
-        "welcomeID": "605143113840984115",
         "botServerID": "233897365679898624",
-        "botServerID2": "695207578489192448",
+        "welcomeID": "605143113840984115",
+        "gateID": "594847406823178242",
         "changelogID": "611509213516136448",
-        "changelogID2": "695207578493517853",
+        "announcementID": "598840850390319125",
         "gearID": "594900581357977620",
+        "guildchatID": "746418618006503495",
+        "guildwarID": "849210902589997056",
+
+        "botServerID2": "695207578489192448",
+        "changelogID2": "695207578493517853",
         "gearID2": "695207578787119129",
 
-        "announcementID": "598840850390319125",
+        "botTrialServerID": "233897365679898624",
         "trialreactionID": "765968056035835926",
-
-
-
 
         "token": "NTk0ODQ1ODg1MTcxNjMwMDkw.XRikRw._sZlEM9D0vYT342vcac4ol4ZnVs",
         
-        "gateID": "594847406823178242",
         "signUpID": "596080167437336579",
         "signUpID2": "695207578787119127",
         "signUpDataID": "596080219727724545",
         "signUpDataID2": "695207578493517852",
         "signUpDataMessage": "signupdata",
         "announcementDataID": "598840911564242955",
-        "guildchatID": "746418618006503495",
-        "guildwarID": "849210902589997056",
-        "botTrialServerID": "233897365679898624",
+        
         "trialhistoryID": "849210903396089906",
         "trialwelcomeID": "849221133864796160",
         "testgroundID": "849225499099529236", 
