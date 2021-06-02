@@ -118,6 +118,7 @@ class GuildWars {
             })
         
         await wDelete(previous)
+        return true
     }
 }
 
