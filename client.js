@@ -18,18 +18,25 @@ module.exports = class Client extends Discord.Client {
     constructor(...args) {
         super(...args)
 
-        this.botMessages = new Discord.Collection();
         this.commands = new Discord.Collection();
         this.events = new Discord.Collection();
+
+        /**
+         * @type {Discord.Collection<Discord.TextChannel, Discord.Message>} 
+         */
+        this.botMessages = new Discord.Collection();
+
+        // might remove at some point
         this.servers = new Discord.Collection();
+
+        this.players = new PlayerCollection();
+        this.wars = new GuildWars()
         this.annCache = null;
 
         for (let [key, value] of Object.entries(Guilds)) {
             log.info(`Client init server ${key}`);
             this.servers.set(value.id, new Server(value));
         };
-
-        this.players = new PlayerCollection();
 
         // Register Commands
         const commandFolders = readdirSync('./commands');
@@ -80,21 +87,22 @@ module.exports = class Client extends Discord.Client {
      * Edit a bot message, or send a new one if there is none.
      * 
      * @param {Discord.TextChannel} channel The channel where the message is
-     * @param {Discord.APIMessage | Discord.StringResolvable} content the bot message
-     * @returns the new message
+     * @param {Discord.Message | Discord.MessageEmbed} content the bot message
+     * @returns {?Discord.Message} The [new?] botmsg or null if failed.
      */
     async refreshBotMsg(channel, content) {
-        let ref = this.botMessages.get(channel.id);
-        let message;
-        if (ref) {
-            message = await channel.messages.fetch(ref);
-            if (message && await wEditMsg(message, content)) {
-                return message;
+        let msg = this.botMessages.get(channel);
+        if (msg) {
+            if (!wEditMsg(msg, content)) {
+                log.warn(`failed to refresh botmessage in ${channel}`);
+            }
+        } else {
+            msg = wSendChannel(channel, content)
+            if (msg) {
+                this.botMessages.set(channel, msg)
             }
         }
-        message = await wSendChannel(channel, content);
-        this.botMessages.set(channel.id, message.id)
-        return message;
+        return msg;
     }
 
     /**
