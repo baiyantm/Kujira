@@ -26,7 +26,6 @@ class War {
 }
 
 class GuildWars {
-    static channels = ["849210902589997056"];
     constructor() {
         this.data = new Collection();
         this.warlog = [];
@@ -35,7 +34,7 @@ class GuildWars {
         this.channel = null;
         log.mark('GuildWars - Instanciated');
     }
-    
+
     // it's late right now, I'll make a better solution another day...
     // ... famous last words
     selfRefreshWrapper() {
@@ -43,7 +42,11 @@ class GuildWars {
             this.refreshEmbed(this.botmsg);
         } else if (this.channel) {
             this.channel.messages.fetch({ limit: 1 })
-                .then(m => this.refreshEmbed(m))
+                .then(m => {
+                    m.forEach((value, key) => {
+                        this.refreshEmbed(value);
+                    })
+                })
                 .catch(e => log.error(`failed to fetch a single message... so useless`, e));
         } else {
             log.error('cannot self-refresh due to missing references');
@@ -89,7 +92,7 @@ class GuildWars {
             if (args.length > 1) this.dec(msg.member.displayName.split('|')[0], args.shift(), ...args);
             else if (args.length > 0) res = 'Invalid arguments! missing: `reason`'
             else res = 'Invalid arguments! missing: `guild` `reason`';
-        // undec https://regex101.com/r/
+            // undec https://regex101.com/r/
         } else if (cmd.match(/^[un](?<=u?)n?de?c{0,2}[a-z]{0,4}$/i)) {
             if (args.length > 0) this.undec(msg.member.displayName.split('|')[0], args.shift(), ...args);
             else res = 'Invalid arguments! missing: `guild`';
@@ -98,7 +101,7 @@ class GuildWars {
         }
         if (res) {
             msg.member.send(res)
-                .then(() => {})
+                .then(() => { })
                 .catch(e => log.error(e));
         }
     }
@@ -111,25 +114,25 @@ class GuildWars {
         if (msg.member.id == msg.client.user.id) {
             return;
 
-        // Officers can leave comments in the channel by prefixing the message with !
+            // Officers can leave comments in the channel by prefixing the message with !
         } else if (text.startsWith("! ") && msg.member.roles.cache.find(x => x.name.includes("Officer"))) {
             log.trace('ignoring note');
             return; // no refresh
 
-        // remove message by id { utility hack due to lack of permissions on testserver }
+            // remove message by id { utility hack due to lack of permissions on testserver }
         } else if (text.startsWith('?rm') && msg.member.roles.cache.find(x => x.name.includes("Officer"))) {
             msg.delete()
                 .then(msg => {
                     let id = text.trim().split(/ +/)[1];
                     msg.channel.messages.fetch(id)
                         .then(m => {
-                            m.delete().then().catch(e => log.warn(`(?rm) failed to remove target ${m.id}`, e)); 
+                            m.delete().then().catch(e => log.warn(`(?rm) failed to remove target ${m.id}`, e));
                         })
                         .catch(e => log.debug(`(?rm) failed to fetch message [${id}] (most likely already deleted)`, e));
                 }).catch(e => log.error(`(?rm) failed to remove trigger ${m.id}`, e));
             return; // no refresh
 
-        // Officers can mark messages from before the bot was active to be parsed
+            // Officers can mark messages from before the bot was active to be parsed
         } else if (text.startsWith('?parse') && msg.member.roles.cache.find(x => x.name.includes("Officer"))) {
             text.trim().split(/ +/).slice(1).forEach(id => {
                 log.debug(`?parse: fetching ${id}`);
@@ -140,15 +143,15 @@ class GuildWars {
                     }).catch(e => log.warn(`(?parse) failed to fetch ${id}`, e));
             });
 
-        // Officers can clear all entries
-        // THIS WILL CLEAR BOTH WARS AND THE WARLOG
+            // Officers can clear all entries
+            // THIS WILL CLEAR BOTH WARS AND THE WARLOG
         } else if (text.startsWith('?clear') && msg.member.roles.cache.find(x => x.name.includes("Officer"))) {
             this.clear();
             msg.delete().then().catch(e => log.error(`(?clear) failed to remove trigger message`, e));
             return; // no refresh.
 
-        // Officers can specify an old embed to load data from by providing the id.
-        // THIS WILL RESET THE CURRENT DATA
+            // Officers can specify an old embed to load data from by providing the id.
+            // THIS WILL RESET THE CURRENT DATA
         } else if (text.startsWith("?load") && msg.member.roles.cache.find(x => x.name.includes("Officer"))) {
             log.debug('load start');
             let id = text.trim().split(/ +/)[1];
@@ -158,7 +161,7 @@ class GuildWars {
                     this.loadFromEmbed(m.embeds[0]);
                     log.debug('load completed');
                 }).catch(e => log.error(`(?load) failed to fetch ${id}`, e));
-            
+
 
         } else {
             this.doAction(msg, text);
@@ -201,7 +204,7 @@ class GuildWars {
                     log.error(`(refresh) failed to edit the botmessage ${this.botmsg}`, e);
                 });
 
-        // after startup or refresh error
+            // after startup or refresh error
         } else if (!this.botmsg && !this.recovering) {
             this.recovering = true;
             this.lookForOldData(msg);

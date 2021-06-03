@@ -174,6 +174,7 @@ async function initLookout() {
     // @ts-ignore - returns instanceof TextChannel
     GuildWarChannel = await bot.channels.fetch(configjson['guildwarID']);
     wars.channel = GuildWarChannel;
+    wars.selfRefreshWrapper();
     bot.setInterval(() => {
         wars.selfRefreshWrapper()
     }, 20*60*1000);
@@ -477,7 +478,7 @@ async function onMessageHandler(message, annCache) {
             } else if (message.channel.id == server.mySignUpData.id) {
                 // === SIGNUP DATA ===
                 signupDataChannelHandler(enteredCommand, message, commands);
-            } else if (GuildWars.channels.find(c => c == message.channel.id)) {
+            } else if (message.channel.id == wars.channel.id) {
                 // === GUILD WARS ===
                 // @ts-ignore
                 wars.handler(message);
@@ -2300,7 +2301,6 @@ var configjsonfile = files.openJsonFile("./resources/config.json", "utf8");
 var configjson = process.env.TOKEN ? configjsonfile["prod"] : configjsonfile["dev"];
 var itemsjson = files.openJsonFile("./resources/items.json", "utf8");
 const wars = new GuildWars();
-GuildWars.channels = [configjson["guildwarID"]];
 
 /*var alarmsjson = files.openJsonFile("./resources/alarms.json", "utf8");*/
 var init = false;
