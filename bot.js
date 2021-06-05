@@ -1310,7 +1310,7 @@ function setupSignUpSchedule() {
     let dd = (today.getDay() + Number(util.isNextDay(configjson["hourSignup"]))) % 7;
     let minUntilSave = util.getMinUntil(dd, configjson["hourSignup"], 0);
     myServers.forEach(server => {
-        if(server.self.id != getMyServerGuildChannel().id) {
+        if(server.self.id == getMyServerGuildChannel().id) {
             bot.setTimeout(async () => {
                 await dumpSignUps(server);
                 setupSignUpSchedule();
