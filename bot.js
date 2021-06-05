@@ -2313,7 +2313,6 @@ if (configjson && itemsjson) {
     var myTrialWelcome;
 
     myServers.push(myServer);
-    myServers.push(myServer2);
 
     var players = new PlayerArray(itemsjson["classlist"], itemsjson["horselist"]);
     var classEmojis = [];
