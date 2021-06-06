@@ -12,6 +12,31 @@ const PlayerArray = require('./classes/PlayerArray');
 const Server = require('./classes/Server');
 const SignUp = require('./classes/SignUp');
 
+const GuildWars = require('./modules/wars');
+
+// Planned global logging replacer on branch reredevcommands
+// has to be `configured` in the main file.
+const log4js = require('log4js');
+log4js.configure({
+    "appenders": {
+        "out": {
+            "type": "stdout",
+            "layout": {
+                "type": "pattern",
+                "pattern": "%[%d{yyyy-MM-dd hh:mm}  %-8.8p %-17.17c %m%]"
+            }
+        },
+    },
+    "categories": {
+        "default": {
+            "appenders": ["out"],
+            "level": "trace" // fiddle with this if you want less logs
+            // mark > fatal > error > warning > info > debug > trace
+            // yes yes, i'll fix so it doesn't trace on prod... tomorrow...
+        }
+    }
+});
+
 ghostScriptGet();
 
 async function initLookout() {
@@ -146,10 +171,19 @@ async function initLookout() {
         collectAllSignUps();
     }, configjson["signupDelay"]);
 
+    // @ts-ignore - returns instanceof TextChannel
+    GuildWarChannel = await bot.channels.fetch(configjson['guildwarID']);
+    wars.channel = GuildWarChannel;
+    wars.selfRefreshWrapper();
+    bot.setInterval(() => {
+        wars.selfRefreshWrapper()
+    }, 20*60*1000);
+
     process.on('SIGTERM', async function () {
         logger.log("Recieved signal to terminate, saving and shutting down");
         await savePlayers();
         bot.destroy();
+        log4js.shutdown(); // application exit!
         process.exit(0);
     });
 
@@ -444,6 +478,10 @@ async function onMessageHandler(message, annCache) {
             } else if (message.channel.id == server.mySignUpData.id) {
                 // === SIGNUP DATA ===
                 signupDataChannelHandler(enteredCommand, message, commands);
+            } else if (message.channel.id == wars.channel.id) {
+                // === GUILD WARS ===
+                // @ts-ignore
+                wars.handler(message);
             } else if (enteredCommand.startsWith("?")) {
                 // === ALL CHANNELS ===
                 allChannelsHandler(enteredCommand, commands, message);
@@ -664,7 +702,7 @@ async function gearChannelHandler(enteredCommand, message, commands) {
 
     myServers.forEach(server => {
         //refresh bot message
-        bot.setTimeout(async () => {
+        bot.setInterval(async () => {
             await refreshBotMsg(server.myGear, server.botMsg, players);
         }, configjson["refreshDelay"]);
     });
@@ -2262,6 +2300,8 @@ const bot = new Discord.Client();
 var configjsonfile = files.openJsonFile("./resources/config.json", "utf8");
 var configjson = process.env.TOKEN ? configjsonfile["prod"] : configjsonfile["dev"];
 var itemsjson = files.openJsonFile("./resources/items.json", "utf8");
+const wars = new GuildWars();
+
 /*var alarmsjson = files.openJsonFile("./resources/alarms.json", "utf8");*/
 var init = false;
 
@@ -2311,6 +2351,10 @@ if (configjson && itemsjson) {
      * @type Discord.TextChannel
      */
     var myTrialWelcome;
+    /**
+     * @type Discord.TextChannel
+     */
+    var GuildWarChannel;
 
     myServers.push(myServer);
 
@@ -2380,10 +2424,12 @@ if (configjson && itemsjson) {
             }
         } catch (e) {
             console.error(e);
+            log4js.shutdown(); // application exit?
         }
     });
 } else {
     logger.log("INFO: Couldn't find config.json and items.json files, aborting.");
+    log4js.shutdown(); // application exit?
 }
 async function initPlayers(players) {
     try {
