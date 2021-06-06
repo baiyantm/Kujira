@@ -1969,7 +1969,7 @@ function checkIntPermission(message) {
  * @returns 
  */
 function intPermission(member) {
-    return member.roles.cache.find(x => x.name == "Members");
+    return member.roles.cache.find(x => x.name == "TAB");
 }
 
 /**
@@ -1992,7 +1992,7 @@ async function checkAdvPermission(message) {
  * @returns 
  */
 function advPermission(member) {
-    return member.roles.cache.find(x => x.name.includes("Officer"));
+    return member.roles.cache.find(x => x.name.includes("LEADERSHIP"));
 }
 
 /**
