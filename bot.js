@@ -53,7 +53,6 @@ async function initLookout() {
     var annCache = { reference: null }; //because JavaScript
     await cacheAnnouncements(annCache);
     await cacheSignUps();
-    await cacheTrialMessage();
     annCache.reference.forEach(async message => {
         try {
             await downloadFilesFromMessage(message);
@@ -89,9 +88,6 @@ async function initLookout() {
 
     bot.on("messageReactionAdd", async (messageReaction, user) => onReactionAddHandler(messageReaction, user));
 
-    bot.on("messageReactionRemove", async (messageReaction, user) => onReactionRemoveHandler(messageReaction, user));
-
-    // @ts-ignore
     bot.on("messageUpdate", async (oldMessage, newMessage) => onEditHandler(newMessage, annCache));
 
     bot.on("messageDelete", async deletedMessage => onDeleteHandler(deletedMessage, annCache));
@@ -206,8 +202,6 @@ async function onLeaveHandler(member) {
     let server = getServerById(member.guild.id);
     if (server && member.guild.id == server.self.id) {
         interactions.wSendChannel(server.myWelcome, member.toString() + "(" + member.user.username + ") has left the server.");
-    } else if (member.guild.id == myTrialServer.id) {
-        interactions.wSendChannel(myTrialWelcome, member.toString() + "(" + member.user.username + ") has left the server.");
     }
 }
 
@@ -244,177 +238,10 @@ async function onDeleteHandler(deletedMessage, annCache) {
  * @param {Discord.MessageReaction} messageReaction 
  * @param {Discord.User | Discord.PartialUser} user 
  */
-async function onReactionRemoveHandler(messageReaction, user) {
-    if (messageReaction.message.channel.id == myTrial.id) {
-        trialReactionRemoveHandler(messageReaction, user);
-    }
-}
-
-/**
- * listener for emoji add event
- * @param {Discord.MessageReaction} messageReaction 
- * @param {Discord.User | Discord.PartialUser} user 
- */
 async function onReactionAddHandler(messageReaction, user) {
     let server = getServerById(messageReaction.message.guild.id);
     if (server && messageReaction.message.channel.id == server.mySignUp.id) {
         signUpReactionAddHandler(messageReaction, user);
-    } else if (messageReaction.message.channel.id == myTrial.id) {
-        trialReactionAddHandler(messageReaction, user);
-    }
-}
-
-/**
- * listener for emoji add event on trial channel
- * @param {Discord.MessageReaction} messageReaction 
- * @param {Discord.User | Discord.PartialUser} user  
- */
-async function trialReactionAddHandler(messageReaction, user) {
-    if ("⚔️" == messageReaction.emoji.name) {
-        const guild = messageReaction.message.guild;
-        const guildMember = await guild.members.fetch(user.id);
-        if (!advPermission(guildMember)) {
-            interactions.wSendChannel(myTrialWelcome, guildMember.toString() + " clicked on ⚔️");
-            const roleIndex = await getNextTrialRoleIndex(guild);
-            const role = guild.roles.cache.find(x => x.name == "Trial " + roleIndex);
-            const channel = guild.channels.cache.find(x => x.name == "trial-" + roleIndex);
-            try {
-                if (channel) {
-                    // @ts-ignore
-                    await historizeChannel(channel, myTrialHistory);
-                }
-                await guildMember.roles.add(role);
-                await guildMember.roles.add(guild.roles.cache.find(x => x.name == "Trialee"));
-                // @ts-ignore
-                await interactions.wSendChannel(channel, user.toString() + " Hi, please post your gear screenshot here in this format: https://imgur.com/a/eYiNNgd")
-            } catch (e) {
-                interactions.wSendChannel(myTrialWelcome, "Error while trying to add a trialee : " + e.toString());
-                console.error(e);
-                logger.log("ERROR: Couldn't add " + role.name + " to " + guildMember.user.tag);
-            }
-        }
-    }
-}
-
-/**
- * gets the next trial role, if not available, creates it
- * @param {Discord.Guild} guild 
- */
-async function getNextTrialRoleIndex(guild) {
-    let available = false;
-    let roleCount = 1;
-    let trialRole;
-    while (!available) {
-        let roleName = "Trial " + roleCount;
-        trialRole = guild.roles.cache.find(x => x.name == roleName);
-        if (trialRole != undefined) {
-            available = await isTrialRoleAvailable(guild, trialRole);
-            if (!available) {
-                roleCount++;
-            } else {
-                let trialChannel = guild.channels.cache.find(channel => channel.name.startsWith("trial-" + roleCount));
-                if (!trialChannel) {
-                    await createNewTrialChannelAndRole(guild, roleCount, trialRole, roleName);
-                }
-            }
-        } else {
-            await createNewTrialChannelAndRole(guild, roleCount, trialRole, roleName);
-            available = true;
-        }
-    }
-    return roleCount;
-}
-
-/**
- * 
- * @param {Discord.Guild} guild 
- * @param {number} roleCount 
- * @param {Discord.Role} trialRole 
- * @param {string} roleName 
- */
-async function createNewTrialChannelAndRole(guild, roleCount, trialRole, roleName) {
-    let channels = guild.channels.cache.array();
-    let trialMax = getTrialMaxNumber(channels);
-    let lastTrialChannel = guild.channels.cache.find(channel => channel.name.startsWith("trial-" + trialMax));
-    let newTrialChannel = await lastTrialChannel.clone({
-        name: "trial-" + roleCount,
-        permissionOverwrites: lastTrialChannel.permissionOverwrites
-    });
-    await newTrialChannel.edit({
-        position: lastTrialChannel.position + 1
-    });
-    let lastTrialRole = guild.roles.cache.find(x => x.name == "Trial " + trialMax);
-    if (!trialRole) {
-        trialRole = await guild.roles.create({
-            data: {
-                name: roleName,
-                position: lastTrialRole.position - 1,
-                permissions: lastTrialRole.permissions
-            }
-        });
-    }
-    await newTrialChannel.updateOverwrite(trialRole, {
-        VIEW_CHANNEL: true,
-        SEND_MESSAGES: true,
-        EMBED_LINKS: true,
-        ATTACH_FILES: true,
-        READ_MESSAGE_HISTORY: true,
-        USE_EXTERNAL_EMOJIS: true,
-        ADD_REACTIONS: true
-    });
-    newTrialChannel.permissionOverwrites.get(lastTrialRole.id).delete();
-    return trialRole;
-}
-
-function getTrialMaxNumber(channels) {
-    let trialMax = 1;
-    for (let i = 0; i < channels.length; i++) {
-        let channel = channels[i];
-        if (channel.name.startsWith("trial-")) {
-            let trialNumber = parseInt(channel.name.split("-")[1]);
-            trialMax = trialMax > trialNumber ? trialMax : trialNumber;
-        }
-    }
-    return trialMax;
-}
-
-/**
- * gets the next trial role, if not available, creates it
- * @param {Discord.Guild} guild 
- */
-async function isTrialRoleAvailable(guild, role) {
-    let available = true;
-    let members = await guild.members.fetch();
-    for (const imember of members) {
-        let member = imember[1];
-        if (member.roles.cache.has(role.id)) {
-            available = false;
-        }
-    }
-    return available;
-}
-
-/**
- * listener for emoji add event on trial channel
- * @param {Discord.MessageReaction} messageReaction 
- * @param {Discord.User | Discord.PartialUser} user 
- */
-async function trialReactionRemoveHandler(messageReaction, user) {
-    if ("⚔️" == messageReaction.emoji.name) {
-        const guildMember = messageReaction.message.guild.members.cache.get(user.id);
-        if (!advPermission(guildMember)) {
-            interactions.wSendChannel(myTrialWelcome, guildMember.toString() + " unclicked on ⚔️");
-            guildMember.roles.cache.forEach(role => {
-                if (role.name.startsWith("Trial")) {
-                    try {
-                        guildMember.roles.remove(role);
-                    } catch (e) {
-                        console.error(e);
-                        logger.log("ERROR: Failed to remove role \"" + role + "\"");
-                    }
-                }
-            });
-        }
     }
 }
 
@@ -720,11 +547,7 @@ async function gearChannelHandler(enteredCommand, message, commands) {
  */
 async function clearCommand(message) {
     startLoading(message);
-    if (message.channel instanceof Discord.TextChannel && message.channel.name.startsWith("trial-") && message.guild == myTrialServer) {
-        historizeChannel(message.channel, myTrialHistory);
-    } else {
-        clearChannel(message.channel);
-    }
+    clearChannel(message.channel);
 }
 
 function removeAllCommand() {
@@ -1218,15 +1041,6 @@ async function cacheSignUps() {
     });
 }
 
-async function cacheTrialMessage() {
-    let messages = await fetchAllMessages(myTrial);
-    messages.forEach(message => {
-        message.reactions.cache.forEach(async reaction => {
-            reaction.users.fetch();
-        });
-    });
-}
-
 /**
  * @param {Discord.Message | Discord.PartialMessage} message 
  * @returns an embed containing info about the message
@@ -1584,7 +1398,7 @@ async function dumpSignUps(server) {
     server.mySignUpData.send(embedToSend);
 
     const sheet = require('./modules/sheets');
-    await sheet.doSheetUpload(signupdata, server.self.id);
+    //await sheet.doSheetUpload(signupdata, server.self.id);
 }
 
 /**
@@ -2329,39 +2143,17 @@ if (configjson && itemsjson) {
      */
     var myServer = new Server();
     /**
-     * @type Server
-     */
-    var myServer2 = new Server();
-    /**
-     * @type Discord.Guild
-     */
-    var myTrialServer;
-    /**
      * @type Discord.Guild
      */
     var myDevServer;
-
     /**
      * @type Discord.TextChannel
      */
     var myGearData;
-
     /**
      * @type Discord.TextChannel
      */
-    var myTrial;
-    /**
-     * @type Discord.TextChannel
-     */
-    var myTrialHistory;
-    /**
-     * @type Discord.TextChannel
-     */
-    var myTrialWelcome;
-    /**
-     * @type Discord.TextChannel
-     */
-    var GuildWarChannel;
+     var GuildWarChannel;
 
     myServers.push(myServer);
 
@@ -2375,16 +2167,9 @@ if (configjson && itemsjson) {
         bot.user.setPresence({ activity: { name: "booting up..." } });
 
         try {
-            myTrialServer = bot.guilds.cache.get(configjson["botTrialServerID"]);
             myDevServer = bot.guilds.cache.get(configjsonfile["dev"]["botServerID"]);
             // @ts-ignore
             myGearData = await bot.channels.fetch(configjson["gearDataID"]);
-            // @ts-ignore
-            myTrial = await bot.channels.fetch(configjson["trialreactionID"]);
-            // @ts-ignore
-            myTrialHistory = await bot.channels.fetch(configjson["trialhistoryID"]);
-            // @ts-ignore
-            myTrialWelcome = await bot.channels.fetch(configjson["trialwelcomeID"]);
 
             let index = 0;
             for (let i = 0; i < myServers.length; i++) {
