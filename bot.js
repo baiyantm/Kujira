@@ -171,6 +171,14 @@ async function initLookout() {
         collectAllSignUps();
     }, configjson["signupDelay"]);
 
+    for (let i = 0; i < myServers.length; i++) {
+        let server = myServers[i];
+        //refresh bot message
+        bot.setInterval(async () => {
+            await refreshBotMsg(server.myGear, server.botMsg, players);
+        }, configjson["refreshDelay"]);
+    }
+
     // @ts-ignore - returns instanceof TextChannel
     GuildWarChannel = await bot.channels.fetch(configjson['guildwarID']);
     wars.channel = GuildWarChannel;
@@ -700,12 +708,11 @@ async function gearChannelHandler(enteredCommand, message, commands) {
     }
     deleteCommand(message);
 
-    myServers.forEach(server => {
+    for (let i = 0; i < myServers.length; i++) {
+        let server = myServers[i];
         //refresh bot message
-        bot.setInterval(async () => {
-            await refreshBotMsg(server.myGear, server.botMsg, players);
-        }, configjson["refreshDelay"]);
-    });
+        await refreshBotMsg(server.myGear, server.botMsg, players);
+    }
 }
 
 /**
@@ -735,7 +742,7 @@ async function removePlayerCommand(message, args) {
     else {
         playerId = args;
     }
-    await removePlayer(players, playerId, message.author);
+    removePlayer(players, playerId, message.author);
 }
 
 /**
@@ -1747,11 +1754,11 @@ function getFormattedAttendanceForWeek() {
  */
 async function removePlayer(players, playerId, issuer) {
     let removed = players.remove(playerId);
-    if (removed && removed instanceof Player) {
+    if (removed && removed instanceof PlayerArray) {
         let content = "";
         content += players.displayFullPlayer(removed[0]) + "\nRemoved from gear list.";
         content += "\n(Command issuer: " + issuer.toString() + ")";
-        await interactions.wSendChannel(getServerById(removed.origin).myChangelog, content);
+        interactions.wSendChannel(getServerById(removed[0].origin).myChangelog, content);
     }
 }
 
