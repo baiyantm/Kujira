@@ -42,14 +42,6 @@ ghostScriptGet();
 async function initLookout() {
     bot.user.setPresence({ activity: { name: 'commands', type: 'LISTENING' } });
 
-    /*if (myGuildChat) {
-        setupAlarms();
-    }
-
-    if (myServer) {
-        setupCustomAlarms();
-    }*/
-
     var annCache = { reference: null }; //because JavaScript
     await cacheAnnouncements(annCache);
     await cacheSignUps();
@@ -372,7 +364,7 @@ async function gateChannelHandler(commands, enteredCommand, message) {
  */
 async function gateCommand() {
     let gateEmbed = new Discord.MessageEmbed();
-    gateEmbed.title = "You're about to enter the Remedy guild's discord";
+    gateEmbed.title = "You're about to enter the TAB guild's discord";
     gateEmbed.color = 3447003;
     gateEmbed.description = `*Please be aware of the following rules before proceeding*
     
@@ -395,7 +387,6 @@ async function okCommand(message) {
     if (!message.member.roles.cache.has(publicRole.id)) {
         await message.member.roles.add(publicRole);
         logger.log("ROLE: " + publicRole + " role added to " + message.author.tag.toString());
-        await interactions.wSendAuthor(message.author, itemsjson["urlguildpage"]);
         await interactions.wSendAuthor(message.author, itemsjson["gateguide"] + "\n\nReminder that you agreed to the following rules :\n" + itemsjson["gaterules"]);
         await interactions.wSendChannel(getMyServer().myWelcome, message.author.toString() + " agreed to the rules and got the public role.");
     }
@@ -1939,26 +1930,6 @@ function dailyTimeout(id, time, message) {
     }, time);
 }
 
-/*
-function setupAlarms() {
-    let channel = myGuildChat;
-    for (const key in alarmsjson) {
-        let dayName = key;
-        for (const hour in alarmsjson[dayName]) {
-            let minUntilAlarm = mod(util.getMinUntil(util.findCorrespondingDayNumber(dayName.toLowerCase()), hour, 0), 10080);
-            let msUntilAlarm = minUntilAlarm * 60 * 1000;
-            let alarmText = getMyServer().roles.cache.find(x => x.name === "Rem").toString() + "\n";
-            alarmsjson[dayName][hour].forEach(alarm => {
-                alarmText += alarm + "\n";
-            });
-            bot.setTimeout(async () => {
-                interactions.wSendChannel(channel, alarmText);
-            }, msUntilAlarm);
-        }
-    }
-    logger.log("INFO: Alarms set");
-}*/
-
 /**
  * The fundamental problem is in JS % is not the modulo operator. It's the remainder operator. There is no modulo operator in JavaScript.
  * @param {number} n 
@@ -2192,8 +2163,6 @@ if (configjson && itemsjson) {
                 server.myWelcome = await bot.channels.fetch(getConfigOrFirst("welcomeID", index));
                 // @ts-ignore
                 server.myChangelog = await bot.channels.fetch(getConfigOrFirst("changelogID", index));
-                // @ts-ignore
-                server.myGuildChat = await bot.channels.fetch(getConfigOrFirst("guildchatID", index));
             }
 
             logger.log("INFO: Booting up attempt...");
