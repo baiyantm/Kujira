@@ -1992,7 +1992,7 @@ async function checkAdvPermission(message) {
  * @returns 
  */
 function advPermission(member) {
-    return member.roles.cache.find(x => x.name.includes("LEADERSHIP"));
+    return member.roles.cache.find(x => x.name.includes("Leadership"));
 }
 
 /**
