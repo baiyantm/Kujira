@@ -164,7 +164,7 @@ async function initLookout() {
         savePlayers();
     }, configjson["saveDelay"]);
 
-    setupSignUpSchedule();
+    //setupSignUpSchedule();
 
     collectAllSignUps();
     bot.setInterval(() => {
