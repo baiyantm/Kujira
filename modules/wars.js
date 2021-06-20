@@ -53,11 +53,18 @@ class GuildWars {
         }
     }
 
+    warlogpush(message) {
+        if(this.warlog.length > 9) {
+            this.warlog = this.warlog.slice(Math.max(this.warlog.length - 10, 0))
+        }
+        this.warlog.push(message);
+    }
+
     dec(origin, guild, ...reason) {
         let war = new War(origin, guild, reason.join(' '));
         log.debug(`set [${war.guildkey}] -> [${war.log('dec')}]`);
         this.data.set(war.guildkey, war);
-        this.warlog.push(war.log('dec'));
+        this.warlogpush(war.log('dec'));
     }
 
     undec(origin, guild, ...reason) {
@@ -66,7 +73,7 @@ class GuildWars {
         if (!this.data.delete(guild.toLowerCase())) {
             log.debug(`Unable to undec ${guild}, not at war.`);
         } else {
-            this.warlog.push(war.log('undec'));
+            this.warlogpush(war.log('undec'));
         }
     }
 
@@ -177,7 +184,7 @@ class GuildWars {
 
     /** @returns {MessageEmbed} */
     makeEmbed() {
-        if (this.warlog.length == 0) this.warlog.push('- no entries -');
+        if (this.warlog.length == 0) this.warlogpush('- no entries -');
         // Will work as long as it doesn't grow past 20, but it should never grow past 11 in the first place
         else if (this.warlog.length > 10) this.warlog.slice((this.warlog.length - 10));
 
@@ -250,7 +257,7 @@ class GuildWars {
 
         embed.description.split('\n').forEach(line => {
             log.trace(`load warlog line: ${line}`);
-            this.warlog.push(line);
+            this.warlogpush(line);
         });
 
         embed.fields[0].value.split('\n')
