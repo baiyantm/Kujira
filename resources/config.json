@@ -1,6 +1,6 @@
 {
     "dev": {
-        "token": "NTk0ODQ1ODg1MTcxNjMwMDkw.XRikRw._sZlEM9D0vYT342vcac4ol4ZnVs",
+        "token": "NTkzMjE4MTExOTEwNDQ1MDU3.XRKraw.0cnY7htk4jMQrJgAsKyBCmdzBEE",
         "botServerID": "233897365679898624",
         "botServerID2": "695207578489192448",
         "gateID": "594847406823178242",
@@ -32,7 +32,9 @@
         "hourSignup": 17,
         "defaultCount": 7,
         "yesreaction": "✅",
-        "noreaction": "❌"
+        "noreaction": "❌",
+        "officerRole" : "Officers",
+        "memberRole" : "Members"
     },
     "prod": {
         "botServerID": "594824222099111937",
@@ -65,7 +67,9 @@
         "hourSignup": 17,
         "defaultCount": 7,
         "yesreaction": "✅",
-        "noreaction": "❌"
+        "noreaction": "❌",
+        "officerRole" : "Officers",
+        "memberRole" : "Members"
     },
     "sheets": {
         "594824222099111937": {

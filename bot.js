@@ -440,7 +440,7 @@ async function signUpReactionAddHandler(messageReaction, user) {
                 removeUserFromReaction(yesReaction, user);
                 players.get(user.id).signUps[today.getDay()].status = "no";
                 // @ts-ignore
-                interactions.wSendAuthor(user, configjson["yesreaction"] + " locked after 19:00, please contact an Officer");
+                interactions.wSendAuthor(user, configjson["yesreaction"] + " locked after 19:00, please contact a " + configjson["officerRole"]);
             } else if (noReaction.users.cache.get(user.id)) {
                 removeUserFromReaction(noReaction, user);
             }
@@ -2184,7 +2184,7 @@ function checkIntPermission(message) {
  * @returns 
  */
 function intPermission(member) {
-    return member.roles.cache.find(x => x.name == "Members");
+    return member.roles.cache.find(x => x.name == configjson["memberRole"]);
 }
 
 /**
@@ -2207,7 +2207,7 @@ async function checkAdvPermission(message) {
  * @returns 
  */
 function advPermission(member) {
-    return member.roles.cache.find(x => x.name.includes("Officer"));
+    return member.roles.cache.find(x => x.name.includes(configjson["officerRole"]));
 }
 
 /**
